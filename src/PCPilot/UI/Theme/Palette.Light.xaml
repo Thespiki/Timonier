@@ -1,0 +1,43 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Palette claire. Toujours référencer ces clés via DynamicResource (changement de thème à chaud). -->
+    <SolidColorBrush x:Key="Pp.WindowBackground" Color="#F3F3F3" />
+    <SolidColorBrush x:Key="Pp.NavBackground" Color="#00FFFFFF" />
+    <SolidColorBrush x:Key="Pp.ContentBackground" Color="#F9F9F9" />
+    <SolidColorBrush x:Key="Pp.ContentBorder" Color="#E6E6E6" />
+    <SolidColorBrush x:Key="Pp.CardBackground" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Pp.CardHover" Color="#F7F7F7" />
+    <SolidColorBrush x:Key="Pp.CardBorder" Color="#E5E5E5" />
+    <SolidColorBrush x:Key="Pp.CardSecondary" Color="#F6F6F6" />
+    <SolidColorBrush x:Key="Pp.Divider" Color="#E3E3E3" />
+    <SolidColorBrush x:Key="Pp.TextPrimary" Color="#1A1A1A" />
+    <SolidColorBrush x:Key="Pp.TextSecondary" Color="#5C5C5C" />
+    <SolidColorBrush x:Key="Pp.TextTertiary" Color="#8A8A8A" />
+    <SolidColorBrush x:Key="Pp.TextOnAccent" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Pp.ControlFill" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Pp.ControlFillHover" Color="#F4F4F4" />
+    <SolidColorBrush x:Key="Pp.ControlFillPressed" Color="#EDEDED" />
+    <SolidColorBrush x:Key="Pp.ControlStroke" Color="#D1D1D1" />
+    <SolidColorBrush x:Key="Pp.SubtleHover" Color="#0F000000" />
+    <SolidColorBrush x:Key="Pp.SubtlePressed" Color="#18000000" />
+    <SolidColorBrush x:Key="Pp.ToggleOffStroke" Color="#8A8A8A" />
+    <SolidColorBrush x:Key="Pp.ToggleOffKnob" Color="#5C5C5C" />
+    <SolidColorBrush x:Key="Pp.Overlay" Color="#4D000000" />
+    <SolidColorBrush x:Key="Pp.Shadow" Color="#22000000" />
+
+    <SolidColorBrush x:Key="Pp.Accent" Color="#005FB8" />
+    <SolidColorBrush x:Key="Pp.AccentHover" Color="#1A6FC0" />
+    <SolidColorBrush x:Key="Pp.AccentSubtle" Color="#E5F0FA" />
+    <SolidColorBrush x:Key="Pp.AccentText" Color="#005FB8" />
+
+    <SolidColorBrush x:Key="Pp.Success" Color="#0F7B0F" />
+    <SolidColorBrush x:Key="Pp.SuccessBackground" Color="#DFF6DD" />
+    <SolidColorBrush x:Key="Pp.Warning" Color="#9D5D00" />
+    <SolidColorBrush x:Key="Pp.WarningBackground" Color="#FFF4CE" />
+    <SolidColorBrush x:Key="Pp.Danger" Color="#C42B1C" />
+    <SolidColorBrush x:Key="Pp.DangerBackground" Color="#FDE7E9" />
+    <SolidColorBrush x:Key="Pp.Info" Color="#005FB8" />
+    <SolidColorBrush x:Key="Pp.InfoBackground" Color="#E8F1FB" />
+    <SolidColorBrush x:Key="Pp.Neutral" Color="#5C5C5C" />
+    <SolidColorBrush x:Key="Pp.NeutralBackground" Color="#EEEEEE" />
+</ResourceDictionary>
