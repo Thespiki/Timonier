@@ -1,14 +1,14 @@
-# Outil de développement : . .\tools\dev.ps1 ; puis Build / Run / Smoke
+﻿# Outil de développement : . .\tools\dev.ps1 ; puis Build / Run / Smoke
 #   Build        compile (Debug) et affiche uniquement les erreurs/avertissements uniques
-#   Run          arrête PC Pilot, compile, lance l'app (non élevée) et affiche la fin du log
+#   Run          arrête Timonier, compile, lance l'app (non élevée) et affiche la fin du log
 #   Smoke        lance l'app, vérifie qu'elle tourne 8 s sans exception, puis la ferme
 . "$PSScriptRoot\env.ps1"
 $script:Root = Resolve-Path "$PSScriptRoot\.."
-$script:Proj = Join-Path $Root "src\PCPilot\PCPilot.csproj"
-$script:Exe = Join-Path $Root "src\PCPilot\bin\Debug\net10.0-windows10.0.22621.0\PCPilot.exe"
-$script:LogFile = Join-Path $env:LOCALAPPDATA "PCPilot\logs\pcpilot.log"
+$script:Proj = Join-Path $Root "src\Timonier\Timonier.csproj"
+$script:Exe = Join-Path $Root "src\Timonier\bin\Debug\net10.0-windows10.0.22621.0\Timonier.exe"
+$script:LogFile = Join-Path $env:LOCALAPPDATA "Timonier\logs\timonier.log"
 
-function Stop-Pilot { Get-Process PCPilot -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $script:Exe } | Stop-Process -Force; Start-Sleep -Milliseconds 300 }
+function Stop-Pilot { Get-Process Timonier -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $script:Exe } | Stop-Process -Force; Start-Sleep -Milliseconds 300 }
 
 function Build {
     param([switch]$Quiet)
@@ -33,14 +33,15 @@ function Run {
 }
 
 function Capture {
-    # Capture -Page "privacy" -Theme dark -Out "$env:TEMP\pcp-shots\privacy.png" [-Param "tweak:xyz"] [-Scroll 1200]
+    # Capture -Page "privacy" -Theme dark -Out "$env:TEMP\tmn-shots\privacy.png" [-Param "tweak:xyz"] [-Scroll 1200] [-Lang de]
     #   -Param  : paramètre de navigation transmis à la page (INavigationAware)
     #   -Scroll : défilement vertical (pixels) du premier ScrollViewer de la page avant la capture
-    param([string]$Page = "", [string]$Theme = "light", [string]$Out = "$env:TEMP\pcp-shots\capture.png", [string]$Param = "", [int]$Scroll = 0, [switch]$NoBuild)
+    #   -Lang   : langue de l'interface (code de Languages.All, ex. en, de, ar, ja) ; défaut : réglage de l'application
+    param([string]$Page = "", [string]$Theme = "light", [string]$Out = "$env:TEMP\tmn-shots\capture.png", [string]$Param = "", [int]$Scroll = 0, [string]$Lang = "", [switch]$NoBuild)
     if (-not $NoBuild) { if (-not (Build -Quiet)) { return } }
     New-Item -ItemType Directory -Force (Split-Path $Out) | Out-Null
     Remove-Item $Out -ErrorAction SilentlyContinue
-    $p = Start-Process -FilePath $script:Exe -ArgumentList @('--capture', "`"$Out`"", $(if ($Page) { $Page } else { '""' }), $Theme, $(if ($Param) { "`"$Param`"" } else { '""' }), "$Scroll") -PassThru
+    $p = Start-Process -FilePath $script:Exe -ArgumentList @('--capture', "`"$Out`"", $(if ($Page) { $Page } else { '""' }), $Theme, $(if ($Param) { "`"$Param`"" } else { '""' }), "$Scroll", $(if ($Lang) { $Lang } else { '""' })) -PassThru
     if (-not $p.WaitForExit(40000)) { $p.Kill(); "CAPTURE TIMEOUT" }
     if (Test-Path $Out) { "CAPTURE OK: $Out" } else { "CAPTURE FAILED"; Get-Content $script:LogFile -Tail 10 -ErrorAction SilentlyContinue }
 }

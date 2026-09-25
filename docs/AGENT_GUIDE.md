@@ -1,6 +1,6 @@
-# PC Pilot — Guide de développement des modules
+# Timonier — Guide de développement des modules
 
-PC Pilot est un centre de contrôle local pour Windows 10/11 (C# / .NET 10 / WPF). Interface **en français**.
+Timonier est un centre de contrôle local pour Windows 10/11 (C# / .NET 10 / WPF). Interface **en français**.
 Tout tourne en local, sans télémétrie, avec une empreinte minimale (le PC de test est un Pentium N6000, 8 Go).
 
 ## 0. Règles absolues
@@ -14,7 +14,7 @@ Tout tourne en local, sans télémétrie, avec une empreinte minimale (le PC de 
 - Pour tester l'interface, utilise uniquement le mode capture (voir §7), qui n'applique rien.
 
 ### Périmètre des fichiers
-- Tu ne modifies **que** ton dossier `src/PCPilot/Modules/<TonModule>/`. Aucun autre fichier (Core, Broker, UI, csproj).
+- Tu ne modifies **que** ton dossier `src/Timonier/Modules/<TonModule>/`. Aucun autre fichier (Core, Broker, UI, csproj).
 - Pas de nouveau paquet NuGet. Disponibles : CommunityToolkit.Mvvm, System.Management (WMI),
   System.ServiceProcess.ServiceController, System.DirectoryServices.AccountManagement, System.Diagnostics.EventLog,
   WinForms (uniquement si indispensable), et les API WinRT (`Windows.*`, TFM `net10.0-windows10.0.22621.0`).
@@ -24,14 +24,14 @@ Tout tourne en local, sans télémétrie, avec une empreinte minimale (le PC de 
 1. **Jamais de shell, jamais de concaténation de commande.** Utilise `ProcessRunner.RunAsync(SystemTool.X, [args…])`
    (ArgumentList, chemins absolus en liste blanche) ou mieux, une API Win32/WMI/WinRT/COM.
 2. **PowerShell** : uniquement via `PowerShellRunner.RunAsync(scriptConstant, parametres)`. Le script est une constante ;
-   les données passent par `$env:PCP_NOM` (dictionnaire `parametres` : clé `NOM` → variable `PCP_NOM`). Jamais d'interpolation.
-3. **Tout paramètre d'action** est validé dans `ValidateParameters(...)` avec `PcPilot.Core.Security.Validate` (liste blanche de formats,
+   les données passent par `$env:TMN_NOM` (dictionnaire `parametres` : clé `NOM` → variable `TMN_NOM`). Jamais d'interpolation.
+3. **Tout paramètre d'action** est validé dans `ValidateParameters(...)` avec `Timonier.Core.Security.Validate` (liste blanche de formats,
    longueurs bornées). Le broker revalide systématiquement : ne fais jamais confiance à l'interface.
 4. **Aucun chemin/identifiant arbitraire** ne doit atteindre une opération admin sans validation : ex. un identifiant
    de périphérique doit exister dans l'énumération actuelle, un nom de service doit être dans ta liste autorisée, etc.
 5. Les actions sensibles (créer un compte admin, installer un logiciel hors catalogue, ouverture de session automatique,
    désactiver un composant système…) : `RequiresElevatedConfirmation => true` (confirmation affichée par le processus élevé).
-6. Aucun secret en clair sur disque ni dans les logs. Aucune connexion réseau initiée par PC Pilot lui-même
+6. Aucun secret en clair sur disque ni dans les logs. Aucune connexion réseau initiée par Timonier lui-même
    (winget peut en faire, c'est son rôle et c'est dit à l'utilisateur).
 7. **Ne jamais affaiblir la sécurité** : pas de réglage pour désactiver Defender, le pare-feu, l'UAC, SmartScreen,
    Secure Boot, les mises à jour de sécurité de façon permanente, etc. On peut *informer* de leur état et proposer de les *activer*.
@@ -39,7 +39,7 @@ Tout tourne en local, sans télémétrie, avec une empreinte minimale (le PC de 
 ## 1. Architecture en bref
 
 ```
-src/PCPilot/
+src/Timonier/
   Core/Model        TweakDefinition (réglage déclaratif), Operation (RegSet, RegDeleteValue, RegDeleteKey,
                     ServiceStartOp, ScheduledTaskOp, RunToolOp, BroadcastSettingChangeOp), Requirement/Requires
   Core/Engine       TweakEngine (appliquer/annuler), OperationExecutor, StateDetector, Journal (annulation)
@@ -64,7 +64,7 @@ src/PCPilot/
 ## 2. Déclarer un module
 
 ```csharp
-namespace PcPilot.Modules.Privacy;
+namespace Timonier.Modules.Privacy;
 
 public sealed class PrivacyModule : IModule   // public, constructeur sans paramètre : découvert automatiquement
 {
@@ -101,7 +101,7 @@ Tweak.Toggle("privacy.ads.advertisingid", "Identifiant de publicité",
     .WhenOn(Reg.CuDword(Adv, "Enabled", 1), Reg.LmDel(AdvPolicy, "DisabledByGroupPolicy"))
     .WhenOff(Reg.CuDword(Adv, "Enabled", 0), Reg.LmDword(AdvPolicy, "DisabledByGroupPolicy", 1))
     .WindowsDefault(TweakDefinition.On)                   // état d'origine de Windows (utilisé si rien ne correspond)
-    .Recommend(TweakDefinition.Off)                       // recommandation de PC Pilot
+    .Recommend(TweakDefinition.Off)                       // recommandation de Timonier
     .Build();
 ```
 
@@ -169,10 +169,10 @@ public sealed class SetDnsAction : IActionHandler
 
 - Pages = `UserControl` (XAML ou code). Structure standard :
   ```xml
-  <UserControl x:Class="PcPilot.Modules.Privacy.PrivacyPage"
+  <UserControl x:Class="Timonier.Modules.Privacy.PrivacyPage"
                xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-               xmlns:controls="clr-namespace:PcPilot.UI.Controls">
+               xmlns:controls="clr-namespace:Timonier.UI.Controls">
     <ScrollViewer Style="{StaticResource Pp.PageScroll}">
       <StackPanel Style="{StaticResource Pp.PageStack}">
         <controls:PageHeader Title="Confidentialité" Subtitle="…" Glyph="&#xE72E;" />
@@ -253,12 +253,12 @@ et ne compte jamais sur une exécution élevée pour une action déclarée non-a
 ```powershell
 . .\tools\dev.ps1                 # charge Build / Capture (dotnet + git sur le PATH)
 Build                             # compile ; affiche erreurs/avertissements
-Capture -Page "privacy" -Theme light -Out "$env:TEMP\pcp-<module>\privacy-light.png"
-Capture -NoBuild -Page "privacy" -Theme dark -Out "$env:TEMP\pcp-<module>\privacy-dark.png"
+Capture -Page "privacy" -Theme light -Out "$env:TEMP\tmn-<module>\privacy-light.png"
+Capture -NoBuild -Page "privacy" -Theme dark -Out "$env:TEMP\tmn-<module>\privacy-dark.png"
 ```
 Le mode capture rend la fenêtre hors écran dans un PNG (≈ 5 s) sans rien appliquer : **ouvre l'image (outil Read) et
-corrige la mise en page** jusqu'à ce qu'elle soit propre dans les deux thèmes. Consulte aussi `%LOCALAPPDATA%\PCPilot\logs\pcpilot.log`
+corrige la mise en page** jusqu'à ce qu'elle soit propre dans les deux thèmes. Consulte aussi `%LOCALAPPDATA%\Timonier\logs\timonier.log`
 (lignes `[ERROR]`). `Registry.Errors` (doublons, catégories inconnues) apparaît dans le log de démarrage si tu ajoutes un `Log.Warn`.
 
 Termine par : build sans erreur ni nouvel avertissement, captures vérifiées, puis
-`git add -A src/PCPilot/Modules/<TonModule>` et `git commit -m "<Module>: …"`.
+`git add -A src/Timonier/Modules/<TonModule>` et `git commit -m "<Module>: …"`.

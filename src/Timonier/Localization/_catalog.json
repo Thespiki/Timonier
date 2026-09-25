@@ -1,0 +1,89 @@
+{
+  "sourceLanguage": "fr",
+  "count": 13,
+  "entries": [
+    {
+      "key": "il y a {0}",
+      "refs": [
+        "src/Timonier/Core/Platform/Utilities.cs:71"
+      ]
+    },
+    {
+      "key": "{0} h {1} min",
+      "refs": [
+        "src/Timonier/Core/Platform/Utilities.cs:63"
+      ]
+    },
+    {
+      "key": "{0} j {1} h",
+      "refs": [
+        "src/Timonier/Core/Platform/Utilities.cs:62"
+      ]
+    },
+    {
+      "key": "{0} min",
+      "refs": [
+        "src/Timonier/Core/Platform/Utilities.cs:64"
+      ]
+    },
+    {
+      "key": "{0} s",
+      "refs": [
+        "src/Timonier/Core/Platform/Utilities.cs:65"
+      ]
+    },
+    {
+      "key": "{0} {1}",
+      "refs": [
+        "src/Timonier/Core/Platform/Utilities.cs:43"
+      ]
+    },
+    {
+      "key": "{0} à {1}",
+      "refs": [
+        "src/Timonier/Core/Platform/Utilities.cs:49"
+      ]
+    },
+    {
+      "key": "à l'instant",
+      "refs": [
+        "src/Timonier/Core/Platform/Utilities.cs:71"
+      ]
+    },
+    {
+      "context": "unité",
+      "key": "Go",
+      "refs": [
+        "src/Timonier/Core/Platform/Utilities.cs:39"
+      ]
+    },
+    {
+      "context": "unité",
+      "key": "Ko",
+      "refs": [
+        "src/Timonier/Core/Platform/Utilities.cs:39"
+      ]
+    },
+    {
+      "context": "unité",
+      "key": "Mo",
+      "refs": [
+        "src/Timonier/Core/Platform/Utilities.cs:39"
+      ]
+    },
+    {
+      "context": "unité",
+      "key": "To",
+      "refs": [
+        "src/Timonier/Core/Platform/Utilities.cs:39"
+      ]
+    },
+    {
+      "context": "unité",
+      "key": "o",
+      "refs": [
+        "src/Timonier/Core/Platform/Utilities.cs:39"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+<Application x:Class="Timonier.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="clr-namespace:Timonier.UI"
+             ShutdownMode="OnExplicitShutdown">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="UI/Theme/Palette.Light.xaml" />
+                <ResourceDictionary Source="UI/Theme/Controls.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+            <ui:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility" />
+            <ui:NullToVisibilityConverter x:Key="NullToVisibility" />
+            <ui:InverseBoolConverter x:Key="InverseBool" />
+            <ui:StringToVisibilityConverter x:Key="StringToVisibility" />
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

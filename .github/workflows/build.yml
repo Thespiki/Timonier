@@ -1,0 +1,76 @@
+# Compile Timonier, lance l'auto-test du canal administrateur, puis produit l'installeur et l'archive portable.
+# Sur une étiquette v*, un brouillon de version GitHub est créé : il reste à le relire puis à le publier à la main.
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2025
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Compilation (Debug)
+        run: dotnet build src/Timonier/Timonier.csproj -c Debug -nologo
+
+      - name: Auto-test du broker (sans élévation, n'applique rien)
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem src/Timonier/bin/Debug -Recurse -Filter Timonier.exe | Select-Object -First 1
+          $p = Start-Process -FilePath $exe.FullName -ArgumentList '--selftest-broker' -PassThru -Wait
+          Get-Content "$env:LOCALAPPDATA/Timonier/logs/selftest-broker.txt" -ErrorAction SilentlyContinue
+          if ($p.ExitCode -ne 0) { throw "Auto-test du broker en échec (code $($p.ExitCode))" }
+
+      - name: Installation d'Inno Setup 6.7.3 (version officielle, empreinte vérifiée)
+        shell: pwsh
+        run: |
+          $f = "$env:RUNNER_TEMP/innosetup-6.7.3.exe"
+          Invoke-WebRequest 'https://github.com/jrsoftware/issrc/releases/download/is-6_7_3/innosetup-6.7.3.exe' -OutFile $f
+          $hash = (Get-FileHash $f -Algorithm SHA256).Hash
+          if ($hash -ne '9C73C3BAE7ED48D44112A0F48E66742C00090BDB5BEF71D9D3C056C66E97B732') { throw "Empreinte inattendue : $hash" }
+          Start-Process $f -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/CURRENTUSER','/SP-' -Wait
+
+      - name: Publication, archive portable et installeur
+        shell: pwsh
+        run: ./tools/publish.ps1
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Timonier
+          path: |
+            artifacts/*.exe
+            artifacts/*.zip
+            artifacts/SHA256SUMS.txt
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: Timonier
+          path: dist
+
+      - name: Brouillon de version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --draft --title "Timonier ${GITHUB_REF_NAME#v}" --generate-notes
