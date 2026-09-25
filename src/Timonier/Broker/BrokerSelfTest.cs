@@ -115,6 +115,15 @@ public static class BrokerSelfTest
         }
         catch (Exception ex) { Check("Arguments invalides", false, ex.Message); }
 
+        // Langue inconnue ou mal formée (4e argument) : code 2 avant toute autre vérification.
+        try
+        {
+            using var p = Process.Start(UnelevatedStartInfo($"--broker Timonier.Broker.{Guid.NewGuid():N} {Environment.ProcessId} 1 ..\\fr"))!;
+            p.WaitForExit(15000);
+            Check("Langue invalide refusée (code 2)", p.HasExited && p.ExitCode == 2, $"code {(p.HasExited ? p.ExitCode : -1)}");
+        }
+        catch (Exception ex) { Check("Langue invalide", false, ex.Message); }
+
         report.AppendLine(failures == 0 ? "RÉSULTAT : tous les tests passent" : $"RÉSULTAT : {failures} échec(s)");
         Directory.CreateDirectory(AppPaths.Logs);
         await File.WriteAllTextAsync(Path.Combine(AppPaths.Logs, "selftest-broker.txt"), report.ToString(), Encoding.UTF8);

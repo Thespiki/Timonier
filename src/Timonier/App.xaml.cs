@@ -57,6 +57,13 @@ public partial class App : Application
 
         if (StartInBackground) _tray.Show(AppHost.Background.Reasons);
         else window.Show();
+
+        // Tâches de démarrage déclarées par les modules (réparations d'un arrêt brutal…), jamais en mode capture.
+        foreach (var (id, run) in AppHost.Registry.UiStartupTasks)
+        {
+            try { run(); }
+            catch (Exception ex) { Log.Warn("App", $"tâche de démarrage {id} : {ex.Message}"); }
+        }
         Log.Info("App", $"démarrage : {AppHost.Registry.Tweaks.Count} réglages, {AppHost.Registry.Actions.Count} actions, {AppHost.Registry.Pages.Count} pages");
     }
 

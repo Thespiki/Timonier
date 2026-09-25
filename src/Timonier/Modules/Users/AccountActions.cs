@@ -52,9 +52,6 @@ internal static class AccountParams
         }
         catch { return null; }
     }
-
-    public const string ConfirmTitle = "Timonier — confirmation administrateur";
-    public const string ConfirmFooter = "\n\nCette confirmation est affichée par le processus administrateur de Timonier. Continuer ?";
 }
 
 /// <summary>Crée un compte local standard ou administrateur (mot de passe transmis en mémoire uniquement).</summary>
@@ -72,6 +69,18 @@ public sealed class CreateAccountAction : IActionHandler
         Validate.OneOf(p, "type", "standard", "admin");
     }
 
+    // Création d'un administrateur : confirmation affichée par le broker (non cliquable par un programme non élevé).
+    public bool RequiresElevatedConfirmationFor(IReadOnlyDictionary<string, string> p) =>
+        Validate.OneOf(p, "type", "standard", "admin") == "admin";
+
+    public string DescribeForConfirmation(IReadOnlyDictionary<string, string> p)
+    {
+        var name = Validate.LocalUserName(Validate.Required(p, "name", 20));
+        return AccountParams.Password(p, allowEmpty: true).Length == 0
+            ? $"Créer le compte ADMINISTRATEUR « {name} », SANS mot de passe ? Il aura un contrôle total sur ce PC et toute personne ayant accès au PC pourra l'ouvrir."
+            : $"Créer le compte ADMINISTRATEUR « {name} » ? Il aura un contrôle total sur ce PC.";
+    }
+
     public Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
     {
         ValidateParameters(p);
@@ -79,11 +88,6 @@ public sealed class CreateAccountAction : IActionHandler
         var fullName = AccountParams.FullName(p);
         var password = AccountParams.Password(p, allowEmpty: true);
         var admin = Validate.OneOf(p, "type", "standard", "admin") == "admin";
-
-        // Création d'un administrateur : confirmation affichée par le processus élevé (non cliquable par un programme non élevé).
-        if (admin && ctx.Elevated && !Timonier.Core.Platform.Native.ConfirmFromElevatedProcess(AccountParams.ConfirmTitle,
-                $"Créer le compte ADMINISTRATEUR « {name} » ? Il aura un contrôle total sur ce PC." + AccountParams.ConfirmFooter))
-            return Task.FromResult(ActionResult.Fail("Création annulée à la confirmation."));
 
         if (LocalAccounts.Enumerate(ctx.UserSid).Any(a => string.Equals(a.Name, name, StringComparison.OrdinalIgnoreCase)))
             throw new ValidationException($"Un compte « {name} » existe déjà.");
@@ -129,13 +133,18 @@ public sealed class DeleteAccountAction : IActionHandler
     public Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
     {
         ValidateParameters(p);
-        var (target, all) = LocalAccounts.Resolve(AccountParams.Sid(p), ctx.UserSid);
-        LocalAccounts.RefuseSessionAccount(target, ctx.UserSid, "supprimer");
-        if (target.IsBuiltIn) throw new ValidationException("Les comptes intégrés de Windows ne peuvent pas être supprimés (désactivez-les plutôt).");
-        LocalAccounts.RefuseLastAdmin(target, all);
+        LocalAccount target;
+        string? profile;
+        lock (LocalAccounts.AdminGate)
+        {
+            (target, var all) = LocalAccounts.Resolve(AccountParams.Sid(p), ctx.UserSid);
+            LocalAccounts.RefuseSessionAccount(target, ctx.UserSid, "supprimer");
+            if (target.IsBuiltIn) throw new ValidationException("Les comptes intégrés de Windows ne peuvent pas être supprimés (désactivez-les plutôt).");
+            LocalAccounts.RefuseLastAdmin(target, all);
 
-        var profile = AccountParams.ProfilePath(target.Sid);
-        NetApi.DeleteUser(target.Name);
+            profile = AccountParams.ProfilePath(target.Sid);
+            NetApi.DeleteUser(target.Name);
+        }
         Log.Info("Users", "compte supprimé : " + target.Name);
         var msg = $"Compte « {target.Name} » supprimé.";
         msg += profile is not null && Directory.Exists(profile)
@@ -163,23 +172,27 @@ public sealed class SetAccountEnabledAction : IActionHandler
     {
         ValidateParameters(p);
         var enable = Validate.Bool(p, "enabled");
-        var (target, all) = LocalAccounts.Resolve(AccountParams.Sid(p), ctx.UserSid);
-        if (target.Rid is 503 or 504) throw new ValidationException("Ce compte technique est géré par Windows : Timonier ne le modifie pas.");
-        if (enable)
+        LocalAccount target;
+        lock (LocalAccounts.AdminGate)
         {
-            // Ne jamais affaiblir la sécurité : l'Administrateur intégré (sans UAC) et l'Invité restent désactivés.
-            if ((target.IsBuiltInAdministrator || target.IsGuest) && !target.Enabled)
-                throw new ValidationException("Par sécurité, Timonier ne réactive pas le compte Administrateur intégré ni le compte Invité.");
-        }
-        else
-        {
-            LocalAccounts.RefuseSessionAccount(target, ctx.UserSid, "désactiver");
-            LocalAccounts.RefuseLastAdmin(target, all);
-        }
+            (target, var all) = LocalAccounts.Resolve(AccountParams.Sid(p), ctx.UserSid);
+            if (target.Rid is 503 or 504) throw new ValidationException("Ce compte technique est géré par Windows : Timonier ne le modifie pas.");
+            if (enable)
+            {
+                // Ne jamais affaiblir la sécurité : l'Administrateur intégré (sans UAC) et l'Invité restent désactivés.
+                if ((target.IsBuiltInAdministrator || target.IsGuest) && !target.Enabled)
+                    throw new ValidationException("Par sécurité, Timonier ne réactive pas le compte Administrateur intégré ni le compte Invité.");
+            }
+            else
+            {
+                LocalAccounts.RefuseSessionAccount(target, ctx.UserSid, "désactiver");
+                LocalAccounts.RefuseLastAdmin(target, all);
+            }
 
-        var flags = NetApi.GetFlags(target.Name);
-        var newFlags = enable ? flags & ~(NetApi.UF_ACCOUNTDISABLE | NetApi.UF_LOCKOUT) : flags | NetApi.UF_ACCOUNTDISABLE;
-        if (newFlags != flags) NetApi.SetFlags(target.Name, newFlags);
+            var flags = NetApi.GetFlags(target.Name);
+            var newFlags = enable ? flags & ~(NetApi.UF_ACCOUNTDISABLE | NetApi.UF_LOCKOUT) : flags | NetApi.UF_ACCOUNTDISABLE;
+            if (newFlags != flags) NetApi.SetFlags(target.Name, newFlags);
+        }
         Log.Info("Users", $"compte {target.Name} : {(enable ? "activé" : "désactivé")}");
         var msg = enable
             ? target.LockedOut ? $"Compte « {target.Name} » déverrouillé et actif." : $"Compte « {target.Name} » activé."
@@ -201,28 +214,35 @@ public sealed class SetAccountTypeAction : IActionHandler
         Validate.OneOf(p, "type", "standard", "admin");
     }
 
+    // Promotion en administrateur : confirmation affichée par le broker (non cliquable par un programme non élevé).
+    public bool RequiresElevatedConfirmationFor(IReadOnlyDictionary<string, string> p) =>
+        Validate.OneOf(p, "type", "standard", "admin") == "admin";
+
+    public string DescribeForConfirmation(IReadOnlyDictionary<string, string> p) =>
+        $"Faire du compte {AccountParams.DescribeTarget(p)} un ADMINISTRATEUR ? Ce compte pourra tout modifier sur ce PC, y compris les autres comptes.";
+
     public Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
     {
         ValidateParameters(p);
         var admin = Validate.OneOf(p, "type", "standard", "admin") == "admin";
-        var (target, all) = LocalAccounts.Resolve(AccountParams.Sid(p), ctx.UserSid);
-        if (target.IsBuiltIn) throw new ValidationException("Le type des comptes intégrés de Windows ne se modifie pas.");
-        if (target.IsAdmin == admin) return Task.FromResult(ActionResult.Ok($"« {target.Name} » est déjà {(admin ? "administrateur" : "standard")}."));
+        LocalAccount target;
+        lock (LocalAccounts.AdminGate)
+        {
+            (target, var all) = LocalAccounts.Resolve(AccountParams.Sid(p), ctx.UserSid);
+            if (target.IsBuiltIn) throw new ValidationException("Le type des comptes intégrés de Windows ne se modifie pas.");
+            if (target.IsAdmin == admin) return Task.FromResult(ActionResult.Ok($"« {target.Name} » est déjà {(admin ? "administrateur" : "standard")}."));
 
-        if (admin)
-        {
-            if (ctx.Elevated && !Timonier.Core.Platform.Native.ConfirmFromElevatedProcess(AccountParams.ConfirmTitle,
-                    $"Faire de « {target.Name} » un ADMINISTRATEUR ? Ce compte pourra tout modifier sur ce PC, y compris les autres comptes." +
-                    AccountParams.ConfirmFooter))
-                return Task.FromResult(ActionResult.Fail("Modification annulée à la confirmation."));
-            NetApi.AddToGroup(LocalAccounts.AdministratorsGroup, target.Sid);
-        }
-        else
-        {
-            LocalAccounts.RefuseSessionAccount(target, ctx.UserSid, "rétrograder");
-            LocalAccounts.RefuseLastAdmin(target, all);
-            NetApi.AddToGroup(LocalAccounts.UsersGroup, target.Sid);
-            NetApi.RemoveFromGroup(LocalAccounts.AdministratorsGroup, target.Sid);
+            if (admin)
+            {
+                NetApi.AddToGroup(LocalAccounts.AdministratorsGroup, target.Sid);
+            }
+            else
+            {
+                LocalAccounts.RefuseSessionAccount(target, ctx.UserSid, "rétrograder");
+                LocalAccounts.RefuseLastAdmin(target, all);
+                NetApi.AddToGroup(LocalAccounts.UsersGroup, target.Sid);
+                NetApi.RemoveFromGroup(LocalAccounts.AdministratorsGroup, target.Sid);
+            }
         }
         Log.Info("Users", $"compte {target.Name} : type {(admin ? "admin" : "standard")}");
         return Task.FromResult(ActionResult.Ok(
@@ -306,6 +326,12 @@ public sealed class LockoutThresholdAction : IActionHandler
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) => Validate.Int(p, "threshold", 0, 50);
+
+    // Désactiver le verrouillage retire une protection contre la force brute : confirmation affichée par le broker.
+    public bool RequiresElevatedConfirmationFor(IReadOnlyDictionary<string, string> p) => Validate.Int(p, "threshold", 0, 50) == 0;
+
+    public string DescribeForConfirmation(IReadOnlyDictionary<string, string> p) =>
+        "Désactiver le verrouillage des comptes ? Une personne pourra essayer autant de mots de passe qu'elle le souhaite sur ce PC.";
 
     public async Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
     {

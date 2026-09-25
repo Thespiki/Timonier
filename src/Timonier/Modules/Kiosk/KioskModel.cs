@@ -154,6 +154,15 @@ internal static partial class KioskRules
              + "Installez-le pour tous les utilisateurs (par exemple dans Program Files).";
     }
 
+    /// <summary>Mot de passe facultatif : 127 caractères au plus, sans caractère de contrôle. Jamais journalisé.</summary>
+    public static string Password(IReadOnlyDictionary<string, string> p)
+    {
+        if (!p.TryGetValue("password", out var pw) || pw is null) return "";
+        if (pw.Length > 127) throw new ValidationException("Mot de passe trop long (127 caractères au maximum).");
+        if (pw.Any(char.IsControl)) throw new ValidationException("Le mot de passe contient des caractères non autorisés.");
+        return pw;
+    }
+
     public static string ExeProblemCheck(string exe)
     {
         var name = Path.GetFileName(exe);

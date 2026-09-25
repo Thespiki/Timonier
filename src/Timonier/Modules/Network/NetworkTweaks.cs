@@ -21,7 +21,6 @@ internal static class NetworkTweaks
     // wlansvc.admx (stratégie WiFiSense) — écrit hors de la branche Policies.
     private const string WifiSense = @"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config";
     // Paramètres Internet de l'utilisateur (WinINet).
-    private const string InetSettings = @"Software\Microsoft\Windows\CurrentVersion\Internet Settings";
     // DeliveryOptimization.admx.
     private const string DeliveryOpt = @"SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization";
     // DnsClient.admx — « Configurer la résolution de noms DNS over HTTPS (DoH) » (Windows 11).
@@ -82,21 +81,9 @@ internal static class NetworkTweaks
             .Tags("privacy-max")
             .Build();
 
-        yield return Tweak.Toggle("network.proxy.manual", "Proxy manuel",
-                "Active ou désactive le serveur proxy saisi dans Paramètres > Réseau et Internet > Proxy (le trafic web des " +
-                "navigateurs et de nombreuses applications passe alors par ce serveur). Timonier ne modifie jamais l'adresse du proxy. " +
-                "Un proxy inconnu apparu sans raison est un signe classique de logiciel malveillant ou publicitaire qui détourne votre trafic.")
-            .In(NetworkModule.Category, GroupConnections)
-            .Keywords("proxy", "serveur proxy", "mandataire", "ProxyEnable", "détournement", "hijack")
-            .WhenOn(Reg.CuDword(InetSettings, "ProxyEnable", 1))
-            .WhenOff(Reg.CuDword(InetSettings, "ProxyEnable", 0))
-            .Labels("Utilisé", "Désactivé")
-            .Risk(RiskLevel.Moderate)
-            .Warning("Activez un proxy uniquement si vous savez qui l'administre (entreprise, école) : il peut lire ou modifier " +
-                     "le trafic non chiffré. Relancez vos navigateurs pour qu'ils prennent en compte le changement.")
-            .Requires(Requires.When(_ => ProxyConfigured(), "Aucun proxy manuel n'est configuré. Saisissez d'abord son adresse dans Paramètres > Réseau et Internet > Proxy."))
-            .WindowsDefault(TweakDefinition.Off)
-            .Build();
+        // Pas de réglage « Proxy manuel » : Windows 10/11 gardent l'état du proxy dans DefaultConnectionSettings (binaire),
+        // qui fait foi sur la seule valeur ProxyEnable ; un interrupteur sur ProxyEnable pourrait rester sans effet.
+        // La page Proxy des Paramètres reste accessible (entrée de recherche et page Réseau › Outils).
 
         // ------------------------------------------------------------------ DNS
         yield return Tweak.Choice("network.dns.doh-policy", "DNS chiffré (DNS over HTTPS)",
@@ -173,19 +160,5 @@ internal static class NetworkTweaks
                      "À réserver au diagnostic ; redémarrage nécessaire.")
             .WindowsDefault("default")
             .Build();
-    }
-
-    /// <summary>Un proxy manuel est-il saisi (ou déjà actif) pour l'utilisateur courant ? Lecture HKCU, instantanée.</summary>
-    private static bool ProxyConfigured()
-    {
-        try
-        {
-            if (RegistryAccess.ReadDword(RegHive.CurrentUser, InetSettings, "ProxyEnable") == 1) return true;
-            return !string.IsNullOrWhiteSpace(RegistryAccess.ReadString(RegHive.CurrentUser, InetSettings, "ProxyServer"));
-        }
-        catch (Exception)
-        {
-            return true; // en cas de doute, on n'empêche pas l'utilisateur de désactiver un proxy
-        }
     }
 }

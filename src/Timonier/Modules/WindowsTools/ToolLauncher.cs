@@ -67,18 +67,11 @@ internal static class ToolLauncher
 
     public static bool System32FileExists(string fileName) => File.Exists(Path.Combine(Environment.SystemDirectory, fileName));
 
-    /// <summary>Lance un outil de la liste blanche du cœur ; bascule sur ShellExecute si Windows exige l'élévation.</summary>
-    public static void Launch(SystemTool tool, params string[] args)
-    {
-        try
-        {
-            ProcessRunner.Launch(tool, args);
-        }
-        catch (Win32Exception ex) when (ex.NativeErrorCode == ErrorElevationRequired)
-        {
-            ElevatedLaunch(SystemTools.Resolve(tool), args);
-        }
-    }
+    /// <summary>
+    /// Lance un outil de la liste blanche du cœur. <see cref="ProcessRunner.Launch"/> gère lui-même l'erreur 740
+    /// (relance via ShellExecute et invite UAC) : aucun repli supplémentaire ici.
+    /// </summary>
+    public static void Launch(SystemTool tool, params string[] args) => ProcessRunner.Launch(tool, args);
 
     /// <summary>Lance un exécutable de System32 figurant dans la liste blanche du module.</summary>
     public static void LaunchSystem32(string fileName, params string[] args)
@@ -127,8 +120,8 @@ internal static class ToolLauncher
     {
         if (!Path.IsPathFullyQualified(path) || !File.Exists(path))
             throw new FileNotFoundException("Outil système introuvable : " + Path.GetFileName(path), path);
-        var psi = new ProcessStartInfo(path) { UseShellExecute = true, WorkingDirectory = Environment.SystemDirectory };
-        foreach (var a in args) psi.ArgumentList.Add(a);
+        // Même mise en forme des arguments que ProcessRunner.Launch (règles de CommandLineToArgvW) pour ShellExecute.
+        var psi = new ProcessStartInfo(path, ProcessRunner.JoinArguments(args)) { UseShellExecute = true, WorkingDirectory = Environment.SystemDirectory };
         try
         {
             Log.Info("WindowsTools", $"ShellExecute {Path.GetFileName(path)} ({args.Length} arg.)");

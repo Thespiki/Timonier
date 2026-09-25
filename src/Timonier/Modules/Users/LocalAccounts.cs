@@ -58,8 +58,12 @@ internal static partial class LocalAccounts
         return slash >= 0 ? account[(slash + 1)..] : account;
     }
 
-    /// <summary>Énumère les comptes locaux. Lent (quelques dizaines de ms) : à appeler hors du thread UI.</summary>
-    public static List<LocalAccount> Enumerate(string? currentSid = null)
+    /// <summary>
+    /// Énumère les comptes locaux. Lent (quelques dizaines de ms) : à appeler hors du thread UI.
+    /// <paramref name="strict"/> : si les membres du groupe Administrateurs sont illisibles, lève une exception au lieu de
+    /// considérer tous les comptes comme standard (les garde-fous du processus élevé ne doivent jamais échouer « ouverts »).
+    /// </summary>
+    public static List<LocalAccount> Enumerate(string? currentSid = null, bool strict = false)
     {
         currentSid ??= WindowsIdentity.GetCurrent().User?.Value;
         HashSet<string> admins;
@@ -67,6 +71,7 @@ internal static partial class LocalAccounts
         catch (Exception ex)
         {
             Log.Warn("Users", "membres Administrateurs illisibles : " + ex.Message);
+            if (strict) throw new InvalidOperationException("Impossible de lire les membres du groupe Administrateurs : opération annulée par sécurité.", ex);
             admins = [];
         }
 
@@ -115,7 +120,7 @@ internal static partial class LocalAccounts
     /// <summary>Retrouve le compte dans l'énumération ACTUELLE (aucun identifiant arbitraire n'atteint l'API).</summary>
     public static (LocalAccount Target, List<LocalAccount> All) Resolve(string sid, string? clientSid)
     {
-        var all = Enumerate(clientSid);
+        var all = Enumerate(clientSid, strict: true);
         var target = all.FirstOrDefault(a => string.Equals(a.Sid, sid, StringComparison.OrdinalIgnoreCase))
                      ?? throw new ValidationException("Compte local introuvable (il a peut-être été supprimé entre-temps).");
         return (target, all);
@@ -138,12 +143,23 @@ internal static partial class LocalAccounts
             throw new ValidationException($"Par sécurité, Timonier refuse de {what} le compte avec lequel vous êtes connecté.");
     }
 
-    /// <summary>Refuse de retirer le dernier administrateur actif (désactivation, suppression, rétrogradation).</summary>
+    /// <summary>
+    /// Sérialise, dans le processus élevé, les opérations qui vérifient puis modifient les administrateurs (suppression,
+    /// désactivation, rétrogradation) : deux requêtes simultanées ne peuvent pas passer le contrôle chacune de leur côté.
+    /// </summary>
+    public static readonly Lock AdminGate = new();
+
+    /// <summary>
+    /// Refuse de retirer le dernier administrateur actif (désactivation, suppression, rétrogradation) : il doit rester au moins
+    /// un AUTRE compte local administrateur, activé et non verrouillé. Les comptes de domaine ou Microsoft Entra membres du
+    /// groupe ne sont pas comptés (prudence : ils peuvent être indisponibles hors réseau).
+    /// </summary>
     public static void RefuseLastAdmin(LocalAccount account, List<LocalAccount> all)
     {
         if (!account.IsAdmin || !account.Enabled) return;
-        var enabledAdmins = all.Count(a => a.IsAdmin && a.Enabled);
-        if (enabledAdmins <= 1)
+        var otherUsableAdmins = all.Count(a => a.IsAdmin && a.Enabled && !a.LockedOut
+                                               && !string.Equals(a.Sid, account.Sid, StringComparison.OrdinalIgnoreCase));
+        if (otherUsableAdmins == 0)
             throw new ValidationException("C'est le dernier compte administrateur actif de ce PC : sans lui, plus personne ne pourrait administrer Windows.");
     }
 

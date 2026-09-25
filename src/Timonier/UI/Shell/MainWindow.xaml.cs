@@ -60,11 +60,7 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
                   : IsKnownPage("dashboard") ? "dashboard" : _navButtons.Keys.FirstOrDefault();
         if (start is not null) Navigate(start);
 
-        if (!string.IsNullOrEmpty(AppHost.Settings.AppPinHash))
-        {
-            LockLayer.Visibility = Visibility.Visible;
-            LockPin.Focus();
-        }
+        if (!string.IsNullOrEmpty(AppHost.Settings.AppPinHash)) Lock();
     }
 
     // ================================================================== Carte PC
@@ -191,6 +187,7 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
 
     private void OnWindowPreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (IsLocked) return; // aucun raccourci derrière l'écran de verrouillage
         var ctrl = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
         if ((ctrl && e.Key is Key.K or Key.F) || e.Key == Key.F3)
         {
@@ -258,12 +255,15 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
         grid.Children.Add(text);
 
         FrameworkElement right;
-        if (hit.Intent is SearchIntent.TurnOn or SearchIntent.TurnOff && doc.Payload is TweakDefinition tweak)
+        // Application directe depuis la recherche : jamais pour un réglage « Avancé » masqué hors mode avancé, et avec
+        // la même confirmation que la carte du réglage (risque, avertissement, non annulable).
+        if (hit.Intent is SearchIntent.TurnOn or SearchIntent.TurnOff && doc.Payload is TweakDefinition tweak
+            && (AppHost.Settings.AdvancedMode || tweak.Risk != RiskLevel.Advanced)
+            && tweak.GetOption(hit.Intent == SearchIntent.TurnOn ? TweakDefinition.On : TweakDefinition.Off) is { } quickOption)
         {
-            var on = hit.Intent == SearchIntent.TurnOn;
             var button = new Button
             {
-                Content = (on ? tweak.GetOption(TweakDefinition.On) : tweak.GetOption(TweakDefinition.Off))?.Label ?? (on ? "Activer" : "Désactiver"),
+                Content = quickOption.Label,
                 Style = (Style)FindResource("Pp.AccentButton"),
                 Padding = new Thickness(10, 3, 10, 3),
                 MinHeight = 26,
@@ -274,7 +274,8 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
             {
                 e.Handled = true;
                 SearchPopup.IsOpen = false;
-                var outcome = await AppHost.Engine.ApplyAsync(tweak, on ? TweakDefinition.On : TweakDefinition.Off);
+                if (IsLocked || !await TweakItemViewModel.ConfirmIfNeededAsync(tweak, quickOption)) return;
+                var outcome = await AppHost.Engine.ApplyAsync(tweak, quickOption.Key);
                 ShowOutcome(outcome);
             };
             right = button;
@@ -401,11 +402,37 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
         if (Application.Current is not App app) return;
         e.Cancel = true;
         Hide();
+        // Timonier reste parfois actif dans la zone de notification : le code sera redemandé à la réouverture.
+        if (!string.IsNullOrEmpty(AppHost.Settings.AppPinHash)) Lock();
         if (app.ShouldStayInBackground()) app.OnMainWindowHidden();
         else _ = app.ExitAsync();
     }
 
     // ================================================================== Verrouillage
+
+    private bool IsLocked => LockLayer.Visibility == Visibility.Visible;
+
+    /// <summary>
+    /// Verrouille : l'écran couvre la fenêtre et tout le reste est désactivé, pour que ni le clavier (Tab, raccourcis)
+    /// ni la recherche ne puissent atteindre les pages et réglages situés dessous.
+    /// </summary>
+    private void Lock()
+    {
+        SearchPopup.IsOpen = false;
+        LockLayer.Visibility = Visibility.Visible;
+        foreach (UIElement child in RootGrid.Children)
+            if (!ReferenceEquals(child, LockLayer)) child.IsEnabled = false;
+        LockPin.Focus();
+    }
+
+    private void UnlockUi()
+    {
+        LockLayer.Visibility = Visibility.Collapsed;
+        foreach (UIElement child in RootGrid.Children) child.IsEnabled = true;
+        LockPin.Clear();
+        LockError.Text = "";
+        if (DialogLayer.Visibility == Visibility.Visible) DialogPrimary.Focus();
+    }
 
     private void LockPin_KeyDown(object sender, KeyEventArgs e)
     {
@@ -421,8 +448,7 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
         }
         if (PinHasher.Verify(LockPin.Password, AppHost.Settings.AppPinHash))
         {
-            LockLayer.Visibility = Visibility.Collapsed;
-            LockPin.Clear();
+            UnlockUi();
             _lockFailures = 0;
             return;
         }

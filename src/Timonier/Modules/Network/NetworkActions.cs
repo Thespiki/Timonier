@@ -28,18 +28,29 @@ internal sealed class SetDnsAction : IActionHandler
 {
     private const string Script = """
         $i = [int]$env:TMN_IF
-        if ($env:TMN_MODE -eq 'reset') {
-            Set-DnsClientServerAddress -InterfaceIndex $i -ResetServerAddresses
-        } else {
+        # Remise à zéro d'abord : Set-DnsClientServerAddress ne touche qu'aux familles (IPv4/IPv6) présentes dans la liste,
+        # d'anciens serveurs IPv6 fixes resteraient sinon actifs à côté des nouveaux serveurs IPv4.
+        Set-DnsClientServerAddress -InterfaceIndex $i -ResetServerAddresses
+        if ($env:TMN_MODE -ne 'reset') {
             $a = @($env:TMN_SERVERS.Split(',') | Where-Object { $_ })
-            Set-DnsClientServerAddress -InterfaceIndex $i -ServerAddresses $a
-            if ($env:TMN_DOH -eq '1') {
-                foreach ($s in $a) {
-                    $e = $null
-                    try { $e = Get-DnsClientDohServerAddress -ServerAddress $s -ErrorAction Stop } catch { $e = $null }
-                    if ($e) { Set-DnsClientDohServerAddress -ServerAddress $s -DohTemplate $env:TMN_TEMPLATE -AllowFallbackToUdp $true -AutoUpgrade $true | Out-Null }
-                    else { Add-DnsClientDohServerAddress -ServerAddress $s -DohTemplate $env:TMN_TEMPLATE -AllowFallbackToUdp $true -AutoUpgrade $true | Out-Null }
+            try {
+                Set-DnsClientServerAddress -InterfaceIndex $i -ServerAddresses $a
+                if ($env:TMN_DOH -eq '1') {
+                    foreach ($s in $a) {
+                        $e = $null
+                        try { $e = Get-DnsClientDohServerAddress -ServerAddress $s -ErrorAction Stop } catch { $e = $null }
+                        if ($e) { Set-DnsClientDohServerAddress -ServerAddress $s -DohTemplate $env:TMN_TEMPLATE -AllowFallbackToUdp $true -AutoUpgrade $true | Out-Null }
+                        else { Add-DnsClientDohServerAddress -ServerAddress $s -DohTemplate $env:TMN_TEMPLATE -AllowFallbackToUdp $true -AutoUpgrade $true | Out-Null }
+                    }
                 }
+            } catch {
+                # Échec : la configuration précédente est rétablie (rien ne doit rester à moitié appliqué).
+                $err = $_
+                if ($env:TMN_PREV) {
+                    $p = @($env:TMN_PREV.Split(',') | Where-Object { $_ })
+                    try { Set-DnsClientServerAddress -InterfaceIndex $i -ServerAddresses $p } catch { }
+                }
+                throw $err
             }
         }
         Clear-DnsClientCache
@@ -109,6 +120,8 @@ internal sealed class SetDnsAction : IActionHandler
             ["SERVERS"] = string.Join(",", servers),
             ["DOH"] = doh && provider?.DohTemplate is not null ? "1" : "0",
             ["TEMPLATE"] = provider?.DohTemplate ?? "",
+            // Adresses fixes actuelles (lues dans le registre par le broker), rétablies si l'application échoue.
+            ["PREV"] = string.Join(",", previous.Where(s => System.Net.IPAddress.TryParse(s, out _))),
         };
         var r = await PowerShellRunner.RunAsync(Script, env, TimeSpan.FromSeconds(60), ct: ctx.Cancellation).ConfigureAwait(false);
         if (!r.Success)
@@ -174,7 +187,7 @@ internal sealed class HostsAddAction : IActionHandler
         var snapshot = HostsFile.Read();
         if (snapshot.Error is not null) return ActionResult.Fail("Fichier hosts illisible : " + snapshot.Error);
 
-        var managed = snapshot.Managed.Select(e => e.Host).Distinct().ToList();
+        var managed = HostsWrite.ValidManaged(snapshot);
         var toAdd = new List<string> { host };
         if (withWww) toAdd.Add("www." + host);
         toAdd = [.. toAdd.Where(h => !managed.Contains(h))];
@@ -182,7 +195,7 @@ internal sealed class HostsAddAction : IActionHandler
         if (managed.Count + toAdd.Count > HostsFile.MaxManagedEntries)
             return ActionResult.Fail($"Limite de {HostsFile.MaxManagedEntries} entrées atteinte : retirez d'abord des sites bloqués.");
 
-        HostsFile.WriteManaged([.. managed, .. toAdd]);
+        if (HostsWrite.Try([.. managed, .. toAdd]) is { } error) return error;
         await DnsCache.FlushAsync().ConfigureAwait(false);
         return ActionResult.Ok($"« {host} » est bloqué sur ce PC{(withWww ? " (avec www)" : "")}.");
     }
@@ -204,10 +217,11 @@ internal sealed class HostsRemoveAction : IActionHandler
         var host = Validate.HostName(Validate.Required(p, "host", 260));
         var snapshot = HostsFile.Read();
         if (snapshot.Error is not null) return ActionResult.Fail("Fichier hosts illisible : " + snapshot.Error);
-        var managed = snapshot.Managed.Select(e => e.Host).Distinct().ToList();
         // Seules les entrées de la section Timonier peuvent être retirées.
-        if (!managed.Remove(host)) return ActionResult.Fail($"« {host} » ne fait pas partie des sites bloqués par Timonier.");
-        HostsFile.WriteManaged(managed);
+        if (!snapshot.Managed.Any(e => e.Host == host)) return ActionResult.Fail($"« {host} » ne fait pas partie des sites bloqués par Timonier.");
+        var managed = HostsWrite.ValidManaged(snapshot);
+        managed.Remove(host);
+        if (HostsWrite.Try(managed) is { } error) return error;
         await DnsCache.FlushAsync().ConfigureAwait(false);
         return ActionResult.Ok($"« {host} » est de nouveau accessible.");
     }
@@ -227,9 +241,54 @@ internal sealed class HostsClearAction : IActionHandler
         if (snapshot.Error is not null) return ActionResult.Fail("Fichier hosts illisible : " + snapshot.Error);
         var count = snapshot.Managed.Count();
         if (count == 0) return ActionResult.Ok("Aucun site bloqué par Timonier.");
-        HostsFile.WriteManaged([]);
+        if (HostsWrite.Try([]) is { } error) return error;
         await DnsCache.FlushAsync().ConfigureAwait(false);
         return ActionResult.Ok($"{count} entrée(s) retirée(s) du fichier hosts. Les autres lignes n'ont pas été modifiées.");
+    }
+}
+
+/// <summary>Écriture de la section Timonier du fichier hosts avec des messages d'échec compréhensibles.</summary>
+internal static class HostsWrite
+{
+    /// <summary>
+    /// Sites de la section Timonier qui passent encore la validation. Une ligne modifiée à la main dans la section, ou un
+    /// domaine devenu protégé depuis, est abandonnée à la prochaine écriture au lieu de bloquer tout ajout ou retrait.
+    /// </summary>
+    public static List<string> ValidManaged(HostsSnapshot snapshot)
+    {
+        var result = new List<string>();
+        foreach (var host in snapshot.Managed.Select(e => e.Host).Distinct())
+        {
+            try
+            {
+                if (HostsFile.ValidateBlockHost(host) == host) result.Add(host);
+            }
+            catch (ValidationException)
+            {
+                Log.Warn("Network", "hosts : entrée ignorée dans la section Timonier : " + host);
+            }
+        }
+        return result;
+    }
+
+    /// <summary>Réécrit la section ; renvoie null si tout s'est bien passé, sinon le résultat d'échec à renvoyer.</summary>
+    public static ActionResult? Try(IReadOnlyList<string> hosts)
+    {
+        try
+        {
+            HostsFile.WriteManaged(hosts);
+            return null;
+        }
+        catch (InvalidOperationException ex)
+        {
+            return ActionResult.Fail(ex.Message);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Log.Warn("Network", "hosts : écriture impossible : " + ex.Message);
+            return ActionResult.Fail("Impossible de modifier le fichier hosts : il est peut-être verrouillé ou protégé par un logiciel de " +
+                                     "sécurité. Détail : " + ex.Message);
+        }
     }
 }
 

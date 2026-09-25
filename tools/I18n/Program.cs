@@ -29,12 +29,16 @@ return command switch
     "extract" => Extract(),
     "check" => Check(),
     "rekey" when args.Length == 2 => Rekey(args[1]),
+    // wrap [préfixe…] : limite aux fichiers dont le chemin relatif à src/<app> commence par l'un des préfixes.
+    "wrap" => Wrapper.Run(SourceFiles("*.cs").Where(f => !Path.GetRelativePath(appDir, f).Replace('\\', '/').StartsWith("Core/Search/", StringComparison.Ordinal)
+            && (args.Length == 1 || args.Skip(1).Any(p => Path.GetRelativePath(appDir, f).Replace('\\', '/').StartsWith(p, StringComparison.OrdinalIgnoreCase)))),
+        root, Path.Combine(root, "artifacts", "i18n-wrap-report.txt")),
     _ => Help(),
 };
 
 int Help()
 {
-    Console.WriteLine("Usage : I18n extract | check | rekey <map.json>");
+    Console.WriteLine("Usage : I18n extract | check | rekey <map.json> | wrap [préfixe…]");
     return 2;
 }
 
@@ -352,11 +356,14 @@ static void WriteJson(string path, JsonNode node)
     File.WriteAllText(path, json.Replace("\r\n", "\n") + "\n", new UTF8Encoding(false));
 }
 
-static string FindRepoRoot()
+// Racine du dépôt : celle du dossier courant (permet de travailler sur un worktree), sinon celle de l'outil.
+static string FindRepoRoot() => FindRoot(Directory.GetCurrentDirectory()) ?? FindRoot(AppContext.BaseDirectory) ?? Directory.GetCurrentDirectory();
+
+static string? FindRoot(string start)
 {
-    var dir = new DirectoryInfo(AppContext.BaseDirectory);
+    var dir = new DirectoryInfo(start);
     while (dir is not null && !Directory.Exists(Path.Combine(dir.FullName, ".git")) && !File.Exists(Path.Combine(dir.FullName, ".git"))) dir = dir.Parent;
-    return dir?.FullName ?? Directory.GetCurrentDirectory();
+    return dir?.FullName;
 }
 
 sealed record Entry(string Key, string? Context, string? One)

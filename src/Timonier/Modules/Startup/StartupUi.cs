@@ -209,7 +209,14 @@ internal static class StartupUi
         try
         {
             if (Directory.Exists(path)) ProcessRunner.OpenFolder(path);
-            else if (File.Exists(path)) ProcessRunner.Launch(SystemTool.Explorer, "/select,", Path.GetFullPath(path));
+            else if (File.Exists(path))
+            {
+                var full = Path.GetFullPath(path);
+                // L'Explorateur découpe ses arguments sur les virgules : un nom de fichier qui en contient serait mal interprété,
+                // on ouvre alors simplement le dossier parent.
+                if (full.Contains(',') && Path.GetDirectoryName(full) is { } parent) ProcessRunner.OpenFolder(parent);
+                else ProcessRunner.Launch(SystemTool.Explorer, "/select,", full);
+            }
             else AppHost.Toasts.Show("Emplacement introuvable : " + path, UI.Services.ToastKind.Warning);
         }
         catch (Exception ex)

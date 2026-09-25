@@ -363,7 +363,12 @@ public sealed partial class KioskPage
 
         var progress = new ProgressBar { IsIndeterminate = true, Width = 120, Height = 3, Visibility = Visibility.Collapsed, Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
         Button? createBtn = null;
-        var cancelBtn = Button("Annuler", null, "Pp.SubtleButton", (_, _) => ToggleCreateForm(false));
+        var cancelBtn = Button("Annuler", null, "Pp.SubtleButton", (_, _) =>
+        {
+            pw.Clear();   // ne garde pas un mot de passe abandonné dans le formulaire
+            pw2.Clear();
+            ToggleCreateForm(false);
+        });
         createBtn = Button("Créer le compte", "", "Pp.AccentButton", async (_, _) =>
         {
             error.Visibility = Visibility.Collapsed;

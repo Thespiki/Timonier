@@ -23,7 +23,7 @@ internal sealed partial class CreateKioskAccountAction : IActionHandler
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
     {
         Validate.LocalUserName(Validate.Required(p, "name", 20));
-        if (p.TryGetValue("password", out var pw) && pw.Length > 127) throw new ValidationException("Mot de passe trop long (127 caractères au maximum).");
+        KioskRules.Password(p);
         if (Validate.Optional(p, "fullName", 64) is { } f && !FullNameRx().IsMatch(f)) throw new ValidationException("Nom complet invalide.");
     }
 
@@ -127,56 +127,80 @@ internal sealed class ApplyKioskAction : IActionHandler
         var newRestrictions = new List<string>();
         string? shellPrev = previous?.IsConfigured == true ? ReadStateString("ShellPrev") : null;
         var shellWasSet = previous?.IsConfigured == true && previous.ShellValue is not null;
-        var needHive = shellValue is not null || plan.Restrictions.Count > 0 || oldRestrictions.Count > 0 || shellWasSet;
-        if (needHive)
+        // Ce qui est réellement en place à chaque instant (pour mémoriser un état exact même en cas d'échec en cours de route) :
+        // interpréteur posé par Timonier, anciennes restrictions pas encore restaurées, accès attribué.
+        var shellInPlace = shellWasSet ? previous!.ShellValue : null;
+        var pendingOld = new Dictionary<string, string>(oldRestrictions, StringComparer.Ordinal);
+        var assigned = previous?.AssignedAccess == true;
+        var hiveTouched = false;
+        List<string> StateRestrictions() => [.. newRestrictions, .. pendingOld.Select(kv => kv.Key + "=" + kv.Value)];
+
+        try
         {
-            ctx.Progress?.Report("Configuration du compte kiosque…");
-            using var hive = UserHive.Open(account, createProfile: true)!;
-            if (shellValue is not null)
+            var needHive = shellValue is not null || plan.Restrictions.Count > 0 || oldRestrictions.Count > 0 || shellWasSet;
+            if (needHive)
             {
-                if (!shellWasSet) shellPrev = hive.ReadEncoded(KioskRules.ShellPolicyKey, KioskRules.ShellPolicyValue);
-                hive.SetString(KioskRules.ShellPolicyKey, KioskRules.ShellPolicyValue, shellValue);
-            }
-            else if (shellWasSet)
-            {
-                hive.Restore(KioskRules.ShellPolicyKey, KioskRules.ShellPolicyValue, shellPrev ?? "");
-                shellPrev = null;
+                ctx.Progress?.Report("Configuration du compte kiosque…");
+                using var hive = UserHive.Open(account, createProfile: true)!;
+                hiveTouched = true;
+                if (shellValue is not null)
+                {
+                    if (!shellWasSet) shellPrev = hive.ReadEncoded(KioskRules.ShellPolicyKey, KioskRules.ShellPolicyValue);
+                    hive.SetString(KioskRules.ShellPolicyKey, KioskRules.ShellPolicyValue, shellValue);
+                    shellInPlace = shellValue;
+                }
+                else if (shellWasSet)
+                {
+                    hive.Restore(KioskRules.ShellPolicyKey, KioskRules.ShellPolicyValue, shellPrev ?? "");
+                    shellInPlace = null;
+                    shellPrev = null;
+                }
+
+                foreach (var (key, prev) in oldRestrictions)
+                {
+                    if (plan.Restrictions.Any(r => r.Key == key)) continue;
+                    if (KioskRestrictions.Get(key) is { } old) hive.Restore(old.RegKey, old.Value, prev);
+                    pendingOld.Remove(key);
+                }
+                foreach (var r in plan.Restrictions)
+                {
+                    var prev = oldRestrictions.TryGetValue(r.Key, out var o) ? o : hive.ReadEncoded(r.RegKey, r.Value);
+                    hive.SetDword(r.RegKey, r.Value, r.Data);
+                    newRestrictions.Add(r.Key + "=" + prev);
+                    pendingOld.Remove(r.Key);
+                }
             }
 
-            foreach (var (key, prev) in oldRestrictions)
+            // 2. Accès attribué : configuré pour une application du Store, retiré si Timonier l'avait posé et qu'on change de mode.
+            if (plan.Mode == KioskModes.Store)
             {
-                if (plan.Restrictions.Any(r => r.Key == key)) continue;
-                if (KioskRestrictions.Get(key) is { } old) hive.Restore(old.RegKey, old.Value, prev);
+                ctx.Progress?.Report("Configuration de l'accès attribué…");
+                var r = await PowerShellRunner.RunAsync(SetAssignedAccessScript,
+                    new Dictionary<string, string> { ["AUMID"] = plan.Aumid!, ["SID"] = account.Sid }, TimeSpan.FromMinutes(2), ct: ctx.Cancellation);
+                if (!r.Success || !r.Output.Contains("OK", StringComparison.Ordinal))
+                {
+                    WriteState(account, plan, shellInPlace, shellPrev, StateRestrictions(), assigned);
+                    return ActionResult.Fail("Windows a refusé l'accès attribué : " + FirstLine(r.Error, r.Output)
+                        + " (les comptes liés à un compte Microsoft ne sont pas acceptés par cette méthode).");
+                }
+                assigned = true;
             }
-            foreach (var r in plan.Restrictions)
+            else if (previous?.AssignedAccess == true)
             {
-                var prev = oldRestrictions.TryGetValue(r.Key, out var o) ? o : hive.ReadEncoded(r.RegKey, r.Value);
-                hive.SetDword(r.RegKey, r.Value, r.Data);
-                newRestrictions.Add(r.Key + "=" + prev);
+                var r = await PowerShellRunner.RunAsync(ClearAssignedAccessScript, null, TimeSpan.FromMinutes(1), ct: ctx.Cancellation);
+                if (r.Success) assigned = false;
+                else Log.Warn("Kiosk", "retrait de l'accès attribué : " + FirstLine(r.Error, r.Output));
             }
+        }
+        catch when (hiveTouched)
+        {
+            // Échec en cours de route : on mémorise ce qui a déjà été modifié pour que « Désactiver » puisse le retirer.
+            try { WriteState(account, plan, shellInPlace, shellPrev, StateRestrictions(), assigned); }
+            catch (Exception ex) { Log.Error("Kiosk", "mémorisation de l'état après échec", ex); }
+            throw;
         }
 
-        // 2. Accès attribué : configuré pour une application du Store, retiré si Timonier l'avait posé et qu'on change de mode.
-        var assigned = false;
-        if (plan.Mode == KioskModes.Store)
-        {
-            ctx.Progress?.Report("Configuration de l'accès attribué…");
-            var r = await PowerShellRunner.RunAsync(SetAssignedAccessScript,
-                new Dictionary<string, string> { ["AUMID"] = plan.Aumid!, ["SID"] = account.Sid }, TimeSpan.FromMinutes(2), ct: ctx.Cancellation);
-            if (!r.Success || !r.Output.Contains("OK", StringComparison.Ordinal))
-            {
-                WriteState(account, plan, shellValue, shellPrev, newRestrictions, assigned: false);
-                return ActionResult.Fail("Windows a refusé l'accès attribué : " + FirstLine(r.Error, r.Output)
-                    + " (les comptes liés à un compte Microsoft ne sont pas acceptés par cette méthode).");
-            }
-            assigned = true;
-        }
-        else if (previous?.AssignedAccess == true)
-        {
-            await PowerShellRunner.RunAsync(ClearAssignedAccessScript, null, TimeSpan.FromMinutes(1), ct: ctx.Cancellation);
-        }
-
-        WriteState(account, plan, shellValue, shellPrev, newRestrictions, assigned);
+        WriteState(account, plan, shellInPlace, shellPrev, StateRestrictions(), assigned);
         Log.Info("Kiosk", "borne configurée : " + plan.Mode);
         return ActionResult.Ok($"Mode kiosque configuré pour « {account.Name} ». Il prendra effet à sa prochaine ouverture de session.",
             new Dictionary<string, string> { ["sid"] = account.Sid, ["profileCreated"] = account.HasProfile ? "0" : "1" });
@@ -263,6 +287,10 @@ internal sealed class RemoveKioskAction : IActionHandler
         var done = new List<string>();
         var warnings = new List<string>();
         var state = KioskState.Read();
+        // Si la ruche du compte n'a pas pu être restaurée, on conserve l'état mémorisé pour pouvoir réessayer :
+        // l'effacer laisserait le compte avec son interpréteur et ses restrictions, sans plus aucun moyen de les retirer.
+        var accountRestoreFailed = false;
+        var assignedCleared = false;
 
         if (state is { IsConfigured: true } && state.Sid is { } sid)
         {
@@ -294,7 +322,8 @@ internal sealed class RemoveKioskAction : IActionHandler
             catch (Exception ex)
             {
                 Log.Error("Kiosk", "restauration du compte", ex);
-                warnings.Add("restauration du compte incomplète : " + ex.Message);
+                warnings.Add("restauration du compte incomplète : " + ex.Message + " (réessayez après la déconnexion du compte kiosque)");
+                accountRestoreFailed = true;
             }
         }
 
@@ -302,7 +331,7 @@ internal sealed class RemoveKioskAction : IActionHandler
         {
             ctx.Progress?.Report("Suppression de l'accès attribué…");
             var r = await PowerShellRunner.RunAsync(ApplyKioskAction.ClearAssignedAccessScript, null, TimeSpan.FromMinutes(1), ct: ctx.Cancellation);
-            if (r.Success) done.Add("accès attribué supprimé");
+            if (r.Success) { done.Add("accès attribué supprimé"); assignedCleared = true; }
             else warnings.Add("accès attribué : " + ApplyKioskAction.FirstLine(r.Error, r.Output));
         }
 
@@ -313,11 +342,24 @@ internal sealed class RemoveKioskAction : IActionHandler
             done.Add("ouverture de session automatique désactivée");
         }
 
-        ClearState(keepAutologon: !Validate.Bool(p, "autologon"));
-        Log.Info("Kiosk", "mode kiosque retiré");
+        if (accountRestoreFailed)
+        {
+            if (assignedCleared) MarkAssignedAccessCleared();
+        }
+        else
+        {
+            ClearState(keepAutologon: !Validate.Bool(p, "autologon"));
+        }
+        Log.Info("Kiosk", accountRestoreFailed ? "mode kiosque partiellement retiré" : "mode kiosque retiré");
         var message = done.Count == 0 ? "Aucune configuration de borne à retirer." : char.ToUpper(string.Join(", ", done)[0]) + string.Join(", ", done)[1..] + ".";
         if (warnings.Count > 0) message += " Attention : " + string.Join(" ; ", warnings) + ".";
         return warnings.Count > 0 && done.Count == 0 ? ActionResult.Fail(message) : ActionResult.Ok(message);
+    }
+
+    private static void MarkAssignedAccessCleared()
+    {
+        using var k = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(KioskRules.StateKey, true);
+        k?.SetValue("AssignedAccess", 0, RegistryValueKind.DWord);
     }
 
     private static void ClearState(bool keepAutologon)
@@ -426,7 +468,7 @@ internal sealed class SetAutologonAction : IActionHandler
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
     {
         Validate.LocalUserName(Validate.Required(p, "user", 20));
-        if (p.TryGetValue("password", out var pw) && pw.Length > 127) throw new ValidationException("Mot de passe trop long (127 caractères au maximum).");
+        KioskRules.Password(p);
     }
 
     public string DescribeForConfirmation(IReadOnlyDictionary<string, string> p) =>

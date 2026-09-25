@@ -277,7 +277,8 @@ public sealed partial class ProfilesPage : UserControl, INavigationAware
 
     private static string Fallback(string value) => string.IsNullOrWhiteSpace(value) ? "Inconnu" : value;
 
-    private static string DiskLabel(SystemProfile pc) => pc.SystemDisk?.Media switch
+    // eMMC : classée « SSD » par Windows, détectée comme sur la page Performance.
+    private static string DiskLabel(SystemProfile pc) => Performance.HardwareAdvice.IsEmmc(pc.SystemDisk) ? "Mémoire eMMC" : pc.SystemDisk?.Media switch
     {
         DiskMedia.Nvme => "SSD NVMe",
         DiskMedia.Ssd => "SSD",

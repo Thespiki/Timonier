@@ -98,6 +98,8 @@ internal static partial class UserRestrictions
 
     public enum HiveSource { Loaded, File, Missing }
 
+    private static readonly Lock HiveGate = new();
+
     /// <summary>
     /// Ouvre la ruche utilisateur du SID : HKU\SID si la session est chargée, sinon NTUSER.DAT du profil chargé sous un
     /// nom temporaire unique (RegLoadKey), déchargé dans tous les cas à la fin. Le profil doit exister.
@@ -114,36 +116,43 @@ internal static partial class UserRestrictions
         if (hiveFile is null) return work(null, HiveSource.Missing);
 
         var mount = "Timonier_" + Guid.NewGuid().ToString("N");
-        NetApi.SetPrivilege("SeRestorePrivilege", true);
-        NetApi.SetPrivilege("SeBackupPrivilege", true);
-        try
+        // Les privilèges sont propres au processus : deux requêtes simultanées ne doivent pas les retirer l'une à l'autre.
+        lock (HiveGate)
         {
-            var rc = NetApi.RegLoadKey(NetApi.HKEY_USERS, mount, hiveFile);
-            if (rc != 0)
-            {
-                throw rc == 32
-                    ? new InvalidOperationException("Le profil de ce compte est en cours d'utilisation : réessayez après sa déconnexion.")
-                    : new System.ComponentModel.Win32Exception(rc, "Chargement du profil impossible (code " + rc + ").");
-            }
             try
             {
-                using var key = users.OpenSubKey(mount, writable) ?? throw new InvalidOperationException("Ruche chargée introuvable.");
-                return work(key, HiveSource.File);
+                NetApi.SetPrivilege("SeRestorePrivilege", true);
+                NetApi.SetPrivilege("SeBackupPrivilege", true);
+                var rc = NetApi.RegLoadKey(NetApi.HKEY_USERS, mount, hiveFile);
+                if (rc != 0)
+                {
+                    throw rc == 32
+                        ? new InvalidOperationException("Le profil de ce compte est en cours d'utilisation : réessayez après sa déconnexion.")
+                        : new System.ComponentModel.Win32Exception(rc, "Chargement du profil impossible (code " + rc + ").");
+                }
+                try
+                {
+                    using var key = users.OpenSubKey(mount, writable) ?? throw new InvalidOperationException("Ruche chargée introuvable.");
+                    return work(key, HiveSource.File);
+                }
+                finally
+                {
+                    Unload(mount);
+                }
             }
             finally
             {
-                Unload(mount);
+                try { NetApi.SetPrivilege("SeBackupPrivilege", false); NetApi.SetPrivilege("SeRestorePrivilege", false); }
+                catch { /* sans conséquence : le broker est éphémère */ }
             }
-        }
-        finally
-        {
-            try { NetApi.SetPrivilege("SeBackupPrivilege", false); NetApi.SetPrivilege("SeRestorePrivilege", false); }
-            catch { /* sans conséquence : le broker est éphémère */ }
         }
     }
 
     private static void Unload(string mount)
     {
+        // Le déchargement exige SeRestorePrivilege : réactivé au cas où une autre requête (kiosque) l'aurait retiré.
+        try { NetApi.SetPrivilege("SeRestorePrivilege", true); }
+        catch (Exception ex) { Log.Warn("Users", "privilège de restauration : " + ex.Message); }
         for (var attempt = 0; attempt < 5; attempt++)
         {
             var rc = NetApi.RegUnLoadKey(NetApi.HKEY_USERS, mount);

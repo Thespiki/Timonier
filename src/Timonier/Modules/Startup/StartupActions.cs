@@ -26,7 +26,9 @@ public abstract class StartupItemActionBase : IActionHandler
         if (!string.Equals(scope, Scope == StartupScope.User ? "user" : "machine", StringComparison.OrdinalIgnoreCase))
             throw new ValidationException("Portée non autorisée pour cette action.");
         var kind = StartupInventory.ParseKind(Validate.OneOf(p, "kind", AllowedKinds));
-        var name = Validate.Required(p, "name", 400);
+        Validate.Required(p, "name", 400);
+        // Valeur exacte (non rognée) : « Outil » et « Outil  » sont deux entrées Run distinctes, il ne faut pas agir sur l'autre.
+        var name = p["name"];
         StartupInventory.EnsureExists(Scope, kind, name, userSid);
         return (kind, name);
     }

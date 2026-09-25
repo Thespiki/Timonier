@@ -85,14 +85,16 @@ public sealed class ActionContext
         try
         {
             foreach (var op in ops) entry.Undo.Add(OperationExecutor.Execute(op, Exec));
+            // Dans le bloc protégé : une modification qu'on ne peut pas journaliser (donc pas annuler) est défaite.
+            JournalWriter.Write(entry, Exec.Elevated);
         }
         catch
         {
             // Échec partiel : on remet en l'état ce qui a déjà été modifié.
-            OperationExecutor.Undo(entry.Undo, Exec);
+            var errors = OperationExecutor.Undo(entry.Undo, Exec);
+            if (errors.Count > 0) Log.Warn("Engine", $"rollback incomplet pour {sourceId}: {string.Join(" ; ", errors)}");
             throw;
         }
-        JournalWriter.Write(entry, Exec.Elevated);
         return entry;
     }
 }
@@ -136,9 +138,19 @@ public sealed class ModuleRegistry
     private readonly List<string> _errors = [];
     private readonly Dictionary<string, IHealthCheck> _health = new(StringComparer.Ordinal);
     private readonly Dictionary<string, QuickAction> _quick = new(StringComparer.Ordinal);
+    private readonly List<(string Id, Action Run)> _uiStartup = [];
 
     public IReadOnlyCollection<IHealthCheck> HealthChecks => _health.Values;
     public IReadOnlyCollection<QuickAction> QuickActions => _quick.Values;
+
+    /// <summary>Tâches exécutées une fois par l'interface (jamais par le broker) juste après l'affichage de la fenêtre.</summary>
+    public IReadOnlyList<(string Id, Action Run)> UiStartupTasks => _uiStartup;
+
+    /// <summary>
+    /// Déclare une tâche courte à exécuter au démarrage de l'interface, sur le fil UI (ex. réparer un état laissé par un
+    /// arrêt brutal). Déclaration seulement : l'action n'est jamais appelée dans le broker.
+    /// </summary>
+    public void AddUiStartupTask(string id, Action run) => _uiStartup.Add((id, run));
 
     public void AddHealthCheck(IHealthCheck check)
     {

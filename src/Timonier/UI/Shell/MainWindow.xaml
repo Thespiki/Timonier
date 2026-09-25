@@ -31,7 +31,7 @@
                     </StackPanel>
                 </Border>
 
-                <TextBox x:Name="SearchBox" Style="{StaticResource Pp.SearchBox}" Margin="4,0,4,8"
+                <TextBox x:Name="SearchBox" Style="{StaticResource Pp.SearchBox}" Margin="4,0,4,8" MaxLength="200"
                          Tag="Rechercher (Ctrl+K)…" AutomationProperties.Name="Rechercher"
                          TextChanged="SearchBox_TextChanged" PreviewKeyDown="SearchBox_PreviewKeyDown" GotKeyboardFocus="SearchBox_GotFocus" />
             </StackPanel>

@@ -50,7 +50,7 @@ internal static class CleanupCatalog
             "Dossier %TEMP% : fichiers laissés par les installations et les applications, non modifiés depuis plus de 24 heures.",
             "\uE8B7", Admin: false, CleanupKind.Files)
         {
-            Targets = () => [new CleanupTarget(Path.GetTempPath(), "*", true, Day)],
+            Targets = () => UserTempDir() is { } temp ? [new CleanupTarget(temp, "*", true, Day)] : [],
         },
         new("recyclebin", "Corbeille",
             "Fichiers supprimés de tous les lecteurs. Une fois vidée, la corbeille ne peut plus être restaurée.",
@@ -124,6 +124,22 @@ internal static class CleanupCatalog
             ],
         },
     ];
+
+    /// <summary>
+    /// Dossier %TEMP% de l'utilisateur, ou null s'il n'a pas l'allure d'un dossier temporaire. La variable TEMP/TMP est
+    /// modifiable par l'utilisateur ou un installateur : mal réglée (« C:\ », « D:\ », le profil, Documents…), elle ne doit
+    /// jamais conduire à supprimer les fichiers de plus de 24 h d'un dossier de données. Seuls sont acceptés le dossier
+    /// standard (%LOCALAPPDATA%\Temp) et un dossier dont le nom est « Temp » ou « Tmp » (hors racine de lecteur).
+    /// </summary>
+    public static string? UserTempDir()
+    {
+        string full;
+        try { full = Path.GetFullPath(Path.GetTempPath()).TrimEnd('\\'); }
+        catch (Exception ex) when (ex is ArgumentException or IOException or NotSupportedException or System.Security.SecurityException) { return null; }
+        if (string.Equals(full, Path.Combine(LocalAppData, "Temp"), StringComparison.OrdinalIgnoreCase)) return full;
+        var leaf = Path.GetFileName(full);
+        return leaf.Equals("Temp", StringComparison.OrdinalIgnoreCase) || leaf.Equals("Tmp", StringComparison.OrdinalIgnoreCase) ? full : null;
+    }
 
     public static CleanupCategory? Get(string key) => All.FirstOrDefault(c => c.Key == key);
 

@@ -389,7 +389,7 @@ public sealed class DashboardPage : UserControl, INavigationAware
 
         var disk = p.SystemDisk;
         items.Add(Spec("", "Disque système",
-            disk is null ? "Inconnu" : $"{MediaLabel(disk.Media)} · {Format.Bytes(disk.SizeBytes)}",
+            disk is null ? "Inconnu" : $"{MediaLabel(disk)} · {Format.Bytes(disk.SizeBytes)}",
             disk is null ? "" : disk.Model.Trim()));
 
         items.Add(Spec(p.HasBattery ? "" : "", "Alimentation",
@@ -447,7 +447,8 @@ public sealed class DashboardPage : UserControl, INavigationAware
         name.Replace("(R)", "", StringComparison.OrdinalIgnoreCase).Replace("(TM)", "", StringComparison.OrdinalIgnoreCase)
             .Replace(" CPU", "", StringComparison.Ordinal).Replace("  ", " ").Trim();
 
-    private static string MediaLabel(DiskMedia m) => m switch
+    /// <summary>Type du disque, avec la même détection de l'eMMC que la page Performance (Windows la classe en « SSD »).</summary>
+    private static string MediaLabel(DiskInfo d) => Performance.HardwareAdvice.IsEmmc(d) ? "Mémoire eMMC" : d.Media switch
     {
         DiskMedia.Nvme => "SSD NVMe",
         DiskMedia.Ssd => "SSD",
@@ -911,7 +912,8 @@ public sealed class DashboardPage : UserControl, INavigationAware
         var profileBits = new List<string>();
         if (p.Tier != PerformanceTier.Unknown) profileBits.Add("gamme " + p.TierLabel.ToLower(Fr));
         profileBits.Add(p.IsLaptopLike ? "PC portable" : "PC de bureau");
-        if (p.SystemDisk is { } d && d.Media != DiskMedia.Unknown) profileBits.Add(d.Media == DiskMedia.Hdd ? "disque dur" : "SSD");
+        if (p.SystemDisk is { } d && d.Media != DiskMedia.Unknown)
+            profileBits.Add(d.Media == DiskMedia.Hdd ? "disque dur" : Performance.HardwareAdvice.IsEmmc(d) ? "mémoire eMMC" : "SSD");
         profileBits.Add("Windows " + (p.IsWindows11 ? "11 " : "10 ") + p.EditionLabel);
 
         if (mismatches.Count == 0)

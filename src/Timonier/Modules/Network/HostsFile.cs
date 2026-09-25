@@ -28,6 +28,12 @@ internal static class HostsFile
     public const string EndMarker = "# --- Timonier (fin) ---";
     public const int MaxManagedEntries = 500;
 
+    /// <summary>
+    /// Taille maximale lue (les grandes listes de blocage publiques font quelques Mo) : au-delà, le fichier n'est ni
+    /// analysé ni modifié, pour ne pas saturer la mémoire d'un PC modeste.
+    /// </summary>
+    public const long MaxFileBytes = 32L * 1024 * 1024;
+
     // Les marqueurs sont écrits en UTF-8 ; lus en Latin-1 ils apparaissent sous cette forme.
     private static readonly string BeginMarkerLatin1 = Encoding.Latin1.GetString(Encoding.UTF8.GetBytes(BeginMarker));
     private static readonly string EndMarkerLatin1 = Encoding.Latin1.GetString(Encoding.UTF8.GetBytes(EndMarker));
@@ -41,6 +47,9 @@ internal static class HostsFile
         "windowsupdate.com", "windowsupdate.microsoft.com", "update.microsoft.com", "delivery.mp.microsoft.com",
         "wd.microsoft.com", "wdcp.microsoft.com", "wdcpalt.microsoft.com", "smartscreen.microsoft.com",
         "smartscreen-prod.microsoft.com", "definitionupdates.microsoft.com", "security.microsoft.com",
+        // Réputation SmartScreen des URL et des applications, listes de révocation des certificats.
+        "urs.microsoft.com", "checkappexec.microsoft.com", "crl.microsoft.com", "mscrl.microsoft.com",
+        "oneocsp.microsoft.com", "ocsp.msocsp.com",
     ];
 
     public static string FilePath => Path.Combine(Environment.SystemDirectory, "drivers", "etc", "hosts");
@@ -52,6 +61,12 @@ internal static class HostsFile
         var raw = value.Trim();
         // Tolère une URL collée : on ne garde que le nom d'hôte.
         if (raw.Contains("://", StringComparison.Ordinal) && Uri.TryCreate(raw, UriKind.Absolute, out var uri)) raw = uri.Host;
+        // Nom de domaine accentué (IDN) : converti en punycode, seule forme reconnue par le fichier hosts.
+        if (raw.Any(c => c > 127))
+        {
+            try { raw = new System.Globalization.IdnMapping().GetAscii(raw.TrimEnd('.')); }
+            catch (ArgumentException) { /* laissé tel quel : refusé ci-dessous avec un message clair */ }
+        }
         var host = Validate.HostName(raw);
         if (!host.Contains('.')) throw new ValidationException("Indiquez un nom de domaine complet (ex. exemple.com).");
         if (IPAddress.TryParse(host, out _) || host.Split('.')[^1].All(char.IsAsciiDigit))
@@ -81,6 +96,8 @@ internal static class HostsFile
     private static byte[] ReadAllBytesShared(string path)
     {
         using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        if (fs.Length > MaxFileBytes)
+            throw new IOException($"le fichier hosts dépasse {MaxFileBytes / (1024 * 1024)} Mo : Timonier ne l'analyse pas et ne le modifie pas.");
         using var ms = new MemoryStream();
         fs.CopyTo(ms);
         return ms.ToArray();
@@ -120,7 +137,15 @@ internal static class HostsFile
 
         var path = FilePath;
         var exists = File.Exists(path);
+        if (exists && File.GetAttributes(path).HasFlag(FileAttributes.ReadOnly))
+            throw new InvalidOperationException("Le fichier hosts est protégé en écriture (attribut « Lecture seule », souvent posé par un " +
+                                                "logiciel de sécurité) : Timonier ne retire pas cette protection. Retirez-la vous-même si vous " +
+                                                "souhaitez gérer les blocages ici.");
         var bytes = exists ? ReadAllBytesShared(path) : [];
+        // Fichier enregistré en UTF-16 (Bloc-notes « Unicode ») : des lignes ajoutées octet par octet le corrompraient.
+        if (bytes.Length >= 2 && (bytes[0], bytes[1]) is (0xFF, 0xFE) or (0xFE, 0xFF))
+            throw new InvalidOperationException("Le fichier hosts est enregistré en UTF-16, un format que Timonier ne peut pas modifier sans " +
+                                                "risque : modification annulée. Réenregistrez-le en ANSI ou UTF-8 puis réessayez.");
         var text = Encoding.Latin1.GetString(bytes);
         var newline = text.Contains("\r\n", StringComparison.Ordinal) || !exists ? "\r\n" : "\n";
 

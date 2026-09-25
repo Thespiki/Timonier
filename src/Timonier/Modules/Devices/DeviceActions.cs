@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using Timonier.Core.Catalog;
 using Timonier.Core.Model;
@@ -11,7 +12,7 @@ namespace Timonier.Modules.Devices;
 /// présent (énumération WMI, correspondance exacte), classe non protégée, disque non système. Tout refus lève une
 /// <see cref="ValidationException"/> au message clair.
 /// </summary>
-internal static class DeviceGuard
+internal static partial class DeviceGuard
 {
     /// <summary><c>pnputil /disable-device</c> et <c>/enable-device</c> existent depuis Windows 10 2004 (build 19041).</summary>
     public const int MinBuild = 19041;
@@ -25,11 +26,74 @@ internal static class DeviceGuard
         var (level, reason) = entry.Protection;
         if (level == DeviceProtection.Protected)
             throw new ValidationException($"Timonier refuse de désactiver « {entry.Name} » : {reason}");
+        CheckNotOnSystemDiskPath(entry.InstanceId, entry.Name);
         if (string.Equals(entry.PnpClass, "DiskDrive", StringComparison.OrdinalIgnoreCase)) CheckExternalDataDisk(id, entry.Name);
         if (level == DeviceProtection.Sensitive && !sensitiveConfirmed)
             throw new ValidationException($"« {entry.Name} » est un périphérique sensible : sa désactivation doit être confirmée par le processus administrateur.");
         return entry;
     }
+
+    /// <summary>
+    /// Refuse tout périphérique situé sur le chemin matériel du disque de Windows (le disque lui-même, son contrôleur
+    /// SD/eMMC, NVMe, USB ou SATA, les ponts PCI…), quelle que soit sa classe : les PC à stockage eMMC rangent par
+    /// exemple le contrôleur du disque système dans la classe « SDHost ». Vérification fail-safe : en cas de doute, refus.
+    /// </summary>
+    private static void CheckNotOnSystemDiskPath(string id, string name)
+    {
+        HashSet<string> chain;
+        try { chain = SystemDiskDeviceChain(); }
+        catch (Exception ex)
+        {
+            Log.Warn("Devices", "chemin matériel du disque système illisible : " + ex.Message);
+            throw new ValidationException("Impossible de vérifier que ce périphérique n'est pas nécessaire au disque de Windows : action refusée par précaution.");
+        }
+        if (chain.Contains(id))
+            throw new ValidationException($"Timonier refuse de désactiver « {name} » : le disque sur lequel Windows est installé en dépend.");
+    }
+
+    /// <summary>Identifiants d'instance du disque système et de tous ses parents dans l'arborescence Plug-and-Play.</summary>
+    private static HashSet<string> SystemDiskDeviceChain()
+    {
+        var root = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\');
+        if (root.Length != 2 || root[1] != ':') throw new InvalidOperationException("lecteur système non identifiable");
+        var indexes = WmiQuery.Query("ASSOCIATORS OF {Win32_LogicalDisk.DeviceID='" + root + "'} WHERE AssocClass = Win32_LogicalDiskToPartition")
+            .Select(pt => Convert.ToInt64(pt.GetValueOrDefault("DiskIndex") ?? -1L))
+            .Where(i => i >= 0)
+            .ToHashSet();
+        var disks = WmiQuery.Query("SELECT Index, PNPDeviceID FROM Win32_DiskDrive")
+            .Where(d => indexes.Contains(Convert.ToInt64(d.GetValueOrDefault("Index") ?? -1L)))
+            .Select(d => d.GetValueOrDefault("PNPDeviceID") as string)
+            .OfType<string>()
+            .ToList();
+        if (disks.Count == 0) throw new InvalidOperationException("disque système introuvable");
+
+        var chain = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var buffer = new char[MaxDeviceIdLength + 1];
+        foreach (var disk in disks)
+        {
+            if (CM_Locate_DevNode(out var node, disk, 0) != 0) throw new InvalidOperationException("nœud du disque système introuvable");
+            chain.Add(disk);
+            for (var depth = 0; depth < 64 && CM_Get_Parent(out var parent, node, 0) == 0; depth++)
+            {
+                if (CM_Get_Device_ID(parent, buffer, (uint)buffer.Length, 0) != 0) throw new InvalidOperationException("identifiant de parent illisible");
+                var end = Array.IndexOf(buffer, '\0');
+                chain.Add(new string(buffer, 0, end < 0 ? buffer.Length : end));
+                node = parent;
+            }
+        }
+        return chain;
+    }
+
+    private const int MaxDeviceIdLength = 400;
+
+    [LibraryImport("cfgmgr32.dll", EntryPoint = "CM_Locate_DevNodeW", StringMarshalling = StringMarshalling.Utf16)]
+    private static partial uint CM_Locate_DevNode(out uint devInst, string deviceId, uint flags);
+
+    [LibraryImport("cfgmgr32.dll", EntryPoint = "CM_Get_Parent")]
+    private static partial uint CM_Get_Parent(out uint parent, uint devInst, uint flags);
+
+    [LibraryImport("cfgmgr32.dll", EntryPoint = "CM_Get_Device_IDW", StringMarshalling = StringMarshalling.Utf16)]
+    private static partial uint CM_Get_Device_ID(uint devInst, [Out] char[] buffer, uint bufferLength, uint flags);
 
     /// <summary>Un disque ne peut être désactivé que s'il est relié en USB et ne contient pas Windows (vérification fail-safe).</summary>
     private static void CheckExternalDataDisk(string id, string name)

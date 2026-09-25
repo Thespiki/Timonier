@@ -77,14 +77,18 @@ public sealed class TweakEngine(ModuleRegistry registry, BrokerClient broker, Sy
         }
     }
 
-    /// <summary>Applique plusieurs réglages (profils) : une seule session admin, progression détaillée.</summary>
+    /// <summary>
+    /// Applique plusieurs réglages (profils) : une seule session admin, progression détaillée. Ne lève pas d'exception
+    /// à l'annulation : renvoie les résultats déjà obtenus (le dernier est marqué <see cref="ApplyOutcome.Cancelled"/>
+    /// si l'annulation l'a interrompu ; les réglages suivants ne sont pas tentés et n'apparaissent pas).
+    /// </summary>
     public async Task<List<(TweakDefinition Tweak, ApplyOutcome Outcome)>> ApplyManyAsync(
         IEnumerable<(TweakDefinition Tweak, string Option)> items, IProgress<string>? progress = null, CancellationToken ct = default)
     {
         var results = new List<(TweakDefinition, ApplyOutcome)>();
         foreach (var (tweak, option) in items)
         {
-            ct.ThrowIfCancellationRequested();
+            if (ct.IsCancellationRequested) break;
             progress?.Report($"{tweak.Title}…");
             var outcome = await ApplyAsync(tweak, option, ct).ConfigureAwait(false);
             results.Add((tweak, outcome));
@@ -182,6 +186,10 @@ public sealed class TweakEngine(ModuleRegistry registry, BrokerClient broker, Sy
         {
             foreach (var op in option.Operations)
                 entry.Undo.Add(OperationExecutor.Execute(op, ctx));
+            var notes = entry.Undo.OfType<NoUndo>().Select(n => n.Reason).Where(r => r != "Notification").Distinct().ToList();
+            if (notes.Count > 0) entry.Note = string.Join(" ", notes);
+            // Dans le bloc protégé : une modification qu'on ne peut pas journaliser (donc pas annuler) est défaite.
+            JournalWriter.Write(entry, ctx.Elevated);
         }
         catch
         {
@@ -189,9 +197,6 @@ public sealed class TweakEngine(ModuleRegistry registry, BrokerClient broker, Sy
             if (errors.Count > 0) Log.Warn("Engine", $"rollback incomplet pour {tweak.Id}: {string.Join(" ; ", errors)}");
             throw;
         }
-        var notes = entry.Undo.OfType<NoUndo>().Select(n => n.Reason).Where(r => r != "Notification").Distinct().ToList();
-        if (notes.Count > 0) entry.Note = string.Join(" ", notes);
-        JournalWriter.Write(entry, ctx.Elevated);
         return entry;
     }
 

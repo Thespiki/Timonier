@@ -51,19 +51,39 @@ public static class SystemTools
 
     private static string ResolveWinget()
     {
-        // Alias d'exécution de l'App Installer (par utilisateur).
+        // Alias d'exécution de l'App Installer (par utilisateur). Son dossier (%LOCALAPPDATA%\Microsoft\WindowsApps) est
+        // modifiable sans élévation : un processus élevé ne l'utilise JAMAIS (un programme pourrait y remplacer
+        // winget.exe et le faire exécuter avec les droits administrateur). Il prend l'exécutable du paquet installé
+        // dans Program Files\WindowsApps, protégé par le système.
         var alias = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Microsoft\WindowsApps\winget.exe");
+        if (ChildEnvironment.IsElevated)
+            return ResolveWingetPackage() ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"WindowsApps\winget.exe");
         if (File.Exists(alias)) return alias;
-        // Processus élevé par un autre compte : on cherche l'installation système du DesktopAppInstaller.
+        return ResolveWingetPackage() ?? alias;
+    }
+
+    /// <summary>winget.exe du paquet Microsoft.DesktopAppInstaller le plus récent (architecture du système), sinon null.</summary>
+    private static string? ResolveWingetPackage()
+    {
         var apps = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "WindowsApps");
+        var arch = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture == System.Runtime.InteropServices.Architecture.Arm64 ? "arm64" : "x64";
         try
         {
-            var dir = Directory.EnumerateDirectories(apps, "Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe")
-                               .OrderByDescending(d => d, StringComparer.OrdinalIgnoreCase).FirstOrDefault();
-            if (dir is not null && File.Exists(Path.Combine(dir, "winget.exe"))) return Path.Combine(dir, "winget.exe");
+            string? best = null;
+            Version? bestVersion = null;
+            foreach (var dir in Directory.EnumerateDirectories(apps, $"Microsoft.DesktopAppInstaller_*_{arch}__8wekyb3d8bbwe"))
+            {
+                var parts = Path.GetFileName(dir).Split('_');
+                if (parts.Length < 2 || !Version.TryParse(parts[1], out var version)) continue;
+                if ((File.GetAttributes(dir) & FileAttributes.ReparsePoint) != 0) continue;
+                var exe = Path.Combine(dir, "winget.exe");
+                if (!File.Exists(exe) || (bestVersion is not null && version <= bestVersion)) continue;
+                best = exe;
+                bestVersion = version;
+            }
+            return best;
         }
-        catch { /* accès refusé à WindowsApps : normal hors élévation */ }
-        return alias;
+        catch { return null; /* accès refusé à WindowsApps : normal hors élévation */ }
     }
 }
 
@@ -131,6 +151,7 @@ public static class ProcessRunner
             WorkingDirectory = options.WorkingDirectory ?? Environment.SystemDirectory,
         };
         foreach (var a in args) psi.ArgumentList.Add(a);
+        ChildEnvironment.Harden(psi.Environment);
         if (options.Environment is not null)
             foreach (var (k, v) in options.Environment) psi.Environment[k] = v;
 
@@ -186,6 +207,7 @@ public static class ProcessRunner
         var path = SystemTools.Resolve(tool);
         var psi = new ProcessStartInfo(path) { UseShellExecute = false };
         foreach (var a in args) psi.ArgumentList.Add(a);
+        ChildEnvironment.Harden(psi.Environment);
         try
         {
             Process.Start(psi)?.Dispose();
@@ -230,7 +252,7 @@ public static class ProcessRunner
     /// </summary>
     public static void OpenSettingsUri(string uri)
     {
-        if (!Regex.IsMatch(uri, @"^(ms-settings|windowsdefender|ms-windows-store|ms-availablenetworks|ms-actioncenter):[A-Za-z0-9\-_./?=&]*$"))
+        if (!Regex.IsMatch(uri, @"^(ms-settings|windowsdefender|ms-windows-store|ms-availablenetworks|ms-actioncenter):[A-Za-z0-9\-_./?=&]{0,200}\z"))
             throw new ArgumentException("URI non autorisée : " + uri);
         Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true })?.Dispose();
     }
@@ -257,7 +279,48 @@ public static class ProcessRunner
     {
         var full = Path.GetFullPath(path);
         if (!Directory.Exists(full)) throw new DirectoryNotFoundException(full);
-        Launch(SystemTool.Explorer, full);
+        // ShellExecute sur le dossier lui-même (verbe « open ») : l'Explorateur ne réanalyse pas une ligne de commande,
+        // où une virgule dans le chemin serait prise pour un séparateur d'options.
+        Process.Start(new ProcessStartInfo(full) { UseShellExecute = true, Verb = "open" })?.Dispose();
+    }
+}
+
+/// <summary>
+/// Environnement des processus enfants. Un processus élevé via l'UAC reçoit les variables de HKCU\Environment, que
+/// n'importe quel programme non élevé de la session peut modifier : profileur .NET (COR_PROFILER, CORECLR_…), crochets
+/// de démarrage (DOTNET_STARTUP_HOOKS), modules PowerShell (PSModulePath), PATH… Elles permettraient d'injecter du code
+/// dans les outils lancés avec les droits administrateur. On les retire toujours, et dans un processus élevé on remet
+/// les chemins système à leur valeur d'origine (dossiers connus, jamais lus depuis l'environnement).
+/// </summary>
+internal static class ChildEnvironment
+{
+    private static readonly string[] InjectionPrefixes = ["COR_", "CORECLR_", "COMPLUS_", "DOTNET_"];
+
+    private static readonly Lazy<bool> Elevated = new(() =>
+    {
+        using var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
+        return new System.Security.Principal.WindowsPrincipal(identity).IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+    });
+
+    /// <summary>Processus courant élevé (broker) : aucun exécutable ni chemin issu du profil utilisateur.</summary>
+    public static bool IsElevated => Elevated.Value;
+
+    public static void Harden(IDictionary<string, string?> environment)
+    {
+        foreach (var name in environment.Keys.Where(k => InjectionPrefixes.Any(p => k.StartsWith(p, StringComparison.OrdinalIgnoreCase))).ToList())
+            environment.Remove(name);
+        if (!Elevated.Value) return;
+
+        var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+        var system32 = Environment.SystemDirectory;
+        var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+        environment["SystemRoot"] = windows;
+        environment["windir"] = windows;
+        environment["ComSpec"] = Path.Combine(system32, "cmd.exe");
+        environment["PATH"] = string.Join(';', system32, windows, Path.Combine(system32, "Wbem"),
+            Path.Combine(system32, @"WindowsPowerShell\v1.0"), Path.Combine(system32, "OpenSSH"));
+        environment["PSModulePath"] = string.Join(';', Path.Combine(programFiles, @"WindowsPowerShell\Modules"),
+            Path.Combine(system32, @"WindowsPowerShell\v1.0\Modules"));
     }
 }
 
@@ -285,7 +348,11 @@ public static partial class PowerShellRunner
             }
         }
 
+        // Modules chargés uniquement depuis les dossiers système : PowerShell 5.1 ajoute sinon le dossier Documents de
+        // l'utilisateur, modifiable sans élévation (chargement automatique d'un module piégé dans un script élevé).
         const string prelude = "$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';" +
+                               "$env:PSModulePath=[IO.Path]::Combine([Environment]::GetFolderPath('ProgramFiles'),'WindowsPowerShell\\Modules')+';'+" +
+                               "[IO.Path]::Combine([Environment]::GetFolderPath('System'),'WindowsPowerShell\\v1.0\\Modules');" +
                                "[Console]::OutputEncoding=[Text.Encoding]::UTF8;";
         var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(prelude + constantScript));
         return ProcessRunner.RunAsync(SystemTool.PowerShell,

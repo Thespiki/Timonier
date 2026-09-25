@@ -21,19 +21,27 @@ internal static class TaskbarGuard
         get { lock (Gate) return Hidden.Count > 0; }
     }
 
-    /// <summary>Masque les barres des tâches visibles (thread UI).</summary>
+    /// <summary>
+    /// Masque les barres des tâches visibles (thread UI). Rappelé pendant la session : une barre recréée par l'Explorateur
+    /// (redémarrage) est masquée à son tour ; le marqueur n'est écrit que si une barre vient d'être masquée.
+    /// </summary>
     public static void Hide()
     {
         EnsureProcessHooks();
         var bars = FindTaskbars();
+        var added = 0;
         lock (Gate)
         {
             foreach (var h in bars)
             {
-                if (!GuidedNative.IsWindowVisible(h) || Hidden.Contains(h)) continue;
-                if (GuidedNative.ShowWindow(h, GuidedNative.SW_HIDE) || !GuidedNative.IsWindowVisible(h)) Hidden.Add(h);
+                if (!GuidedNative.IsWindowVisible(h)) continue;
+                if (GuidedNative.ShowWindow(h, GuidedNative.SW_HIDE) || !GuidedNative.IsWindowVisible(h))
+                {
+                    if (!Hidden.Contains(h)) Hidden.Add(h);
+                    added++;
+                }
             }
-            if (Hidden.Count == 0) return;
+            if (added == 0) return;
         }
         try
         {

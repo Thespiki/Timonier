@@ -26,7 +26,8 @@ public sealed record RegValueSnapshot(RegistryValueKind Kind, long? Number, stri
         RegistryValueKind.QWord => Number ?? 0,
         RegistryValueKind.MultiString => Multi ?? [],
         RegistryValueKind.Binary or RegistryValueKind.None => Binary ?? [],
-        _ => Text ?? "",
+        // Type non standard (ex. REG_RESOURCE_LIST, lu comme Unknown) : on restitue les octets plutôt qu'une chaîne vide.
+        _ => Text ?? (object?)Binary ?? "",
     };
 }
 
@@ -88,7 +89,12 @@ public sealed class UserJournalStore
             var list = Load();
             list.Add(e);
             if (list.Count > MaxEntries) list.RemoveRange(0, list.Count - MaxEntries);
-            Save(list);
+            try { Save(list); }
+            catch
+            {
+                list.Remove(e); // l'appelant défait la modification : l'entrée ne doit pas rester en mémoire
+                throw;
+            }
         }
     }
 

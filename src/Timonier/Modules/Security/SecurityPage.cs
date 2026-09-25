@@ -478,7 +478,7 @@ public sealed class SecurityPage : UserControl, INavigationAware
         var limits = new TextBlock
         {
             Text = "Sans effet si le pare-feu Windows est désactivé ou remplacé par un pare-feu tiers. Les applications du Microsoft Store " +
-                   "et les programmes de Windows ne peuvent pas être bloqués ici.",
+                   "ainsi que les programmes de Windows et de Microsoft Defender ne peuvent pas être bloqués ici.",
             Margin = new Thickness(0, 6, 0, 0),
         };
         limits.SetResourceReference(StyleProperty, "Pp.Caption");
@@ -544,7 +544,7 @@ public sealed class SecurityPage : UserControl, INavigationAware
         foreach (var group in rules.GroupBy(r => r.Name))
         {
             var first = group.First();
-            var display = first.Name[FirewallRules.NamePrefix.Length..];
+            var display = first.DisplayName;
 
             var icon = new TextBlock { Text = "", Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
             icon.SetResourceReference(StyleProperty, "Pp.Icon");
@@ -557,6 +557,7 @@ public sealed class SecurityPage : UserControl, INavigationAware
             foreach (var dir in group.Select(r => r.Direction).Distinct().OrderByDescending(d => d))
                 nameRow.Children.Add(Badge(dir == "Out" ? "Sortant" : "Entrant", "Pp.NeutralBackground", "Pp.Neutral"));
             if (group.Any(r => !r.Enabled)) nameRow.Children.Add(Badge("Règle désactivée", "Pp.WarningBackground", "Pp.Warning"));
+            if (first.Legacy) nameRow.Children.Add(Badge("Créée sous le nom PC Pilot", "Pp.NeutralBackground", "Pp.Neutral"));
 
             var path = new TextBlock { Text = first.Application ?? "(programme inconnu)", TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap, ToolTip = first.Application };
             path.SetResourceReference(StyleProperty, "Pp.Caption");

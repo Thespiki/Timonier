@@ -76,6 +76,8 @@ internal static class DataInventory
     public static string SettingsFile => Path.Combine(AppPaths.LocalData, "settings.json");
     public static string ProfileCacheFile => Path.Combine(AppPaths.LocalData, "system-profile.json");
     public static string UserJournalFile => Path.Combine(AppPaths.LocalData, "journal.json");
+    /// <summary>Journaux du broker élevé (voir Log.UseProtectedFile).</summary>
+    public static string BrokerLogs => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), AppPaths.AppName, "logs");
 
     public static List<Item> Read()
     {
@@ -88,8 +90,9 @@ internal static class DataInventory
                 + "Lisible par tous, modifiable uniquement par les administrateurs.", @"HKEY_LOCAL_MACHINE\SOFTWARE\Timonier\Journal", "Registre"),
             new("Cache", "Portrait matériel du PC (accélère le démarrage) et données temporaires des modules. Recréé automatiquement.",
                 $"{ProfileCacheFile}\n{CacheDir}", Format.Bytes(Size(ProfileCacheFile) + DirSize(CacheDir))),
-            new("Journaux de diagnostic", "Messages techniques en cas d'erreur (1 Mo par fichier, 2 fichiers au maximum). Aucun secret, aucune donnée envoyée.",
-                AppPaths.Logs, Format.Bytes(DirSize(AppPaths.Logs))),
+            new("Journaux de diagnostic", "Messages techniques en cas d'erreur (1 Mo par fichier, 2 fichiers au maximum). Aucun secret, aucune donnée envoyée. "
+                + "Ceux de la session administrateur sont dans un dossier réservé aux administrateurs (lisible par tous).",
+                $"{AppPaths.Logs}\n{BrokerLogs}", Format.Bytes(DirSize(AppPaths.Logs) + DirSize(BrokerLogs))),
         };
         if (StartupRegistration.IsEnabled())
             list.Add(new("Démarrage avec Windows", "Lance Timonier dans la zone de notification à l'ouverture de session.",

@@ -71,8 +71,8 @@ fr.LaunchApp=Lancer Timonier
 en.LaunchApp=Launch Timonier
 fr.AppComment=Centre de contrôle local pour Windows
 en.AppComment=Local control center for Windows
-fr.RemoveData=Supprimer aussi les données de Timonier ?%n%n- vos paramètres, le cache et les journaux d'activité (dossier %1) ;%n- le journal des modifications administrateur (registre HKLM\SOFTWARE\Timonier).%n%nSans ce journal, les modifications déjà faites ne pourront plus être annulées depuis Timonier.
-en.RemoveData=Also remove Timonier's data?%n%n- your settings, cache and activity logs (folder %1);%n- the administrator change journal (registry HKLM\SOFTWARE\Timonier).%n%nWithout this journal, changes already made can no longer be undone from Timonier.
+fr.RemoveData=Supprimer aussi les données de Timonier ?%n%n- vos paramètres, le cache et les journaux d'activité (dossier %1) ;%n- les journaux et le journal des modifications administrateur (dossier ProgramData\Timonier, registre HKLM\SOFTWARE\Timonier).%n%nSans ce journal, les modifications déjà faites ne pourront plus être annulées depuis Timonier.
+en.RemoveData=Also remove Timonier's data?%n%n- your settings, cache and activity logs (folder %1);%n- the administrator logs and change journal (folder ProgramData\Timonier, registry HKLM\SOFTWARE\Timonier).%n%nWithout this journal, changes already made can no longer be undone from Timonier.
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
@@ -107,6 +107,7 @@ begin
   if MsgBox(FmtMessage(CustomMessage('RemoveData'), [DataDir]), mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES then
   begin
     DelTree(DataDir, True, True, True);
+    DelTree(ExpandConstant('{commonappdata}\Timonier'), True, True, True);
     RegDeleteKeyIncludingSubkeys(HKLM64, 'SOFTWARE\Timonier');
   end;
 end;

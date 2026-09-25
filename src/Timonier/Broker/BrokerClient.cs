@@ -52,6 +52,16 @@ public sealed class BrokerClient : IAsyncDisposable
         try
         {
             if (IsRunning) return;
+            // Variables permettant d'injecter du code dans le futur processus administrateur : on n'élève pas.
+            if (EnvironmentGuard.Find() is { Count: > 0 } injected)
+            {
+                Log.Warn("Broker", "élévation refusée, variables d'environnement : " + string.Join(", ", injected));
+                throw new InvalidOperationException(
+                    "Session administrateur refusée par sécurité : ces variables d'environnement permettraient à un autre programme " +
+                    "d'exécuter son code avec les droits administrateur de Timonier : " + string.Join(", ", injected) + ". " +
+                    "Si vous ne les avez pas créées vous-même (outil de profilage .NET), supprimez-les dans « Modifier les variables " +
+                    "d'environnement » et faites analyser le PC par votre antivirus.");
+            }
             if (BeforeElevation is not null && !await BeforeElevation().ConfigureAwait(false))
                 throw new OperationCanceledException("Opération annulée.");
 
@@ -96,9 +106,18 @@ public sealed class BrokerClient : IAsyncDisposable
             StartedAt = DateTime.Now;
             _ = ReadLoopAsync(pipe);
 
-            var hello = await SendCoreAsync(new BrokerRequest { Op = "hello" }, null, ct).ConfigureAwait(false);
-            if (hello.ServerVersion != BrokerFraming.ProtocolVersion)
-                throw new InvalidOperationException("Version du broker incompatible.");
+            try
+            {
+                var hello = await SendCoreAsync(new BrokerRequest { Op = "hello" }, null, ct).ConfigureAwait(false);
+                if (hello.ServerVersion != BrokerFraming.ProtocolVersion)
+                    throw new InvalidOperationException("Version du broker incompatible.");
+            }
+            catch
+            {
+                // Poignée de main ratée : on ne garde pas un canal « connecté » vers un broker inutilisable.
+                await DisconnectAsync().ConfigureAwait(false);
+                throw;
+            }
             Log.Info("BrokerClient", "session admin ouverte");
             StateChanged?.Invoke(this, EventArgs.Empty);
         }

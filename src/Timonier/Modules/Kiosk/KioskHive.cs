@@ -51,8 +51,16 @@ internal sealed class UserHive : IDisposable
             var file = Path.Combine(profile, "NTUSER.DAT");
             if (!File.Exists(file)) throw new FileNotFoundException("Ruche du compte introuvable.", file);
 
-            KioskNative.SetPrivilege("SeBackupPrivilege", true);
-            KioskNative.SetPrivilege("SeRestorePrivilege", true);
+            try
+            {
+                KioskNative.SetPrivilege("SeBackupPrivilege", true);
+                KioskNative.SetPrivilege("SeRestorePrivilege", true);
+            }
+            catch
+            {
+                DropPrivileges();
+                throw;
+            }
             var mount = "Timonier_Kiosk_" + Guid.NewGuid().ToString("N")[..10];
             var rc = KioskNative.RegLoadKey(KioskNative.HKEY_USERS, mount, file);
             if (rc != 0)
@@ -93,6 +101,9 @@ internal sealed class UserHive : IDisposable
         if (_mountName is null) return;
         try
         {
+            // Le déchargement exige SeRestorePrivilege : on le réactive au cas où une autre requête du broker l'aurait retiré entre-temps.
+            try { KioskNative.SetPrivilege("SeRestorePrivilege", true); }
+            catch (Exception ex) { Log.Warn("Kiosk", "privilège de restauration : " + ex.Message); }
             for (var attempt = 0; attempt < 6; attempt++)
             {
                 GC.Collect();

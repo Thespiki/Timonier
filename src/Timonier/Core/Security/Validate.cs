@@ -18,13 +18,14 @@ public static partial class Validate
     public const int MaxKeyLength = 40;
     public const int MaxValueLength = 8192;
 
-    [GeneratedRegex(@"^[a-zA-Z][a-zA-Z0-9_.]{0,39}$")] private static partial Regex KeyRx();
-    [GeneratedRegex(@"^[A-Za-z0-9][A-Za-z0-9._+\-]{0,127}$")] private static partial Regex WingetIdRx();
-    [GeneratedRegex(@"^[A-Za-z0-9._\-]+![A-Za-z0-9._\-]+$")] private static partial Regex AumidRx();
-    [GeneratedRegex(@"^[A-Za-z0-9 ._\-]{1,20}$")] private static partial Regex UserNameRx();
-    [GeneratedRegex(@"^S-1-[0-9]{1,2}(-[0-9]{1,10}){1,14}$")] private static partial Regex SidRx();
-    [GeneratedRegex(@"^[A-Za-z0-9\\&_.#{}\- ]{3,400}$")] private static partial Regex DeviceIdRx();
-    [GeneratedRegex(@"^(?=.{1,253}$)(?!-)[A-Za-z0-9\-]{1,63}(?<!-)(\.(?!-)[A-Za-z0-9\-]{1,63}(?<!-))*$")] private static partial Regex HostNameRx();
+    // Ancre de fin \z (et non $, qui accepte un saut de ligne final) ; classes ASCII explicites (pas de \d ni \w Unicode).
+    [GeneratedRegex(@"^[a-zA-Z][a-zA-Z0-9_.]{0,39}\z")] private static partial Regex KeyRx();
+    [GeneratedRegex(@"^[A-Za-z0-9][A-Za-z0-9._+\-]{0,127}\z")] private static partial Regex WingetIdRx();
+    [GeneratedRegex(@"^[A-Za-z0-9._\-]+![A-Za-z0-9._\-]+\z")] private static partial Regex AumidRx();
+    [GeneratedRegex(@"^[A-Za-z0-9 ._\-]{1,20}\z")] private static partial Regex UserNameRx();
+    [GeneratedRegex(@"^S-1-[0-9]{1,2}(-[0-9]{1,10}){1,14}\z")] private static partial Regex SidRx();
+    [GeneratedRegex(@"^[A-Za-z0-9\\&_.#{}\- ]{3,400}\z")] private static partial Regex DeviceIdRx();
+    [GeneratedRegex(@"^(?=.{1,253}\z)(?!-)[A-Za-z0-9\-]{1,63}(?<!-)(\.(?!-)[A-Za-z0-9\-]{1,63}(?<!-))*\z")] private static partial Regex HostNameRx();
 
     /// <summary>Contrôles communs à tout sac de paramètres (taille, noms, caractères de contrôle).</summary>
     public static void ParameterBag(IReadOnlyDictionary<string, string> p)
@@ -165,10 +166,20 @@ public static class PinHasher
     public static bool Verify(string pin, string? stored)
     {
         if (string.IsNullOrEmpty(stored)) return false;
+        // Le hachage vient d'un fichier modifiable (settings.json) : format strict, jamais d'exception ni de calcul démesuré.
         var parts = stored.Split(':');
-        if (parts.Length != 4 || parts[0] != "v1" || !int.TryParse(parts[1], out var it)) return false;
-        var salt = Convert.FromBase64String(parts[2]);
-        var expected = Convert.FromBase64String(parts[3]);
+        if (parts.Length != 4 || parts[0] != "v1"
+            || !int.TryParse(parts[1], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var it)
+            || it is < 100_000 or > 5_000_000)
+            return false;
+        byte[] salt, expected;
+        try
+        {
+            salt = Convert.FromBase64String(parts[2]);
+            expected = Convert.FromBase64String(parts[3]);
+        }
+        catch (FormatException) { return false; }
+        if (salt.Length < 16 || expected.Length != 32) return false;
         var actual = Rfc2898DeriveBytes.Pbkdf2(Encoding.UTF8.GetBytes(pin), salt, it, HashAlgorithmName.SHA256, expected.Length);
         return CryptographicOperations.FixedTimeEquals(actual, expected);
     }

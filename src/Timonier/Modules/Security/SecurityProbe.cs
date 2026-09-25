@@ -304,13 +304,13 @@ internal static partial class SecurityProbe
 
     // ====================================================================== UAC
 
-    public static bool UacStricterThanDefault()
-    {
-        var lua = RegistryAccess.ReadDword(RegHive.LocalMachine, SecurityTweaks.PolSystem, "EnableLUA") ?? 1;
-        var cpba = RegistryAccess.ReadDword(RegHive.LocalMachine, SecurityTweaks.PolSystem, "ConsentPromptBehaviorAdmin") ?? 5;
-        var secure = RegistryAccess.ReadDword(RegHive.LocalMachine, SecurityTweaks.PolSystem, "PromptOnSecureDesktop") ?? 1;
-        return lua == 1 && secure == 1 && cpba is 1 or 2;
-    }
+    /// <summary>
+    /// L'invite administrateur est déjà plus stricte que le niveau recommandé (1 = identifiants, 2 = toujours m'avertir) :
+    /// « Rétablir le niveau recommandé » (ConsentPromptBehaviorAdmin = 5) l'abaisserait, quel que soit l'état d'EnableLUA
+    /// ou du Bureau sécurisé.
+    /// </summary>
+    public static bool UacStricterThanDefault() =>
+        RegistryAccess.ReadDword(RegHive.LocalMachine, SecurityTweaks.PolSystem, "ConsentPromptBehaviorAdmin") is 1 or 2;
 
     private static SecItem Uac(SystemProfile profile)
     {
@@ -318,7 +318,14 @@ internal static partial class SecurityProbe
         var lua = RegistryAccess.ReadDword(RegHive.LocalMachine, SecurityTweaks.PolSystem, "EnableLUA") ?? 1;
         var cpba = RegistryAccess.ReadDword(RegHive.LocalMachine, SecurityTweaks.PolSystem, "ConsentPromptBehaviorAdmin") ?? 5;
         var secure = RegistryAccess.ReadDword(RegHive.LocalMachine, SecurityTweaks.PolSystem, "PromptOnSecureDesktop") ?? 1;
-        var fix = new SecFix("Rétablir") { TweakId = "security.uac.recommended", Option = TweakDefinition.Run };
+        // Ne jamais proposer une correction qui abaisse l'invite : « Toujours m'avertir » (2) est conservé par l'action
+        // « niveau maximal » ; « identifiants » (1) n'a pas d'équivalent, sauf si l'UAC est entièrement désactivé.
+        SecFix? fix = cpba switch
+        {
+            2 => new SecFix("Rétablir") { TweakId = "security.uac.always", Option = TweakDefinition.Run },
+            1 => lua == 0 ? new SecFix("Rétablir") { TweakId = "security.uac.always", Option = TweakDefinition.Run } : null,
+            _ => new SecFix("Rétablir") { TweakId = "security.uac.recommended", Option = TweakDefinition.Run },
+        };
         var account = profile.IsUserAdmin ? "" : " Vous utilisez un compte standard : c'est la configuration la plus sûre.";
 
         if (lua == 0)
@@ -332,7 +339,7 @@ internal static partial class SecurityProbe
         if (secure == 0)
             return new SecItem("uac", SectionEssential, title, glyph, SecLevel.Warning, "Invites hors du Bureau sécurisé",
                 "Les invites UAC s'affichent sur le bureau normal, où un autre programme peut les imiter ou cliquer dessus à votre place.", 15)
-            { Fix = UacStricterThanDefault() ? null : fix };
+            { Fix = fix };
 
         var level = cpba switch
         {

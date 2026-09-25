@@ -133,14 +133,20 @@ internal sealed class InstalledView : StackPanel
     private async Task UninstallAsync(InstalledProgram p)
     {
         if (_ctx.Activity.IsBusy) return;
-        var message = $"« {p.DisplayName} »{(p.Publisher is { Length: > 0 } pub ? $" ({pub})" : "")} sera désinstallé par winget, en mode silencieux quand " +
-                      "l'éditeur le permet ; sinon son assistant de désinstallation s'affiche.\n\nVos documents ne sont pas touchés, mais les réglages " +
-                      "du programme peuvent être perdus. Une confirmation administrateur sera demandée.";
+        var who = p.Publisher is { Length: > 0 } pub ? $"« {p.DisplayName} » ({pub})" : $"« {p.DisplayName} »";
+        // Programme installé pour ce compte seulement : désinstallé sans élévation (son désinstalleur ne doit jamais
+        // s'exécuter avec les droits administrateur, voir WingetUninstallAction).
+        var message = p.PerUser
+            ? $"{who} sera désinstallé par winget, en mode silencieux quand l'éditeur le permet ; sinon son assistant de désinstallation s'affiche.\n\n" +
+              "Vos documents ne sont pas touchés, mais les réglages du programme peuvent être perdus."
+            : $"{who} sera désinstallé par winget, en mode silencieux quand l'éditeur le permet ; sinon son assistant de désinstallation s'affiche.\n\n" +
+              "Vos documents ne sont pas touchés, mais les réglages du programme peuvent être perdus. Une confirmation administrateur sera demandée.";
         if (!await AppHost.Dialogs.ConfirmAsync("Désinstaller ce programme ?", message, "Désinstaller", "Annuler", danger: true)) return;
         var parameters = p.ProductCode is { } code
             ? new Dictionary<string, string> { ["productCode"] = code, ["name"] = p.DisplayName }
             : new Dictionary<string, string> { ["name"] = p.DisplayName };
-        var outcome = await _ctx.Activity.RunAsync($"Désinstallation de {p.DisplayName}", WingetUninstallAction.ActionId, parameters);
+        var actionId = p.PerUser ? WingetUninstallUserAction.ActionId : WingetUninstallAction.ActionId;
+        var outcome = await _ctx.Activity.RunAsync($"Désinstallation de {p.DisplayName}", actionId, parameters);
         if (outcome is { Success: true }) _ctx.NotifyInstalledChanged();
     }
 

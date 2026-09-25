@@ -235,6 +235,8 @@ internal sealed class GuidedSession : IDisposable
             if (replacement != 0) _target = replacement;
             else if (_overlay is null) { ShowOverlay(OverlayMode.TargetClosed); return; }
         }
+        // Explorateur redémarré pendant la session : sa nouvelle barre des tâches est visible, on la masque à nouveau.
+        if (_options.HideTaskbar) TaskbarGuard.Hide();
         // Filet de sécurité : un changement de premier plan a pu échapper aux événements.
         if (_options.KeepForeground && !_refocus.IsEnabled && !IsAllowedForeground(GuidedNative.GetForegroundWindow())) ScheduleRefocus();
     }

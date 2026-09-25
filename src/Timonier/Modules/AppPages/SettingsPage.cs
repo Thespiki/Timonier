@@ -395,19 +395,8 @@ public sealed class SettingsPage : UserControl, INavigationAware
             if (!await AppHost.Dialogs.ShowAsync("Réinitialiser Timonier ?", content, "Réinitialiser", "Annuler", danger: true)) return;
             if (!string.IsNullOrEmpty(S.AppPinHash) && !await VerifyCurrentPinAsync("Réinitialiser Timonier")) return;
 
-            var defaults = new AppSettings();
-            SettingsStore.Update(s =>
-            {
-                s.Theme = defaults.Theme;
-                s.AdvancedMode = defaults.AdvancedMode;
-                s.BrokerIdleMinutes = defaults.BrokerIdleMinutes;
-                s.AllowBackground = defaults.AllowBackground;
-                s.StartWithWindows = false;
-                s.AppPinHash = null;
-                s.ConfirmBeforeAdminActions = defaults.ConfirmBeforeAdminActions;
-                s.ReduceAnimations = defaults.ReduceAnimations;
-            });
-            AppHost.Broker.IdleMinutes = defaults.BrokerIdleMinutes;
+            SettingsStore.Reset();
+            AppHost.Broker.IdleMinutes = S.BrokerIdleMinutes;
             ThemeManager.Apply();
 
             var errors = await Task.Run(() =>

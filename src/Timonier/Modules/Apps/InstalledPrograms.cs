@@ -49,6 +49,39 @@ public static partial class InstalledPrograms
             .OrderBy(p => p.DisplayName, StringComparer.CurrentCultureIgnoreCase)];
     }
 
+    /// <summary>
+    /// Vrai si la ruche de l'utilisateur (HKCU, modifiable SANS droits administrateur) contient une entrée de désinstallation
+    /// portant ce nom affiché ou ce code produit, filtres compris (y compris WOW6432Node). En cas d'erreur de lecture : vrai
+    /// (échec fermé). Sert à refuser une désinstallation élevée qui pourrait viser une entrée créée par l'utilisateur.
+    /// </summary>
+    public static bool UserHiveHasEntry(string? userSid, string? displayName, string? productCode)
+    {
+        try
+        {
+            using var cu = userSid is null
+                ? RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64)
+                : RegistryAccess.OpenRoot(RegHive.CurrentUser, userSid, writable: false);
+            foreach (var path in new[] { UninstallKey, @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall" })
+            {
+                using var uninstall = cu.OpenSubKey(path);
+                if (uninstall is null) continue;
+                foreach (var name in uninstall.GetSubKeyNames())
+                {
+                    if (productCode is not null && string.Equals(name, productCode, StringComparison.OrdinalIgnoreCase)) return true;
+                    if (displayName is null) continue;
+                    using var k = uninstall.OpenSubKey(name);
+                    if (k?.GetValue("DisplayName") is string d && string.Equals(d.Trim(), displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                }
+            }
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Log.Warn("Apps", "vérification HKCU\\Uninstall : " + ex.Message);
+            return true;
+        }
+    }
+
     private static void ReadHive(RegistryKey root, bool perUser, bool is32, List<InstalledProgram> result, bool dispose = true)
     {
         try

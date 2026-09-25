@@ -673,7 +673,8 @@ internal static class CustomizationTweaks
 
         yield return Tweak.Toggle("custom.logon.background", "Image de fond sur l'écran de connexion",
                 "Affiche l'image de l'écran de verrouillage derrière la zone de connexion. Désactivé, un fond de couleur unie " +
-                "est utilisé. Stratégie Windows : s'applique à tous les utilisateurs.")
+                "est utilisé. S'applique à tous les utilisateurs. Valeur de stratégie absente des modèles d'administration de " +
+                "Microsoft mais très répandue : une mise à jour de Windows pourrait la rendre inopérante.")
             .In(C, GroupLogon)
             .Keywords("ecran de connexion", "image de fond", "sign-in screen", "logon background", "arriere plan connexion")
             .WhenOn(Reg.LmDel(SystemPolicy, "DisableLogonBackgroundImage"))
@@ -712,7 +713,9 @@ internal static class CustomizationTweaks
             .Keywords("son de demarrage", "startup sound", "jingle", "son windows", "musique demarrage")
             .WhenOn(Reg.LmDword(BootAnimation, "DisableStartupSound", 0))
             .WhenOff(Reg.LmDword(BootAnimation, "DisableStartupSound", 1))
-            .Detect(() => RegistryAccess.ReadDword(RegHive.LocalMachine, BootAnimation, "DisableStartupSound") switch
+            // La stratégie « Désactiver le son de démarrage de Windows » (Logon.admx), si elle est définie, l'emporte.
+            .Detect(() => (RegistryAccess.ReadDword(RegHive.LocalMachine, SystemPoliciesLegacy, "DisableStartupSound")
+                           ?? RegistryAccess.ReadDword(RegHive.LocalMachine, BootAnimation, "DisableStartupSound")) switch
             {
                 1 => Off,
                 0 => On,

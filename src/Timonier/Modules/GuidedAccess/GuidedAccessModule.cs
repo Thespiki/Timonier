@@ -1,5 +1,6 @@
 using Timonier.Core.Catalog;
 using Timonier.Core.Search;
+using Timonier.UI.Services;
 
 namespace Timonier.Modules.GuidedAccess;
 
@@ -30,12 +31,17 @@ public sealed class GuidedAccessModule : IModule
             Order = 60,
         });
 
-        // Lecture seule (préférences) ; si une session a été interrompue brutalement, réaffiche la barre des tâches.
-        r.AddHealthCheck(HealthCheck.Sync("guided.state", "Accès guidé", Glyph, PageId, () =>
+        // Session interrompue brutalement (Timonier arrêté de force) : la barre des tâches est réaffichée dès le démarrage
+        // de l'interface, quelle que soit la page ouverte (ou en arrière-plan).
+        r.AddUiStartupTask("guided.taskbar-recovery", () =>
         {
             if (TaskbarGuard.RecoverIfNeeded())
-                return new HealthResult(HealthStatus.Warning, "Barre des tâches réaffichée",
-                    "Une session d'accès guidé avait été interrompue brutalement (Timonier arrêté de force) : la barre des tâches masquée a été restaurée.");
+                AppHost.Toasts?.Show("La barre des tâches, restée masquée après une session d'accès guidé interrompue, a été réaffichée.", ToastKind.Info);
+        });
+
+        // Lecture seule (préférences).
+        r.AddHealthCheck(HealthCheck.Sync("guided.state", "Accès guidé", Glyph, PageId, () =>
+        {
             return GuidedPin.IsSet
                 ? new HealthResult(HealthStatus.Good, "Code de sortie défini", "L'accès guidé est prêt à l'emploi.")
                 : new HealthResult(HealthStatus.Info, "Aucun code de sortie", "Définissez un code pour pouvoir démarrer l'accès guidé.");

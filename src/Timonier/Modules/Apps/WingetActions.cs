@@ -161,9 +161,13 @@ public sealed class WingetUpgradeAllAction : IActionHandler
 }
 
 /// <summary>
-/// Désinstalle un programme de bureau avec winget, désigné par son nom exact (« name ») ou son code produit MSI
-/// (« productCode »). Le programme doit figurer dans la liste actuelle des programmes installés ; la chaîne de
-/// désinstallation brute du registre n'est jamais exécutée par Timonier.
+/// Désinstalle un programme de bureau inscrit POUR TOUS LES UTILISATEURS (HKLM) avec winget, désigné par son nom exact
+/// (« name ») ou son code produit MSI (« productCode »). Le programme doit figurer dans la liste actuelle des programmes
+/// installés ; la chaîne de désinstallation brute du registre n'est jamais exécutée par Timonier.
+/// <para>Sécurité : les entrées de HKCU sont modifiables sans droits. Exécuter leur désinstalleur dans le broker élevé
+/// permettrait à n'importe quel programme de l'utilisateur d'obtenir les droits administrateur : l'action élevée est donc
+/// limitée aux entrées machine (winget « --scope machine ») et refuse un nom ou code produit également présent dans HKCU.
+/// Les programmes installés pour l'utilisateur passent par <see cref="WingetUninstallUserAction"/>, sans élévation.</para>
 /// </summary>
 public sealed class WingetUninstallAction : IActionHandler
 {
@@ -175,15 +179,46 @@ public sealed class WingetUninstallAction : IActionHandler
 
     public string DescribeForConfirmation(IReadOnlyDictionary<string, string> p)
     {
-        var (name, code) = Read(p);
+        var (name, code) = WingetUninstall.Read(p);
         return code is null
             ? $"Désinstaller « {name} » avec winget ?\n\nLe programme et ses fichiers seront supprimés ; l'assistant de l'éditeur peut s'afficher."
             : $"Désinstaller le programme MSI {code}{(name is null ? "" : $" (« {name} »)")} avec winget ?";
     }
 
-    public void ValidateParameters(IReadOnlyDictionary<string, string> p) => Read(p);
+    public void ValidateParameters(IReadOnlyDictionary<string, string> p) => WingetUninstall.Read(p);
 
-    private static (string? Name, string? ProductCode) Read(IReadOnlyDictionary<string, string> p)
+    public Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
+    {
+        ValidateParameters(p);
+        return WingetUninstall.RunAsync(ctx, p, perUser: false);
+    }
+}
+
+/// <summary>
+/// Désinstalle un programme installé pour l'utilisateur courant seulement (HKCU), SANS élévation : son désinstalleur
+/// s'exécute avec les droits de l'utilisateur, comme depuis les Paramètres de Windows. Mêmes paramètres que
+/// <see cref="WingetUninstallAction"/>.
+/// </summary>
+public sealed class WingetUninstallUserAction : IActionHandler
+{
+    public const string ActionId = "apps.winget.uninstall.user";
+    public string Id => ActionId;
+    public string Title => "Désinstaller un programme de votre compte (winget)";
+    public bool RequiresAdmin => false;
+
+    public void ValidateParameters(IReadOnlyDictionary<string, string> p) => WingetUninstall.Read(p);
+
+    public Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
+    {
+        ValidateParameters(p);
+        return WingetUninstall.RunAsync(ctx, p, perUser: true);
+    }
+}
+
+/// <summary>Validation et exécution communes aux deux actions de désinstallation.</summary>
+internal static class WingetUninstall
+{
+    public static (string? Name, string? ProductCode) Read(IReadOnlyDictionary<string, string> p)
     {
         var code = Validate.Optional(p, "productCode", 38);
         var name = Validate.Optional(p, "name", 260);
@@ -194,24 +229,26 @@ public sealed class WingetUninstallAction : IActionHandler
         return (name, code?.ToUpperInvariant());
     }
 
-    public async Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
+    public static async Task<ActionResult> RunAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p, bool perUser)
     {
-        ValidateParameters(p);
         var (name, code) = Read(p);
 
-        // Le programme doit exister MAINTENANT dans la liste des programmes installés.
+        // Le programme doit exister MAINTENANT dans la liste des programmes installés, dans la bonne portée.
         var installed = await Task.Run(() => InstalledPrograms.Read(ctx.UserSid)).ConfigureAwait(false);
         var match = code is not null
-            ? installed.FirstOrDefault(x => string.Equals(x.ProductCode, code, StringComparison.OrdinalIgnoreCase))
-            : installed.FirstOrDefault(x => string.Equals(x.DisplayName, name, StringComparison.Ordinal));
+            ? installed.FirstOrDefault(x => x.PerUser == perUser && string.Equals(x.ProductCode, code, StringComparison.OrdinalIgnoreCase))
+            : installed.FirstOrDefault(x => x.PerUser == perUser && string.Equals(x.DisplayName, name, StringComparison.Ordinal));
         if (match is null) return ActionResult.Fail("Ce programme ne figure plus dans la liste des programmes installés.");
         if (match.NoRemove) return ActionResult.Fail($"« {match.DisplayName} » ne peut pas être désinstallé (protégé par son éditeur).");
+        if (!perUser && await Task.Run(() => InstalledPrograms.UserHiveHasEntry(ctx.UserSid, match.DisplayName, code)).ConfigureAwait(false))
+            return ActionResult.Fail($"Un programme « {match.DisplayName} » est aussi inscrit pour votre compte seulement : par sécurité, Timonier ne le désinstalle pas avec les droits administrateur. Utilisez les Paramètres de Windows (Applications installées).");
         if (!Winget.IsAvailable) return ActionResult.Fail("winget est introuvable sur ce PC.");
 
         ctx.Progress?.Report($"Désinstallation de {match.DisplayName}…");
+        var scope = perUser ? "user" : "machine";
         string[] args = code is not null
-            ? ["uninstall", "--product-code", code, "--silent", "--accept-source-agreements", "--disable-interactivity"]
-            : ["uninstall", "--name", match.DisplayName, "--exact", "--silent", "--accept-source-agreements", "--disable-interactivity"];
+            ? ["uninstall", "--product-code", code, "--scope", scope, "--silent", "--accept-source-agreements", "--disable-interactivity"]
+            : ["uninstall", "--name", match.DisplayName, "--exact", "--scope", scope, "--silent", "--accept-source-agreements", "--disable-interactivity"];
         var r = await Winget.RunAsync(args, TimeSpan.FromMinutes(20), ctx.Progress, ctx.Cancellation).ConfigureAwait(false);
         var meaning = Winget.Describe(r.ExitCode, r.TimedOut);
         Log.Info("Apps", $"winget uninstall → {r.ExitCode} ({meaning})");

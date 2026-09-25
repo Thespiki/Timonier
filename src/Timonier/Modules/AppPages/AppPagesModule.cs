@@ -28,13 +28,13 @@ public sealed class AppPagesModule : IModule
         r.AddPage(new PageInfo(TransparencyPageId, "Transparence", TransparencyGlyph, NavSection.App, 20, () => new TransparencyPage())
         {
             Description = "Ce que Timonier peut faire, comment il le fait, ce qu'il ne fait pas et les données qu'il conserve.",
-            Keywords = ["transparence", "sécurité de pc pilot", "limites", "catalogue", "opérations", "registre modifié",
-                        "données stockées", "confidentialité de pc pilot", "télémétrie", "arrière-plan"],
+            Keywords = ["transparence", "sécurité de timonier", "limites", "catalogue", "opérations", "registre modifié",
+                        "données stockées", "confidentialité de timonier", "télémétrie", "arrière-plan"],
         });
         r.AddPage(new PageInfo(SettingsPageId, "Paramètres de Timonier", SettingsGlyph, NavSection.App, 30, () => new SettingsPage())
         {
             Description = "Thème, code PIN, session administrateur, démarrage avec Windows, réinitialisation.",
-            Keywords = ["paramètres", "préférences", "options", "réglages de pc pilot", "thème", "code pin", "mode avancé",
+            Keywords = ["paramètres", "préférences", "options", "réglages de timonier", "thème", "code pin", "mode avancé",
                         "démarrer avec windows", "à propos", "version"],
         });
 
@@ -63,8 +63,8 @@ public sealed class AppPagesModule : IModule
 
         Synonyms.AddGroup("annuler", "undo", "revenir en arriere", "defaire", "restaurer", "retablir");
         Synonyms.AddGroup("journal", "historique", "log", "history");
-        Synonyms.AddGroup("code pin", "mot de passe de pc pilot", "verrouiller pc pilot", "pin");
-        Synonyms.AddGroup("demarrer avec windows", "lancer au demarrage", "demarrage automatique de pc pilot");
+        Synonyms.AddGroup("code pin", "mot de passe de timonier", "verrouiller timonier", "pin");
+        Synonyms.AddGroup("demarrer avec windows", "lancer au demarrage", "demarrage automatique de timonier");
     }
 
     private static void RegisterSearchEntries(ModuleRegistry r)
@@ -85,7 +85,7 @@ public sealed class AppPagesModule : IModule
             "effacer historique", "supprimer journal", "vider historique");
 
         Add("transparency.catalog", "Tout ce que Timonier peut modifier", "Transparence › liste complète des réglages et opérations",
-            TransparencyGlyph, TransparencyPageId, "tab:tweaks", "catalogue", "operations", "cles de registre", "que modifie pc pilot");
+            TransparencyGlyph, TransparencyPageId, "tab:tweaks", "catalogue", "operations", "cles de registre", "que modifie timonier");
         Add("transparency.actions", "Actions de Timonier", "Transparence › actions paramétrées, admin et confirmations", TransparencyGlyph,
             TransparencyPageId, "tab:actions", "actions", "liste des actions", "confirmation elevee");
         Add("transparency.unavailable", "Fonctions indisponibles sur ce PC", "Transparence › regroupées par raison", "",
@@ -95,14 +95,14 @@ public sealed class AppPagesModule : IModule
         Add("transparency.security", "Sécurité de Timonier", "Transparence › architecture, élévation, vérifications", "",
             TransparencyPageId, "tab:security", "securite", "broker", "uac", "elevation", "canal nomme", "pipe");
         Add("transparency.data", "Données stockées par Timonier", "Transparence › fichiers et registre utilisés", "",
-            TransparencyPageId, "tab:security", "donnees", "fichiers", "stockage", "localappdata", "telemetrie", "vie privee de pc pilot");
+            TransparencyPageId, "tab:security", "donnees", "fichiers", "stockage", "localappdata", "telemetrie", "vie privee de timonier");
         Add("transparency.background", "Timonier en arrière-plan", "Transparence › pourquoi l'application reste active", "",
             TransparencyPageId, "tab:security", "arriere-plan", "zone de notification", "tray", "reste ouvert");
 
         Add("settings.theme", "Thème de Timonier", "Paramètres › Système, clair ou sombre", "", SettingsPageId, "section:appearance",
-            "theme", "mode sombre", "dark mode", "clair", "apparence de pc pilot");
+            "theme", "mode sombre", "dark mode", "clair", "apparence de timonier");
         Add("settings.pin", "Code PIN de Timonier", "Paramètres › protéger l'ouverture de l'application", "", SettingsPageId,
-            "section:security", "code pin", "mot de passe", "verrouiller", "proteger pc pilot", "pin");
+            "section:security", "code pin", "mot de passe", "verrouiller", "proteger timonier", "pin");
         Add("settings.startup", "Démarrer Timonier avec Windows", "Paramètres › lancement à l'ouverture de session", "", SettingsPageId,
             "section:behavior", "demarrer avec windows", "demarrage automatique", "lancer au demarrage", "autostart");
         Add("settings.admin", "Session administrateur", "Paramètres › délai de fermeture automatique, fermer maintenant", "",

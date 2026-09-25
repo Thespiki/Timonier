@@ -72,14 +72,49 @@ public static class SettingsStore
         Save();
     }
 
+    /// <summary>
+    /// Remet les préférences de l'application à leur valeur par défaut (même instance : les références déjà obtenues
+    /// restent valides). Sont conservés : la langue, les données des modules (<see cref="AppSettings.ModuleData"/> :
+    /// de quoi retirer un mode kiosque, un fond d'écran précédent…), le code de l'accès guidé, l'assistant de premier
+    /// lancement et la dernière page ouverte. Le démarrage avec Windows (registre) reste à retirer par l'appelant.
+    /// </summary>
+    public static void Reset()
+    {
+        var d = new AppSettings();
+        lock (Gate)
+        {
+            var s = Current;
+            s.Theme = d.Theme;
+            s.AdvancedMode = d.AdvancedMode;
+            s.BrokerIdleMinutes = d.BrokerIdleMinutes;
+            s.AllowBackground = d.AllowBackground;
+            s.StartWithWindows = d.StartWithWindows;
+            s.AppPinHash = d.AppPinHash;
+            s.ConfirmBeforeAdminActions = d.ConfirmBeforeAdminActions;
+            s.ReduceAnimations = d.ReduceAnimations;
+        }
+        Save();
+    }
+
     private static AppSettings Load()
     {
+        AppSettings? loaded = null;
         try
         {
             if (File.Exists(FilePath))
-                return JsonSerializer.Deserialize(File.ReadAllText(FilePath), CoreJson.Default.AppSettings) ?? new AppSettings();
+                loaded = JsonSerializer.Deserialize(File.ReadAllText(FilePath), CoreJson.Default.AppSettings);
         }
         catch (Exception ex) { Log.Warn("Settings", "fichier illisible, valeurs par défaut : " + ex.Message); }
-        return new AppSettings();
+        return Normalize(loaded ?? new AppSettings());
+    }
+
+    /// <summary>Le fichier est modifiable à la main : valeurs nulles ou hors bornes ramenées à des valeurs sûres.</summary>
+    private static AppSettings Normalize(AppSettings s)
+    {
+        s.Language ??= "auto";
+        s.ModuleData ??= [];
+        s.BrokerIdleMinutes = Math.Clamp(s.BrokerIdleMinutes, 1, 60);
+        if (!Enum.IsDefined(s.Theme)) s.Theme = ThemePreference.System;
+        return s;
     }
 }

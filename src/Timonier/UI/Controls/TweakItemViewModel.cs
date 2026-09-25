@@ -130,20 +130,27 @@ public sealed partial class TweakItemViewModel : ObservableObject
         if (Definition.RecommendationFor(AppHost.Profile) is { } key) await ApplyAsync(key);
     }
 
+    /// <summary>
+    /// Confirmation exigée avant d'appliquer un réglage à risque, avec avertissement ou non annulable. Partagée par
+    /// toutes les façons d'appliquer un réglage isolé (carte, bouton direct de la recherche). Vrai = on peut appliquer.
+    /// </summary>
+    public static Task<bool> ConfirmIfNeededAsync(TweakDefinition definition, TweakOption option)
+    {
+        if (definition.Risk == RiskLevel.Safe && definition.Warning is null && definition.IsReversible) return Task.FromResult(true);
+        var text = $"{definition.Description}\n\n{(definition.Warning is null ? "" : "⚠ " + definition.Warning + "\n\n")}Choix : {option.Label}";
+        return AppHost.Dialogs.ConfirmAsync(definition.Title, text, "Appliquer", "Annuler", definition.Risk == RiskLevel.Advanced);
+    }
+
     public async Task ApplyAsync(string optionKey)
     {
         if (IsBusy) return;
         var option = Definition.GetOption(optionKey);
         if (option is null) return;
 
-        if (Definition.Risk != RiskLevel.Safe || Definition.Warning is not null || !Definition.IsReversible)
+        if (!await ConfirmIfNeededAsync(Definition, option))
         {
-            var text = $"{Definition.Description}\n\n{(Definition.Warning is null ? "" : "⚠ " + Definition.Warning + "\n\n")}Choix : {option.Label}";
-            if (!await AppHost.Dialogs.ConfirmAsync(Definition.Title, text, "Appliquer", "Annuler", Definition.Risk == RiskLevel.Advanced))
-            {
-                await RefreshAsync();
-                return;
-            }
+            await RefreshAsync();
+            return;
         }
 
         IsBusy = true;

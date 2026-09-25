@@ -430,8 +430,11 @@ public sealed class JournalPage : UserControl, INavigationAware
     private async Task UndoManyAsync(bool session)
     {
         if (_busy) return;
+        // Le journal administrateur est commun à tous les comptes : le broker refuse d'annuler l'entrée d'un autre compte.
+        var mySid = AppHost.Profile.UserSid;
         var items = _all
             .Where(e => e.CanUndo && (session ? e.At.LocalDateTime >= _sessionStart : e.At.LocalDateTime.Date == DateTime.Today))
+            .Where(e => !e.Machine || e.UserSid is null || string.Equals(e.UserSid, mySid, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(e => e.At)
             .ToList();
         var scope = session ? "depuis l'ouverture de Timonier" : "aujourd'hui";
@@ -553,9 +556,10 @@ public sealed class JournalPage : UserControl, INavigationAware
         static string Esc(string? s)
         {
             s ??= "";
-            // Neutralise les formules (injection CSV dans un tableur).
-            if (s.Length > 0 && s[0] is '=' or '+' or '-' or '@') s = "'" + s;
-            return s.IndexOfAny([';', '"', '\n', '\r']) >= 0 ? "\"" + s.Replace("\"", "\"\"") + "\"" : s;
+            // Neutralise les formules (injection CSV dans un tableur). Le titre et la note viennent de journal.json,
+            // modifiable sans élévation : on couvre aussi tabulation et retour chariot en tête (règles OWASP).
+            if (s.Length > 0 && s[0] is '=' or '+' or '-' or '@' or '\t' or '\r' or '\n') s = "'" + s;
+            return s.IndexOfAny([';', '"', '\n', '\r', '\t']) >= 0 ? "\"" + s.Replace("\"", "\"\"") + "\"" : s;
         }
         var sb = new StringBuilder();
         sb.AppendLine("Date;Heure;Titre;Identifiant;Modification;Portée;Annulable;Annulé le;Note");

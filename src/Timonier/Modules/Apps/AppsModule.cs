@@ -21,6 +21,7 @@ public sealed class AppsModule : IModule
         r.AddAction(new WingetUpgradeAction());
         r.AddAction(new WingetUpgradeAllAction());
         r.AddAction(new WingetUninstallAction());
+        r.AddAction(new WingetUninstallUserAction());
         r.AddAction(new AppxRemoveAction());
         r.AddAction(new AppxDeprovisionAction());
 

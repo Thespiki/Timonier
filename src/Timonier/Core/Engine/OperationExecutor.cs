@@ -126,6 +126,8 @@ public static class OperationExecutor
             case RegKeyUndo k:
             {
                 using var root = RegistryAccess.OpenRoot(k.Hive, ctx.UserSid);
+                // Clé absente au moment de l'application : l'annulation la supprime (contrat utilisé par les modules :
+                // CuDelKey puis CuDword… sur la même clé → l'annulation retire toute la clé créée ensuite).
                 if (k.Existed && k.Tree is not null)
                 {
                     using var key = root.CreateSubKey(k.Key, true);
@@ -152,15 +154,20 @@ public static class OperationExecutor
 
     private static RegTreeSnapshot SnapshotTree(RegistryKey key, int depth)
     {
+        // Sauvegarde complète ou refus : la clé est supprimée juste après, une copie tronquée perdrait des données.
         if (depth > 8) throw new InvalidOperationException("Arborescence de registre trop profonde pour être sauvegardée.");
+        var valueNames = key.GetValueNames();
+        var subKeyNames = key.GetSubKeyNames();
+        if (valueNames.Length > 2000 || subKeyNames.Length > 500)
+            throw new InvalidOperationException("Arborescence de registre trop volumineuse pour être sauvegardée : suppression annulée.");
         var values = new Dictionary<string, RegValueSnapshot>();
-        foreach (var name in key.GetValueNames().Take(2000))
+        foreach (var name in valueNames)
         {
             var v = key.GetValue(name, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
             if (RegValueSnapshot.From(v, key.GetValueKind(name)) is { } snap) values[name] = snap;
         }
         var subs = new Dictionary<string, RegTreeSnapshot>();
-        foreach (var sub in key.GetSubKeyNames().Take(500))
+        foreach (var sub in subKeyNames)
         {
             using var sk = key.OpenSubKey(sub, false);
             if (sk is not null) subs[sub] = SnapshotTree(sk, depth + 1);

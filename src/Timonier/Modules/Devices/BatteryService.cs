@@ -79,6 +79,8 @@ public static partial class BatteryService
         var file = Path.Combine(CacheDir, "battery-report.xml");
         try
         {
+            // Jamais d'analyse d'un ancien rapport : s'il n'est pas régénéré, on affiche « indisponible ».
+            File.Delete(file);
             var r = await ProcessRunner.RunAsync(SystemTool.PowerCfg, ["/batteryreport", "/xml", "/output", file],
                 new RunOptions { Timeout = TimeSpan.FromSeconds(60) }, ct).ConfigureAwait(false);
             if (!r.Success || !File.Exists(file)) return null;
@@ -124,6 +126,7 @@ public static partial class BatteryService
         {
             Directory.CreateDirectory(CacheDir);
             var file = Path.Combine(CacheDir, "battery-report.html");
+            File.Delete(file);
             var r = await ProcessRunner.RunAsync(SystemTool.PowerCfg, ["/batteryreport", "/output", file],
                 new RunOptions { Timeout = TimeSpan.FromSeconds(60) }).ConfigureAwait(true);
             if (!r.Success || !File.Exists(file)) return (false, "Windows n'a pas pu générer le rapport de batterie.");

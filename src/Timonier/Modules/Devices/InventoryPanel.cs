@@ -481,7 +481,8 @@ internal sealed class InventoryPanel : UserControl
 
     private static void OpenDeviceManager()
     {
-        try { ProcessRunner.Launch(SystemTool.Mmc, "devmgmt.msc"); }
+        // Chemin absolu : un « devmgmt.msc » relatif pourrait être cherché dans le dossier courant.
+        try { ProcessRunner.Launch(SystemTool.Mmc, Path.Combine(Environment.SystemDirectory, "devmgmt.msc")); }
         catch (Exception ex)
         {
             Log.Warn("Devices", "Gestionnaire de périphériques : " + ex.Message);

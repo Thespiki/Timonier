@@ -29,7 +29,11 @@ public static partial class BrokerServer
 
     public static int Run(string[] args)
     {
-        Log.UseFile("broker.log");
+        // Élevé : journal dans un dossier réservé aux administrateurs (jamais dans le profil, modifiable sans élévation).
+        bool elevated;
+        using (var me = WindowsIdentity.GetCurrent()) elevated = new WindowsPrincipal(me).IsInRole(WindowsBuiltInRole.Administrator);
+        if (elevated) Log.UseProtectedFile("broker.log");
+        else Log.UseFile("broker.log");
         try
         {
             return RunAsync(args).GetAwaiter().GetResult();
@@ -50,6 +54,12 @@ public static partial class BrokerServer
         {
             Log.Warn("Broker", "arguments invalides");
             return 2;
+        }
+        // Défense en profondeur (l'interface vérifie déjà avant l'UAC) : pas de session si du code a pu être injecté.
+        if (EnvironmentGuard.Find() is { Count: > 0 } injected)
+        {
+            Log.Warn("Broker", "variables d'environnement d'injection présentes, arrêt : " + string.Join(", ", injected));
+            return 5;
         }
         // Confirmations et messages du broker dans la langue de l'interface qui l'a lancé.
         Core.Localization.Loc.Initialize(args.Length == 4 ? args[3] : null);
@@ -107,8 +117,13 @@ public static partial class BrokerServer
     private sealed class Session(NamedPipeServerStream pipe, ModuleRegistry registry, string clientSid, TimeSpan idle)
     {
         private readonly SemaphoreSlim _writeLock = new(1, 1);
+        // Une seule opération administrateur à la fois : aucune action ne peut voir l'état modifié par une autre entre sa
+        // vérification et son exécution, et les privilèges du jeton (SeBackup/SeRestore) ne sont jamais partagés.
+        // La lecture du canal continue pendant ce temps, ce qui permet d'annuler l'opération en cours ou en attente.
+        private readonly SemaphoreSlim _execGate = new(1, 1);
         private readonly ConcurrentDictionary<int, CancellationTokenSource> _running = new();
         private readonly CancellationTokenSource _stop = new();
+        private readonly Lock _undoGate = new();
         private DateTime _lastActivity = DateTime.UtcNow;
 
         public async Task RunAsync(Process parent)
@@ -174,8 +189,14 @@ public static partial class BrokerServer
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(_stop.Token);
             _running[req.Id] = cts;
             BrokerResponse response;
+            var entered = false;
             try
             {
+                if (req.Op != "hello")
+                {
+                    await _execGate.WaitAsync(cts.Token).ConfigureAwait(false);
+                    entered = true;
+                }
                 var progress = new FrameProgress(this, req.Id);
                 var ctx = new ExecContext { Elevated = true, UserSid = clientSid, Progress = progress, Cancellation = cts.Token };
                 response = req.Op switch
@@ -196,6 +217,7 @@ public static partial class BrokerServer
             }
             finally
             {
+                if (entered) _execGate.Release();
                 _running.TryRemove(req.Id, out _);
                 _lastActivity = DateTime.UtcNow;
             }
@@ -250,16 +272,22 @@ public static partial class BrokerServer
         private BrokerResponse Undo(BrokerRequest req, ExecContext ctx)
         {
             // L'entrée est relue depuis HKLM (zone admin) : le client ne fournit que son identifiant.
-            var entry = MachineJournalStore.Get(req.EntryId ?? Guid.Empty) ?? throw new ValidationException("Entrée de journal introuvable.");
-            if (entry.Undone) throw new ValidationException("Déjà annulé.");
-            if (entry.UserSid is not null && entry.UserSid != clientSid)
-                throw new ValidationException("Cette modification a été faite pour un autre compte utilisateur.");
-            Log.Info("Broker", $"undo {entry.SourceId}");
-            var errors = OperationExecutor.Undo(entry.Undo, ctx);
-            entry.Undone = true;
-            entry.UndoneAt = DateTimeOffset.Now;
-            if (errors.Count > 0) entry.Note = string.Join(" ; ", errors);
-            MachineJournalStore.Write(entry);
+            // Les requêtes tournent en parallèle : une même entrée ne doit jamais être annulée deux fois.
+            JournalEntry entry;
+            List<string> errors;
+            lock (_undoGate)
+            {
+                entry = MachineJournalStore.Get(req.EntryId ?? Guid.Empty) ?? throw new ValidationException("Entrée de journal introuvable.");
+                if (entry.Undone) throw new ValidationException("Déjà annulé.");
+                if (entry.UserSid is not null && entry.UserSid != clientSid)
+                    throw new ValidationException("Cette modification a été faite pour un autre compte utilisateur.");
+                Log.Info("Broker", $"undo {entry.SourceId}");
+                errors = OperationExecutor.Undo(entry.Undo, ctx);
+                entry.Undone = true;
+                entry.UndoneAt = DateTimeOffset.Now;
+                if (errors.Count > 0) entry.Note = string.Join(" ; ", errors);
+                MachineJournalStore.Write(entry);
+            }
             var effect = registry.GetTweak(entry.SourceId)?.Effect ?? Core.Model.ApplyEffect.None;
             return errors.Count == 0
                 ? new BrokerResponse { Ok = true, Message = $"Annulé : {entry.Title}", Effect = (int)effect }

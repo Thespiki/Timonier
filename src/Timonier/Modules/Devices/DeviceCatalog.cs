@@ -147,6 +147,7 @@ public static class DeviceCatalog
         ("Bluetooth", "les claviers, souris et écouteurs Bluetooth seront déconnectés"),
         ("Biometric", "la connexion par Windows Hello (empreinte, visage) ne fonctionnera plus"),
         ("SmartCardReader", "la connexion par carte à puce ne fonctionnera plus"),
+        ("SDHost", "les cartes mémoire ne seront plus lues et, sur les PC à stockage eMMC, le disque interne peut en dépendre"),
     ];
 
     /// <summary>

@@ -15,6 +15,9 @@ internal static unsafe class KeyboardGuard
     private static uint _threadId;
 
     // Configuration lue par le rappel (écrite avant l'installation, puis en lecture seule).
+    // _active : faux dès la désinstallation ; un crochet qui survivrait (thread en retard) laisse alors tout passer.
+    private static volatile bool _active;
+    private static int _generation;
     private static volatile bool _blockShortcuts;
     private static volatile bool _blockAltF4;
     private static volatile bool _blockMedia;
@@ -34,28 +37,36 @@ internal static unsafe class KeyboardGuard
         _blockMedia = !options.AllowMediaKeys;
         _exitGesture = exitGesture;
         _esc1 = _esc2 = 0;
+        _active = true;
+        var generation = Interlocked.Increment(ref _generation);
 
-        using var ready = new ManualResetEventSlim(false);
+        // Pas de « using » : si l'attente expire, le thread peut encore appeler Set() plus tard (ObjectDisposedException
+        // sur un thread d'arrière-plan = arrêt du processus).
+        var ready = new ManualResetEventSlim(false);
         Exception? failure = null;
-        _thread = new Thread(() =>
+        var thread = new Thread(() =>
         {
-            _threadId = GuidedNative.GetCurrentThreadId();
-            _hook = GuidedNative.SetWindowsHookEx(GuidedNative.WH_KEYBOARD_LL, &HookProc, GuidedNative.GetModuleHandle(null), 0);
-            if (_hook == 0) failure = new System.ComponentModel.Win32Exception();
+            if (generation == Volatile.Read(ref _generation)) _threadId = GuidedNative.GetCurrentThreadId();
+            var hook = GuidedNative.SetWindowsHookEx(GuidedNative.WH_KEYBOARD_LL, &HookProc, GuidedNative.GetModuleHandle(null), 0);
+            if (hook == 0) failure = new System.ComponentModel.Win32Exception();
+            if (generation == Volatile.Read(ref _generation)) _hook = hook;
             ready.Set();
-            if (_hook == 0) return;
+            if (hook == 0) return;
             try
             {
+                // Installation abandonnée entre-temps (délai dépassé) : on retire aussitôt le crochet.
+                if (!_active || generation != Volatile.Read(ref _generation)) return;
                 while (GuidedNative.GetMessage(out _, 0, 0, 0) > 0) { /* le crochet est appelé pendant GetMessage */ }
             }
             finally
             {
-                GuidedNative.UnhookWindowsHookEx(_hook);
-                _hook = 0;
+                GuidedNative.UnhookWindowsHookEx(hook);
+                if (_hook == hook) _hook = 0;
             }
         })
         { IsBackground = true, Name = "Timonier.GuidedAccess.Keyboard" };
-        _thread.Start();
+        _thread = thread;
+        thread.Start();
         ready.Wait(TimeSpan.FromSeconds(5));
         if (failure is not null || _hook == 0)
         {
@@ -66,6 +77,7 @@ internal static unsafe class KeyboardGuard
 
     public static void Uninstall()
     {
+        _active = false;
         var thread = _thread;
         _thread = null;
         _exitGesture = null;
@@ -82,7 +94,7 @@ internal static unsafe class KeyboardGuard
     [System.Runtime.InteropServices.UnmanagedCallersOnly]
     private static nint HookProc(int code, nuint wParam, nint lParam)
     {
-        if (code == GuidedNative.HC_ACTION)
+        if (code == GuidedNative.HC_ACTION && _active)
         {
             var k = (GuidedNative.KBDLLHOOKSTRUCT*)lParam;
             if (ShouldSwallow(k->vkCode, k->flags, (uint)wParam)) return 1;

@@ -263,12 +263,16 @@ public static partial class SystemProfileService
 
     private static void ReadDevicesPresence(SystemProfile p)
     {
+        // Recompté depuis zéro : le profil peut venir du cache (matériel retiré depuis).
+        bool bluetooth = false, camera = false;
         foreach (var dev in Wmi("SELECT PNPClass FROM Win32_PnPEntity WHERE PNPClass = 'Bluetooth' OR PNPClass = 'Camera' OR PNPClass = 'Image'"))
         {
             var cls = dev["PNPClass"] as string;
-            if (cls == "Bluetooth") p.HasBluetooth = true;
-            else p.HasCamera = true;
+            if (cls == "Bluetooth") bluetooth = true;
+            else camera = true;
         }
+        p.HasBluetooth = bluetooth;
+        p.HasCamera = camera;
     }
 
     private static void ReadSecurity(SystemProfile p)
@@ -294,7 +298,13 @@ public static partial class SystemProfileService
         {
             if (!File.Exists(CachePath)) return null;
             var cached = JsonSerializer.Deserialize(File.ReadAllText(CachePath), CoreJson.Default.SystemProfile);
-            if (cached is not null) cached.HardwareLoaded = false; // sera rafraîchi en arrière-plan
+            if (cached is null) return null;
+            cached.HardwareLoaded = false; // sera rafraîchi en arrière-plan
+            // Fichier modifiable à la main : pas de listes nulles (les conditions des réglages les parcourent).
+            cached.Gpus ??= [];
+            cached.Disks ??= [];
+            cached.Gpus.RemoveAll(g => g is null);
+            cached.Disks.RemoveAll(d => d is null);
             return cached;
         }
         catch { return null; }

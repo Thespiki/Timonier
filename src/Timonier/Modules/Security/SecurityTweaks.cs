@@ -184,7 +184,8 @@ internal static class SecurityTweaks
             .Keywords("uac", "contrôle de compte", "élévation", "invite admin", "bureau sécurisé", "enablelua")
             .Tags("security", "family", "kiosk", "office")
             .Requires(Requires.When(_ => !SecurityProbe.UacStricterThanDefault(),
-                "L'UAC est déjà réglé plus strictement que le niveau recommandé (« Toujours m'avertir ») : il n'y a rien à rétablir."))
+                "L'invite UAC est déjà réglée plus strictement que le niveau recommandé : utilisez plutôt « Passer l'UAC au niveau " +
+                "maximal », qui réactive l'UAC et le Bureau sécurisé sans abaisser ce réglage."))
             .Warning("Si l'UAC était complètement désactivé (EnableLUA = 0), un redémarrage est nécessaire.")
             .Run(Reg.LmDword(PolSystem, "EnableLUA", 1), Reg.LmDword(PolSystem, "ConsentPromptBehaviorAdmin", 5),
                  Reg.LmDword(PolSystem, "PromptOnSecureDesktop", 1))

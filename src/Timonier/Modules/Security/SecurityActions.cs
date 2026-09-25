@@ -8,17 +8,26 @@ using Timonier.Core.Security;
 namespace Timonier.Modules.Security;
 
 /// <summary>Règle de pare-feu créée par Timonier (lue dans le magasin local du pare-feu).</summary>
-internal sealed record TimonierFirewallRule(string Name, string? Application, string Direction, bool Enabled);
+/// <param name="Legacy">Règle créée par une version antérieure au changement de nom (groupe « PC Pilot »).</param>
+internal sealed record TimonierFirewallRule(string Name, string? Application, string Direction, bool Enabled, bool Legacy)
+{
+    /// <summary>Nom affiché : le nom de la règle sans son préfixe (« Timonier — » ou « PC Pilot — »).</summary>
+    public string DisplayName => FirewallRules.DisplayName(Name);
+}
 
 /// <summary>
 /// Règles de pare-feu « Timonier ». Lecture : magasin local du pare-feu dans le registre (lisible sans droits, rapide).
 /// Écriture : API COM HNetCfg (INetFwPolicy2 / INetFwRule), uniquement dans le broker. Timonier ne touche jamais
-/// une règle dont le groupe n'est pas exactement « Timonier ».
+/// une règle dont le groupe n'est pas exactement « Timonier » (ou « PC Pilot » pour les règles créées par les versions
+/// antérieures au changement de nom, qui restent listées et supprimables mais ne sont plus jamais créées).
 /// </summary>
 internal static class FirewallRules
 {
     public const string Grouping = "Timonier";
     public const string NamePrefix = "Timonier — ";
+    /// <summary>Groupe et préfixe utilisés par les versions publiées sous le nom « PC Pilot ».</summary>
+    public const string LegacyGrouping = "PC Pilot";
+    public const string LegacyNamePrefix = "PC Pilot — ";
     private const string RulesKey = @"SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\FirewallRules";
     private const int DirectionIn = 1, DirectionOut = 2, ActionBlock = 0, AllProfiles = 0x7FFFFFFF;
 
@@ -55,13 +64,24 @@ internal static class FirewallRules
         return rules;
     }
 
-    /// <summary>Règles créées par Timonier (lecture seule, sans élévation).</summary>
+    /// <summary>Groupe attendu pour une règle d'après le préfixe de son nom (null si le nom n'est pas celui d'une règle Timonier).</summary>
+    private static string? OwnerGroup(string name) =>
+        name.StartsWith(NamePrefix, StringComparison.Ordinal) ? Grouping
+        : name.StartsWith(LegacyNamePrefix, StringComparison.Ordinal) ? LegacyGrouping
+        : null;
+
+    public static string DisplayName(string name) =>
+        name.StartsWith(NamePrefix, StringComparison.Ordinal) ? name[NamePrefix.Length..]
+        : name.StartsWith(LegacyNamePrefix, StringComparison.Ordinal) ? name[LegacyNamePrefix.Length..]
+        : name;
+
+    /// <summary>Règles créées par Timonier, y compris sous son ancien nom (lecture seule, sans élévation).</summary>
     public static List<TimonierFirewallRule> List() =>
         [.. ReadStore()
-            .Where(r => r.Group == Grouping && r.Name.StartsWith(NamePrefix, StringComparison.Ordinal))
+            .Where(r => r.Group is not null && r.Group == OwnerGroup(r.Name))
             .Select(r => new TimonierFirewallRule(r.Name, r.App is null ? null : Environment.ExpandEnvironmentVariables(r.App),
-                r.Direction.Equals("In", StringComparison.OrdinalIgnoreCase) ? "In" : "Out", r.Active))
-            .OrderBy(r => r.Name, StringComparer.CurrentCultureIgnoreCase)];
+                r.Direction.Equals("In", StringComparison.OrdinalIgnoreCase) ? "In" : "Out", r.Active, r.Group == LegacyGrouping))
+            .OrderBy(r => DisplayName(r.Name), StringComparer.CurrentCultureIgnoreCase)];
 
     /// <summary>Crée les règles de blocage (sortant, et entrant si demandé). Renvoie le nom des règles.</summary>
     public static string Block(string exePath, bool inbound)
@@ -105,9 +125,10 @@ internal static class FirewallRules
     /// <summary>Supprime les règles Timonier portant ce nom ; refuse si une autre règle porte le même nom.</summary>
     public static int Unblock(string name)
     {
+        var group = OwnerGroup(name) ?? throw new ValidationException("Seules les règles créées par Timonier peuvent être supprimées.");
         var matching = ReadStore().Where(r => r.Name == name).ToList();
         if (matching.Count == 0) throw new InvalidOperationException("Cette règle n'existe plus.");
-        if (matching.Any(r => r.Group != Grouping))
+        if (matching.Any(r => r.Group != group))
             throw new InvalidOperationException("Une règle qui n'a pas été créée par Timonier porte ce nom : suppression refusée par sécurité.");
 
         var policy = CreateCom("HNetCfg.FwPolicy2");
@@ -117,7 +138,7 @@ internal static class FirewallRules
             // INetFwRules.Remove supprime une règle par appel : on répète tant qu'il en reste (borné).
             for (var i = 0; i < matching.Count + 2; i++)
             {
-                if (!ReadStore().Any(r => r.Name == name && r.Group == Grouping)) break;
+                if (!ReadStore().Any(r => r.Name == name && r.Group == group)) break;
                 rules.Remove(name);
             }
         }
@@ -145,14 +166,36 @@ internal static class FirewallRules
         if (path.StartsWith(windows, StringComparison.OrdinalIgnoreCase))
             throw new ValidationException("Les programmes de Windows ne peuvent pas être bloqués ici : cela risquerait de casser Windows Update, " +
                                           "le réseau ou Sécurité Windows.");
+        if (DefenderFolders().Any(d => path.StartsWith(d, StringComparison.OrdinalIgnoreCase)))
+            throw new ValidationException("Les composants de Microsoft Defender ne peuvent pas être bloqués : l'antivirus ne pourrait plus " +
+                                          "mettre à jour ses définitions ni consulter la protection dans le cloud.");
         if (string.Equals(path, Environment.ProcessPath, StringComparison.OrdinalIgnoreCase))
             throw new ValidationException("Timonier ne peut pas se bloquer lui-même.");
         return path;
     }
 
+    /// <summary>Dossiers de Microsoft Defender situés hors du dossier Windows (moteur, plateforme, outils).</summary>
+    private static IEnumerable<string> DefenderFolders()
+    {
+        foreach (var root in new[]
+                 {
+                     Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                     Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                     Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                 })
+        {
+            if (string.IsNullOrEmpty(root)) continue;
+            var baseDir = root.TrimEnd('\\') + "\\";
+            yield return baseDir + "Windows Defender\\";
+            yield return baseDir + "Windows Defender Advanced Threat Protection\\";
+            yield return baseDir + "Microsoft\\Windows Defender\\";
+            yield return baseDir + "Microsoft\\Windows Defender Advanced Threat Protection\\";
+        }
+    }
+
     public static string ValidateRuleName(string raw)
     {
-        if (!raw.StartsWith(NamePrefix, StringComparison.Ordinal) || raw.Length > NamePrefix.Length + 280 || raw.Length == NamePrefix.Length)
+        if (OwnerGroup(raw) is null || raw.Length > NamePrefix.Length + 280 || DisplayName(raw).Length == 0)
             throw new ValidationException("Seules les règles créées par Timonier peuvent être supprimées.");
         if (raw.Any(c => char.IsControl(c) || c is '|' or '"'))
             throw new ValidationException("Nom de règle invalide.");
@@ -207,7 +250,7 @@ public sealed class FirewallUnblockAction : IActionHandler
         ValidateParameters(p);
         var name = FirewallRules.ValidateRuleName(Validate.Required(p, "name", 400));
         var count = FirewallRules.Unblock(name);
-        return Task.FromResult(ActionResult.Ok($"« {name[FirewallRules.NamePrefix.Length..]} » peut de nouveau accéder au réseau ({count} règle(s) supprimée(s))."));
+        return Task.FromResult(ActionResult.Ok($"« {FirewallRules.DisplayName(name)} » peut de nouveau accéder au réseau ({count} règle(s) supprimée(s))."));
     }
 }
 

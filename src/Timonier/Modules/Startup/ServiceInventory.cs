@@ -70,8 +70,10 @@ public static partial class ServiceInventory
         // Sécurité (ne jamais affaiblir)
         "CryptSvc", "BFE", "MpsSvc", "WinDefend", "WdNisSvc", "Sense", "MDCoreSvc", "SecurityHealthService", "wscsvc",
         "SgrmBroker", "webthreatdefsvc", "webthreatdefusersvc", "KeyIso", "VaultSvc", "Appinfo", "NgcSvc", "NgcCtnrSvc",
-        // Réseau de base
-        "Dhcp", "Dnscache", "nsi", "NlaSvc", "netprofm", "LanmanWorkstation", "Wcmsvc", "WinHttpAutoProxySvc",
+        // BitLocker ; wlidsvc : ouverture de session avec un compte Microsoft (selon la description du service)
+        "BDESVC", "wlidsvc",
+        // Réseau de base (Netlogon : ouverture de session sur un PC joint à un domaine)
+        "Dhcp", "Dnscache", "nsi", "NlaSvc", "netprofm", "LanmanWorkstation", "Wcmsvc", "WinHttpAutoProxySvc", "Netlogon",
         // Mises à jour, installation et licences
         "TrustedInstaller", "wuauserv", "UsoSvc", "WaaSMedicSvc", "BITS", "DoSvc", "sppsvc", "ClipSVC", "AppXSvc", "AppReadiness",
         // Son

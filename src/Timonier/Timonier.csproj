@@ -30,6 +30,8 @@
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
     <ServerGarbageCollection>false</ServerGarbageCollection>
     <TieredPGO>true</TieredPGO>
+    <!-- Sécurité : le broker élevé ne doit jamais charger de « startup hook » désigné par l'environnement (DOTNET_STARTUP_HOOKS). -->
+    <StartupHookSupport>false</StartupHookSupport>
     <UseSystemResourceKeys>false</UseSystemResourceKeys>
 
     <!-- WPF0001 : ThemeMode (Fluent) est encore marqué expérimental. -->
