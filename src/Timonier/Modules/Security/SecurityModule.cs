@@ -16,8 +16,8 @@ public sealed class SecurityModule : IModule
 
     public void Register(ModuleRegistry r)
     {
-        r.AddCategory(new CategoryInfo(Category, L("Sécurité"), Glyph,
-            L("Antivirus, pare-feu, UAC, chiffrement, Secure Boot et renforcement de Windows.")));
+        r.AddCategory(new CategoryInfo(Category, L("Security"), Glyph,
+            L("Antivirus, firewall, UAC, encryption, Secure Boot and Windows hardening.")));
 
         r.AddTweaks(SecurityTweaks.All());
 
@@ -26,35 +26,35 @@ public sealed class SecurityModule : IModule
         r.AddAction(new FirewallEnableAction());
         r.AddAction(new Smb1UninstallAction());
 
-        r.AddPage(new PageInfo(PageId, L("Sécurité"), Glyph, NavSection.Control, 10, () => new SecurityPage())
+        r.AddPage(new PageInfo(PageId, L("Security"), Glyph, NavSection.Control, 10, () => new SecurityPage())
         {
             CategoryId = Category,
-            Description = L("État de sécurité et score, pare-feu par application, renforcement de Windows."),
-            Keywords = [L("sécurité, antivirus, defender, pare-feu, firewall, uac, bitlocker, chiffrement, secure boot, tpm, smartscreen, ransomware, renforcement, hardening")],
+            Description = L("Security status and score, per-app firewall, Windows hardening."),
+            Keywords = [L("security, antivirus, defender, firewall, uac, bitlocker, encryption, secure boot, tpm, smartscreen, ransomware, hardening")],
         });
 
         // Contrôles de santé : exécutés dans l'interface, hors du thread UI, en lecture seule.
         r.AddHealthCheck(HealthCheck.Sync("security.antivirus", L("Antivirus"), Glyph, PageId,
             () => SecurityProbe.SafeHealth(SecurityProbe.AntivirusMain)));
-        r.AddHealthCheck(HealthCheck.Sync("security.firewall", L("Pare-feu"), "", PageId,
+        r.AddHealthCheck(HealthCheck.Sync("security.firewall", L("Firewall"), "", PageId,
             () => SecurityProbe.SafeHealth(SecurityProbe.Firewall)));
-        r.AddHealthCheck(HealthCheck.Sync("security.encryption", L("Chiffrement du disque"), "", PageId,
+        r.AddHealthCheck(HealthCheck.Sync("security.encryption", L("Drive encryption"), "", PageId,
             () => SecurityProbe.SafeHealth(() => SecurityProbe.Encryption(AppHost.Profile))));
-        r.AddHealthCheck(HealthCheck.Sync("security.secureboot", L("Démarrage sécurisé"), "", PageId,
+        r.AddHealthCheck(HealthCheck.Sync("security.secureboot", L("Secure Boot"), "", PageId,
             () => SecurityProbe.SafeHealth(SecurityProbe.SecureBoot)));
 
-        r.AddQuickAction(new QuickAction("security.open-windows-security", L("Ouvrir Sécurité Windows"), Glyph,
-            L("Antivirus, pare-feu, contrôle des applications et sécurité de l'appareil."),
+        r.AddQuickAction(new QuickAction("security.open-windows-security", L("Open Windows Security"), Glyph,
+            L("Antivirus, firewall, app control and device security."),
             () => { ProcessRunner.OpenSettingsUri("windowsdefender:"); return Task.CompletedTask; })
         {
-            Keywords = [L("sécurité windows, windows security, defender, antivirus, centre de sécurité")],
+            Keywords = [L("windows security, defender, antivirus, security center")],
             Order = 30,
         });
-        r.AddQuickAction(new QuickAction("security.defender-quickscan", L("Analyse antivirus rapide"), "",
-            L("Ouvre Protection contre les virus et menaces de Sécurité Windows pour lancer une analyse rapide."),
+        r.AddQuickAction(new QuickAction("security.defender-quickscan", L("Quick antivirus scan"), "",
+            L("Opens Virus & threat protection in Windows Security to run a quick scan."),
             () => { ProcessRunner.OpenSettingsUri("windowsdefender://threat/"); return Task.CompletedTask; })
         {
-            Keywords = [L("analyse, scan, antivirus, virus, analyse rapide, quick scan, defender")],
+            Keywords = [L("scan, antivirus, virus, quick scan, defender, malware")],
             Order = 40,
         });
 
@@ -74,19 +74,19 @@ public sealed class SecurityModule : IModule
         r.AddSearchEntry(new SearchEntry
         {
             Id = "security.score",
-            Title = L("Score de sécurité"),
-            Subtitle = L("Bilan pondéré : antivirus, pare-feu, UAC, chiffrement, Secure Boot…"),
+            Title = L("Security score"),
+            Subtitle = L("Weighted assessment: antivirus, firewall, UAC, encryption, Secure Boot…"),
             Glyph = Glyph,
-            Keywords = [L("score securite, bilan securite, audit securite, etat securite, suis-je protege")],
+            Keywords = [L("security score, security check, security audit, security status, am i protected")],
             PageId = PageId,
         });
         r.AddSearchEntry(new SearchEntry
         {
             Id = "security.firewall-block",
-            Title = L("Bloquer Internet pour une application"),
-            Subtitle = L("Crée une règle de pare-feu qui coupe l'accès réseau d'un programme"),
+            Title = L("Block internet for an app"),
+            Subtitle = L("Creates a firewall rule that cuts off a program's network access"),
             Glyph = "",
-            Keywords = [L("bloquer internet, bloquer application, pare-feu application, firewall block, empecher connexion, hors ligne")],
+            Keywords = [L("block internet, block app, app firewall, firewall block, prevent connection, offline")],
             PageId = PageId,
             PageParameter = "section:firewall",
             Boost = 0.1,
@@ -94,31 +94,31 @@ public sealed class SecurityModule : IModule
         r.AddSearchEntry(new SearchEntry
         {
             Id = "security.hardening",
-            Title = L("Renforcement de la sécurité de Windows"),
-            Subtitle = L("SMBv1, Bureau à distance, AutoRun, LSA, intégrité de la mémoire, règles ASR…"),
+            Title = L("Windows security hardening"),
+            Subtitle = L("SMBv1, Remote Desktop, AutoRun, LSA, memory integrity, ASR rules…"),
             Glyph = "",
-            Keywords = [L("renforcement, hardening, durcissement, securiser windows")],
+            Keywords = [L("hardening, harden, secure windows, security hardening")],
             PageId = PageId,
             PageParameter = "section:hardening",
         });
 
-        AddUri(r, "security.win.virus", L("Protection contre les virus et menaces"), L("Sécurité Windows : analyses, mises à jour des définitions"),
-            "windowsdefender://threat/", [L("virus, menaces, analyse, definitions")]);
-        AddUri(r, "security.win.firewall", L("Pare-feu et protection du réseau"), L("Sécurité Windows : état du pare-feu par réseau"),
-            "windowsdefender://network/", [L("pare-feu, firewall, reseau")]);
-        AddUri(r, "security.win.device", L("Sécurité de l'appareil"), L("Isolation du noyau, processeur de sécurité (TPM), démarrage sécurisé"),
-            "windowsdefender://devicesecurity/", [L("isolation noyau, tpm, securite appareil, device security")]);
-        AddUri(r, "security.win.appbrowser", L("Contrôle des applications et du navigateur"), L("SmartScreen, protection fondée sur la réputation, protection contre les exploits"),
-            "windowsdefender://appbrowser/", [L("smartscreen, reputation, exploit protection, controle applications")]);
-        AddUri(r, "security.win.history", L("Historique de protection"), L("Menaces détectées et actions de Microsoft Defender"),
-            "windowsdefender://history/", [L("historique protection, quarantaine, menaces detectees")]);
+        AddUri(r, "security.win.virus", L("Virus & threat protection"), L("Windows Security: scans, definition updates"),
+            "windowsdefender://threat/", [L("virus, threats, scan, definitions, malware")]);
+        AddUri(r, "security.win.firewall", L("Firewall & network protection"), L("Windows Security: firewall status per network"),
+            "windowsdefender://network/", [L("firewall, network")]);
+        AddUri(r, "security.win.device", L("Device security"), L("Core isolation, security processor (TPM), Secure Boot"),
+            "windowsdefender://devicesecurity/", [L("core isolation, tpm, device security")]);
+        AddUri(r, "security.win.appbrowser", L("App & browser control"), L("SmartScreen, reputation-based protection, exploit protection"),
+            "windowsdefender://appbrowser/", [L("smartscreen, reputation, exploit protection, app control")]);
+        AddUri(r, "security.win.history", L("Protection history"), L("Threats detected and actions taken by Microsoft Defender"),
+            "windowsdefender://history/", [L("protection history, quarantine, detected threats")]);
         r.AddSearchEntry(new SearchEntry
         {
             Id = "security.win.firewall-advanced",
-            Title = L("Pare-feu Windows avec fonctions avancées"),
-            Subtitle = L("Console MMC des règles de pare-feu (wf.msc)"),
+            Title = L("Windows Defender Firewall with Advanced Security"),
+            Subtitle = L("MMC console for firewall rules (wf.msc)"),
             Glyph = "",
-            Keywords = [L("wf.msc, regles pare-feu, firewall avance, advanced firewall")],
+            Keywords = [L("wf.msc, firewall rules, advanced firewall")],
             Kind = SearchEntryKind.Tool,
             Execute = () => ProcessRunner.Launch(SystemTool.Mmc, Path.Combine(Environment.SystemDirectory, "wf.msc")),
         });

@@ -101,13 +101,13 @@ public sealed class SystemProfile
     [JsonIgnore]
     public string EditionLabel => Edition switch
     {
-        EditionFamily.Home => LC("Windows edition", "Famille"),
-        EditionFamily.Pro => LC("Windows edition", "Professionnel"),
-        EditionFamily.ProEducation => LC("Windows edition", "Professionnel Éducation"),
-        EditionFamily.ProWorkstation => LC("Windows edition", "Professionnel pour stations de travail"),
-        EditionFamily.Education => LC("Windows edition", "Éducation"),
-        EditionFamily.Enterprise => LC("Windows edition", "Entreprise"),
-        EditionFamily.IoTEnterprise => LC("Windows edition", "IoT Entreprise"),
+        EditionFamily.Home => LC("Windows edition", "Home"),
+        EditionFamily.Pro => LC("Windows edition", "Pro"),
+        EditionFamily.ProEducation => LC("Windows edition", "Pro Education"),
+        EditionFamily.ProWorkstation => LC("Windows edition", "Pro for Workstations"),
+        EditionFamily.Education => LC("Windows edition", "Education"),
+        EditionFamily.Enterprise => LC("Windows edition", "Enterprise"),
+        EditionFamily.IoTEnterprise => LC("Windows edition", "IoT Enterprise"),
         EditionFamily.SE => "SE",
         EditionFamily.Server => "Server",
         _ => EditionId,
@@ -116,23 +116,23 @@ public sealed class SystemProfile
     [JsonIgnore]
     public string FormFactorLabel => FormFactor switch
     {
-        FormFactor.Desktop => L("Ordinateur de bureau"),
-        FormFactor.Laptop => L("Ordinateur portable"),
-        FormFactor.Convertible => L("PC convertible"),
-        FormFactor.Tablet => L("Tablette"),
-        FormFactor.AllInOne => L("Tout-en-un"),
+        FormFactor.Desktop => LC("device type", "Desktop"),
+        FormFactor.Laptop => L("Laptop"),
+        FormFactor.Convertible => L("2-in-1 PC"),
+        FormFactor.Tablet => L("Tablet"),
+        FormFactor.AllInOne => L("All-in-one"),
         FormFactor.MiniPc => L("Mini PC"),
-        FormFactor.Server => L("Serveur"),
-        FormFactor.VirtualMachine => L("Machine virtuelle"),
-        _ => HasBattery ? L("Ordinateur portable") : L("PC"),
+        FormFactor.Server => L("Server"),
+        FormFactor.VirtualMachine => L("Virtual machine"),
+        _ => HasBattery ? L("Laptop") : L("PC"),
     };
 
     [JsonIgnore]
     public string TierLabel => Tier switch
     {
-        PerformanceTier.Low => LC("performance tier", "Modeste"),
-        PerformanceTier.Medium => LC("performance tier", "Intermédiaire"),
-        PerformanceTier.High => LC("performance tier", "Performant"),
-        _ => L("Inconnu"),
+        PerformanceTier.Low => LC("performance tier", "Entry-level"),
+        PerformanceTier.Medium => LC("performance tier", "Mid-range"),
+        PerformanceTier.High => LC("performance tier", "High-end"),
+        _ => L("Unknown"),
     };
 }

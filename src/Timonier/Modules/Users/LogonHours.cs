@@ -53,7 +53,7 @@ internal static partial class LogonHoursMap
 
     public static byte[] ParseHex(string value)
     {
-        if (!HexRx().IsMatch(value)) throw new ValidationException(L("Plages horaires invalides (42 caractères hexadécimaux attendus)."));
+        if (!HexRx().IsMatch(value)) throw new ValidationException(L("Invalid time slots (42 hexadecimal characters expected)."));
         return Convert.FromHexString(value);
     }
 
@@ -64,7 +64,7 @@ internal static partial class LogonHoursMap
 public sealed class SetLogonHoursAction : IActionHandler
 {
     public string Id => "users.logonhours.set";
-    public string Title => L("Plages horaires de connexion");
+    public string Title => L("Sign-in hours");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
@@ -78,18 +78,18 @@ public sealed class SetLogonHoursAction : IActionHandler
         ValidateParameters(p);
         var bitmap = LogonHoursMap.ParseHex(Validate.Required(p, "hours", 42));
         var (target, _) = LocalAccounts.Resolve(AccountParams.Sid(p), ctx.UserSid);
-        LocalAccounts.RefuseSessionAccount(target, ctx.UserSid, L("Par sécurité, Timonier refuse de restreindre les horaires du compte avec lequel vous êtes connecté."));
-        if (target.IsAdmin) throw new ValidationException(L("Les plages horaires sont réservées aux comptes standard : un administrateur pourrait les retirer lui-même."));
-        if (target.IsBuiltIn) throw new ValidationException(L("Les comptes intégrés de Windows ne sont pas concernés."));
+        LocalAccounts.RefuseSessionAccount(target, ctx.UserSid, L("For security, Timonier refuses to restrict the hours of the account you're signed in with."));
+        if (target.IsAdmin) throw new ValidationException(L("Time slots are reserved for standard accounts: an administrator could remove them themselves."));
+        if (target.IsBuiltIn) throw new ValidationException(L("Windows built-in accounts aren't affected."));
 
         NetApi.SetLogonHours(target.Name, bitmap);
         var allowed = bitmap.Sum(b => System.Numerics.BitOperations.PopCount(b));
         Log.Info("Users", $"plages horaires {target.Name} : {allowed} h/semaine");
         var msg = allowed switch
         {
-            168 => L("« {0} » peut de nouveau ouvrir une session à toute heure.", target.Name),
-            0 => L("« {0} » ne peut plus ouvrir de session à aucun moment.", target.Name),
-            _ => LP(allowed, "Plages horaires de « {1} » enregistrées ({0} h par semaine).", "Plages horaires de « {1} » enregistrées ({0} h par semaine).", target.Name),
+            168 => L("“{0}” can sign in at any time again.", target.Name),
+            0 => L("“{0}” can no longer sign in at any time.", target.Name),
+            _ => LP(allowed, "Time slots for “{1}” saved ({0} hour per week).", "Time slots for “{1}” saved ({0} hours per week).", target.Name),
         };
         return Task.FromResult(ActionResult.Ok(msg));
     }

@@ -33,16 +33,16 @@ internal sealed class UpdatesPanel
         // ---- État
         var status = new StackPanel();
         status.Children.Add(_stateBadgeHost);
-        status.Children.Add(KeyValue(L("Dernière installation réussie"), _lastInstall));
-        status.Children.Add(KeyValue(L("Dernière recherche réussie"), _lastSearch));
-        status.Children.Add(KeyValue(L("État"), _state));
-        status.Children.Add(KeyValue(L("Heures d'activité"), _hours));
+        status.Children.Add(KeyValue(L("Last successful install"), _lastInstall));
+        status.Children.Add(KeyValue(L("Last successful check"), _lastSearch));
+        status.Children.Add(KeyValue(L("Status"), _state));
+        status.Children.Add(KeyValue(L("Active hours"), _hours));
         var actions = new WrapPanel { Margin = new Thickness(0, 12, 0, 0) };
-        var check = MaintUi.Button(L("Rechercher des mises à jour"), "", "Pp.AccentButton", (_, _) => MaintUi.OpenSettings("ms-settings:windowsupdate-action"));
+        var check = MaintUi.Button(L("Check for updates"), "", "Pp.AccentButton", (_, _) => MaintUi.OpenSettings("ms-settings:windowsupdate-action"));
         check.Margin = new Thickness(0, 0, 8, 8);
-        var history = MaintUi.Button(L("Historique des mises à jour"), "", "Pp.Button", (_, _) => MaintUi.OpenSettings("ms-settings:windowsupdate-history"));
+        var history = MaintUi.Button(L("Update history"), "", "Pp.Button", (_, _) => MaintUi.OpenSettings("ms-settings:windowsupdate-history"));
         history.Margin = new Thickness(0, 0, 8, 8);
-        var refresh = MaintUi.Button(L("Actualiser"), "", "Pp.SubtleButton", async (_, _) => await RefreshAsync());
+        var refresh = MaintUi.Button(L("Refresh"), "", "Pp.SubtleButton", async (_, _) => await RefreshAsync());
         refresh.Margin = new Thickness(0, 0, 8, 8);
         actions.Children.Add(check);
         actions.Children.Add(history);
@@ -51,10 +51,10 @@ internal sealed class UpdatesPanel
         root.Children.Add(MaintUi.Card(status, new Thickness(0, 0, 0, 12)));
 
         // ---- Pause + heures d'activité, côte à côte
-        for (var w = 1; w <= 5; w++) _weeks.Items.Add(new ComboBoxItem { Content = LP(w, "{0} semaine", "{0} semaines"), Tag = w });
+        for (var w = 1; w <= 5; w++) _weeks.Items.Add(new ComboBoxItem { Content = LP(w, "{0} week", "{0} weeks"), Tag = w });
         _weeks.SelectedIndex = 0;
-        _pause = MaintUi.Button(L("Suspendre"), "", "Pp.Button", async (_, _) => await PauseAsync());
-        _resume = MaintUi.Button(L("Reprendre maintenant"), "", "Pp.AccentButton", async (_, _) => await ResumeAsync());
+        _pause = MaintUi.Button(L("Pause"), "", "Pp.Button", async (_, _) => await PauseAsync());
+        _resume = MaintUi.Button(L("Resume now"), "", "Pp.AccentButton", async (_, _) => await ResumeAsync());
         var pauseRow = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
         _weeks.Margin = new Thickness(0, 0, 8, 8);
         _pause.Margin = new Thickness(0, 0, 8, 8);
@@ -63,8 +63,8 @@ internal sealed class UpdatesPanel
         pauseRow.Children.Add(_pause);
         pauseRow.Children.Add(_resume);
         var pauseCard = new StackPanel();
-        pauseCard.Children.Add(CardHeader("", L("Suspendre les mises à jour")));
-        pauseCard.Children.Add(MaintUi.Text(L("Reporte l'installation de toutes les mises à jour, comme dans les Paramètres. Elles reprennent automatiquement à la fin de la pause, et Windows les installe avant d'autoriser une nouvelle pause."), "Pp.Caption"));
+        pauseCard.Children.Add(CardHeader("", L("Pause updates")));
+        pauseCard.Children.Add(MaintUi.Text(L("Postpones the installation of all updates, just like in Settings. They resume automatically when the pause ends, and Windows installs them before allowing another pause."), "Pp.Caption"));
         pauseCard.Children.Add(pauseRow);
         pauseCard.Children.Add(_pauseHint);
 
@@ -77,12 +77,12 @@ internal sealed class UpdatesPanel
         _end.SelectedIndex = 17;
         _start.SelectionChanged += (_, _) => ValidateHours();
         _end.SelectionChanged += (_, _) => ValidateHours();
-        _applyHours = MaintUi.Button(L("Appliquer"), "", "Pp.Button", async (_, _) => await ApplyHoursAsync());
+        _applyHours = MaintUi.Button(L("Apply"), "", "Pp.Button", async (_, _) => await ApplyHoursAsync());
         var hoursRow = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
-        var from = MaintUi.Text(LC("hours range", "De"), "Pp.Body", wrap: false);
+        var from = MaintUi.Text(LC("hours range", "From"), "Pp.Body", wrap: false);
         from.VerticalAlignment = VerticalAlignment.Center;
         from.Margin = new Thickness(0, 0, 8, 8);
-        var to = MaintUi.Text(LC("hours range", "à"), "Pp.Body", wrap: false);
+        var to = MaintUi.Text(LC("hours range", "to"), "Pp.Body", wrap: false);
         to.VerticalAlignment = VerticalAlignment.Center;
         to.Margin = new Thickness(0, 0, 8, 8);
         _start.Margin = new Thickness(0, 0, 8, 8);
@@ -94,8 +94,8 @@ internal sealed class UpdatesPanel
         hoursRow.Children.Add(_end);
         hoursRow.Children.Add(_applyHours);
         var hoursCard = new StackPanel();
-        hoursCard.Children.Add(CardHeader("", L("Heures d'activité")));
-        hoursCard.Children.Add(MaintUi.Text(L("Windows ne redémarre pas automatiquement pour installer des mises à jour pendant cette plage (18 heures au plus). Remplace le réglage automatique."), "Pp.Caption"));
+        hoursCard.Children.Add(CardHeader("", L("Active hours")));
+        hoursCard.Children.Add(MaintUi.Text(L("Windows won't restart automatically to install updates during this range (18 hours at most). Overrides the automatic setting."), "Pp.Caption"));
         hoursCard.Children.Add(hoursRow);
         hoursCard.Children.Add(_hoursHint);
 
@@ -136,7 +136,7 @@ internal sealed class UpdatesPanel
         return g;
     }
 
-    private static string When(DateTime? d) => d is { } v ? $"{Format.Date(v)} ({Format.Ago(v)})" : L("Inconnue");
+    private static string When(DateTime? d) => d is { } v ? $"{Format.Date(v)} ({Format.Ago(v)})" : LC("feminine", "Unknown");
 
     public async Task RefreshAsync()
     {
@@ -145,20 +145,20 @@ internal sealed class UpdatesPanel
         catch (Exception ex)
         {
             Log.Error("Maintenance", "état Windows Update", ex);
-            _state.Text = L("Impossible de lire l'état de Windows Update.");
+            _state.Text = L("Couldn't read the Windows Update status.");
             return;
         }
         _status = s;
-        _lastInstall.Text = s.ComFailed ? L("Indisponible (agent Windows Update inaccessible)") : When(s.LastInstall);
-        _lastSearch.Text = s.ComFailed ? L("Indisponible") : When(s.LastSearch);
+        _lastInstall.Text = s.ComFailed ? L("Unavailable (Windows Update agent unreachable)") : When(s.LastInstall);
+        _lastSearch.Text = s.ComFailed ? L("Unavailable") : When(s.LastSearch);
         var parts = new List<string>();
-        if (s.IsPaused) parts.Add(L("Mises à jour suspendues jusqu'au {0}", Format.Day(s.PausedUntil!.Value)));
-        if (s.RebootPending) parts.Add(L("Redémarrage nécessaire pour terminer l'installation"));
-        if (s.ManagedByPolicy) parts.Add(L("Mises à jour automatiques désactivées par une stratégie"));
-        _state.Text = parts.Count == 0 ? L("Aucune action requise") : string.Join(" · ", parts);
+        if (s.IsPaused) parts.Add(L("Updates paused until {0}", Format.Day(s.PausedUntil!.Value)));
+        if (s.RebootPending) parts.Add(L("Restart required to finish installing"));
+        if (s.ManagedByPolicy) parts.Add(L("Automatic updates turned off by a policy"));
+        _state.Text = parts.Count == 0 ? L("No action needed") : string.Join(" · ", parts);
         _hours.Text = s.SmartActiveHours || s.ActiveStart is null || s.ActiveEnd is null
-            ? L("Réglées automatiquement par Windows selon votre activité")
-            : L("De {0} h à {1} h", s.ActiveStart, s.ActiveEnd);
+            ? L("Set automatically by Windows based on your activity")
+            : L("From {0}:00 to {1}:00", s.ActiveStart, s.ActiveEnd);
         if (!s.SmartActiveHours && s.ActiveStart is { } a && s.ActiveEnd is { } b && a is >= 0 and < 24 && b is >= 0 and < 24)
         {
             _start.SelectedIndex = a;
@@ -167,20 +167,20 @@ internal sealed class UpdatesPanel
 
         var h = s.ToHealth();
         var (text, fg, bg, glyph) = s.IsPaused
-            ? (L("En pause"), "Pp.Warning", "Pp.WarningBackground", "")
+            ? (L("Paused"), "Pp.Warning", "Pp.WarningBackground", "")
             : h.Status switch
             {
-                Core.Catalog.HealthStatus.Critical => (L("Mises à jour en retard"), "Pp.Danger", "Pp.DangerBackground", ""),
-                Core.Catalog.HealthStatus.Warning => (L("À vérifier"), "Pp.Warning", "Pp.WarningBackground", ""),
-                Core.Catalog.HealthStatus.Unknown => (L("État inconnu"), "Pp.TextSecondary", "Pp.CardSecondary", ""),
-                _ => s.RebootPending ? (L("Redémarrage requis"), "Pp.Warning", "Pp.WarningBackground", "") : (L("Windows est à jour"), "Pp.Success", "Pp.SuccessBackground", ""),
+                Core.Catalog.HealthStatus.Critical => (L("Updates overdue"), "Pp.Danger", "Pp.DangerBackground", ""),
+                Core.Catalog.HealthStatus.Warning => (L("Needs review"), "Pp.Warning", "Pp.WarningBackground", ""),
+                Core.Catalog.HealthStatus.Unknown => (L("Unknown state"), "Pp.TextSecondary", "Pp.CardSecondary", ""),
+                _ => s.RebootPending ? (L("Restart required"), "Pp.Warning", "Pp.WarningBackground", "") : (L("Windows is up to date"), "Pp.Success", "Pp.SuccessBackground", ""),
             };
         _stateBadgeHost.Child = MaintUi.Badge(text, fg, bg, glyph);
 
         _resume.Visibility = s.IsPaused ? Visibility.Visible : Visibility.Collapsed;
         if (_pause.Content is StackPanel { Children.Count: 2 } sp && sp.Children[1] is TextBlock label)
-            label.Text = s.IsPaused ? L("Prolonger la pause") : L("Suspendre");
-        _pauseHint.Text = s.PauseBlocked ? L("La mise en pause est interdite par une stratégie de l'organisation.") : "";
+            label.Text = s.IsPaused ? L("Extend pause") : L("Pause");
+        _pauseHint.Text = s.PauseBlocked ? L("Pausing updates is blocked by an organization policy.") : "";
         _pauseHint.Margin = new Thickness(0, s.PauseBlocked ? 2 : 0, 0, 0);
         SetBusy(_busy);
         StatusChanged?.Invoke(s);
@@ -203,9 +203,9 @@ internal sealed class UpdatesPanel
             return false;
         }
         var span = ActiveHoursAction.Span(s, e);
-        if (span == 0) { message = L("Le début et la fin doivent être différents."); return false; }
-        if (span > 18) { message = LP(span, "Plage de {0} heure : 18 heures au maximum.", "Plage de {0} heures : 18 heures au maximum."); return false; }
-        message = LP(span, "Plage de {0} heure.", "Plage de {0} heures.");
+        if (span == 0) { message = L("Start and end must be different."); return false; }
+        if (span > 18) { message = LP(span, "Range of {0} hour: 18 hours maximum.", "Range of {0} hours: 18 hours maximum."); return false; }
+        message = LP(span, "Range of {0} hour.", "Range of {0} hours.");
         return true;
     }
 

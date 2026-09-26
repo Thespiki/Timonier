@@ -16,7 +16,7 @@ using Timonier.Core.Localization;
 
 static partial class Chunker
 {
-    public static int Split(string catalogPath, string outDir, int size)
+    public static int Split(string catalogPath, string outDir, int size, int maxRefs = 3)
     {
         var catalog = JsonNode.Parse(File.ReadAllText(catalogPath))!;
         var entries = catalog["entries"]!.AsArray().Select(n => n!.AsObject())
@@ -35,7 +35,7 @@ static partial class Chunker
                 if (e["context"] is { } ctx) o["context"] = ctx.GetValue<string>();
                 if (e["one"] is { } one) o["one"] = one.GetValue<string>();
                 o["text"] = e["key"]!.GetValue<string>();
-                o["refs"] = new JsonArray([.. e["refs"]!.AsArray().Take(3).Select(r => (JsonNode)r!.GetValue<string>())]);
+                if (maxRefs > 0) o["refs"] = new JsonArray([.. e["refs"]!.AsArray().Take(maxRefs).Select(r => (JsonNode)r!.GetValue<string>())]);
                 items.Add(o);
             }
             Write(Path.Combine(outDir, $"{c + 1:00}.json"), new JsonObject

@@ -11,8 +11,8 @@ namespace Timonier.Modules.Maintenance;
 internal static partial class MaintenanceTweaks
 {
     // Titres de groupe affichés ; la page compare TweakDefinition.Group à ces mêmes champs.
-    public static readonly string GroupUpdates = L("Réglages de Windows Update");
-    public static readonly string GroupStorage = L("Assistant de stockage");
+    public static readonly string GroupUpdates = L("Windows Update settings");
+    public static readonly string GroupStorage = LC("feature name", "Storage Sense");
 
     private const string Cat = MaintenanceModule.Category;
     private const string WuPolicy = @"SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate";
@@ -27,62 +27,62 @@ internal static partial class MaintenanceTweaks
     public static IEnumerable<TweakDefinition> All()
     {
         // ---------------------------------------------------------------- Windows Update
-        yield return Tweak.Toggle("maintenance.wu.autoreboot", L("Redémarrage automatique avec une session ouverte"),
-                L("Autorise Windows Update à redémarrer le PC de lui-même pour terminer une installation alors qu'un utilisateur est connecté. Désactivé (stratégie officielle « Pas de redémarrage automatique avec des utilisateurs connectés »), Windows attend que vous redémarriez vous-même et vous le rappelle par des notifications : aucun travail non enregistré n'est perdu."))
+        yield return Tweak.Toggle("maintenance.wu.autoreboot", L("Automatic restart while a user is signed in"),
+                L("Allows Windows Update to restart the PC on its own to finish an installation while a user is signed in. When off (official “No auto-restart with logged on users for scheduled automatic updates installations” policy), Windows waits for you to restart yourself and reminds you with notifications: no unsaved work is lost."))
             .In(Cat, GroupUpdates)
-            .Keywords(L("redémarrage automatique, reboot, auto restart, NoAutoRebootWithLoggedOnUsers, redémarrer tout seul, windows update"))
+            .Keywords(L("automatic restart, reboot, auto restart, NoAutoRebootWithLoggedOnUsers, restarts by itself, windows update"))
             .WhenOn(Reg.LmDel(AuPolicy, "NoAutoRebootWithLoggedOnUsers"))
             .WhenOff(Reg.LmDword(AuPolicy, "NoAutoRebootWithLoggedOnUsers", 1))
-            .Labels(L("Autorisé"), L("Bloqué"))
+            .Labels(L("Allowed"), L("Blocked"))
             .WindowsDefault(TweakDefinition.On)
             .Recommend(TweakDefinition.Off)
             .Requires(Requires.ProOrHigher)
-            .Warning(L("Les correctifs de sécurité ne sont réellement appliqués qu'après le redémarrage : redémarrez quand Windows vous le demande."))
+            .Warning(L("Security fixes only really take effect after the restart: restart when Windows asks you to."))
             .Tags("office", "family")
             .Build();
 
-        yield return Tweak.Toggle("maintenance.wu.otherproducts", L("Mises à jour des autres produits Microsoft"),
-                L("Fait installer par Windows Update les correctifs d'Office, des runtimes .NET, de Visual Studio et d'autres logiciels Microsoft. « Imposé » applique la stratégie officielle (case « Installer les mises à jour d'autres produits Microsoft ») ; « Au choix » laisse l'option « Recevoir les mises à jour d'autres produits Microsoft » des Paramètres décider."))
+        yield return Tweak.Toggle("maintenance.wu.otherproducts", L("Updates for other Microsoft products"),
+                L("Has Windows Update install fixes for Office, .NET runtimes, Visual Studio and other Microsoft software. “Enforced” applies the official policy (“Install updates for other Microsoft products” checkbox); “User's choice” lets the “Receive updates for other Microsoft products” option in Settings decide."))
             .In(Cat, GroupUpdates)
-            .Keywords(L("office, microsoft update, autres produits, AllowMUUpdateService, .net, correctifs office"))
+            .Keywords(L("office, microsoft update, other products, AllowMUUpdateService, .net, office updates"))
             .WhenOn(Reg.LmDword(AuPolicy, "AllowMUUpdateService", 1))
             .WhenOff(Reg.LmDel(AuPolicy, "AllowMUUpdateService"))
-            .Labels(L("Imposé"), L("Au choix (Paramètres)"))
+            .Labels(L("Enforced"), L("User's choice (Settings)"))
             .WindowsDefault(TweakDefinition.Off)
             .Recommend(TweakDefinition.On)
             .Tags("office", "family")
             .Build();
 
-        yield return Tweak.Toggle("maintenance.wu.drivers", L("Pilotes via Windows Update"),
-                L("Laisse Windows Update installer automatiquement des pilotes de périphériques (graphique, Wi-Fi, audio…). Désactivé (stratégie « Ne pas inclure les pilotes avec les mises à jour Windows »), les pilotes ne viennent plus de Windows Update : utile si une mise à jour de pilote a provoqué un problème ou si vous installez ceux du fabricant."))
+        yield return Tweak.Toggle("maintenance.wu.drivers", L("Drivers through Windows Update"),
+                L("Lets Windows Update automatically install device drivers (graphics, Wi-Fi, audio…). When off (“Do not include drivers with Windows Updates” policy), drivers no longer come from Windows Update: useful if a driver update caused a problem or if you install the manufacturer's drivers."))
             .In(Cat, GroupUpdates)
-            .Keywords(L("pilotes, drivers, ExcludeWUDriversInQualityUpdate, mise à jour pilote, driver update"))
+            .Keywords(L("drivers, ExcludeWUDriversInQualityUpdate, driver update, update drivers"))
             .WhenOn(Reg.LmDel(WuPolicy, "ExcludeWUDriversInQualityUpdate"))
             .WhenOff(Reg.LmDword(WuPolicy, "ExcludeWUDriversInQualityUpdate", 1))
-            .Labels(L("Inclus"), L("Exclus"))
+            .Labels(L("Included"), L("Excluded"))
             .WindowsDefault(TweakDefinition.On)
             .Risk(RiskLevel.Moderate)
-            .Warning(L("Vous devrez mettre à jour vos pilotes vous-même (site du fabricant) : un nouveau périphérique peut rester sans pilote adapté."))
+            .Warning(L("You'll have to update your drivers yourself (manufacturer's website): a new device may be left without a suitable driver."))
             .Build();
 
         if (TargetVersionTweak() is { } target) yield return target;
 
-        yield return Tweak.Toggle("maintenance.wu.metered", L("Téléchargement sur connexion limitée"),
-                L("Autorise le téléchargement automatique des mises à jour sur une connexion définie comme limitée (partage de connexion d'un téléphone, forfait 4G/5G). Par défaut, Windows évite ces téléchargements pour préserver votre forfait. Stratégie officielle « Autoriser le téléchargement automatique des mises à jour sur des connexions limitées »."))
+        yield return Tweak.Toggle("maintenance.wu.metered", L("Download over metered connections"),
+                L("Allows updates to download automatically over a connection set as metered (phone hotspot, 4G/5G plan). By default, Windows avoids these downloads to save your data plan. Official “Allow updates to be downloaded automatically over metered connections” policy."))
             .In(Cat, GroupUpdates)
-            .Keywords(L("connexion limitée, metered, forfait, 4g, partage de connexion, données mobiles"))
+            .Keywords(L("metered connection, metered, data plan, 4g, 5g, hotspot, tethering, mobile data"))
             .WhenOn(Reg.LmDword(WuPolicy, "AllowAutoWindowsUpdateDownloadOverMeteredNetwork", 1))
             .WhenOff(Reg.LmDel(WuPolicy, "AllowAutoWindowsUpdateDownloadOverMeteredNetwork"))
-            .Labels(L("Autorisé"), L("Évité"))
+            .Labels(L("Allowed"), L("Avoided"))
             .WindowsDefault(TweakDefinition.Off)
             .RecommendWhen(p => p.IsLaptopLike ? TweakDefinition.Off : null)
             .Build();
 
         // ---------------------------------------------------------------- Assistant de stockage
-        yield return Tweak.Toggle("maintenance.storage.enabled", L("Assistant de stockage"),
-                L("Libère automatiquement de l'espace : fichiers temporaires des applications et, selon les choix ci-dessous, corbeille et Téléchargements. Il s'exécute à la fréquence choisie, ou quand l'espace disque devient faible. Une stratégie d'organisation peut imposer ce réglage."))
+        yield return Tweak.Toggle("maintenance.storage.enabled", LC("feature name", "Storage Sense"),
+                L("Frees up space automatically: apps' temporary files and, depending on the choices below, the Recycle Bin and Downloads. It runs at the chosen frequency, or when disk space gets low. An organization policy can enforce this setting."))
             .In(Cat, GroupStorage)
-            .Keywords(L("storage sense, espace disque, nettoyage automatique, libérer de l'espace, stockage"))
+            .Keywords(L("storage sense, disk space, automatic cleanup, free up space, storage"))
             .WhenOn(Reg.CuDword(StoragePolicy, "01", 1))
             .WhenOff(Reg.CuDword(StoragePolicy, "01", 0))
             .WindowsDefault(TweakDefinition.Off)
@@ -90,23 +90,23 @@ internal static partial class MaintenanceTweaks
             .Tags("lowend", "family", "office")
             .Build();
 
-        yield return Tweak.Choice("maintenance.storage.cadence", L("Fréquence de l'Assistant de stockage"),
-                L("Quand l'Assistant de stockage s'exécute (s'il est activé). « Espace faible » : uniquement lorsque le disque se remplit."))
+        yield return Tweak.Choice("maintenance.storage.cadence", L("Storage Sense frequency"),
+                L("When Storage Sense runs (if it's on). “Low disk space”: only when the disk is filling up."))
             .In(Cat, GroupStorage)
-            .Keywords(L("storage sense, fréquence, cadence, chaque semaine, chaque mois"))
-            .Option("lowspace", L("Espace faible"), Reg.CuDword(StoragePolicy, "2048", 0))
-            .Option("daily", L("Chaque jour"), Reg.CuDword(StoragePolicy, "2048", 1))
-            .Option("weekly", L("Chaque semaine"), Reg.CuDword(StoragePolicy, "2048", 7))
-            .Option("monthly", L("Chaque mois"), Reg.CuDword(StoragePolicy, "2048", 30))
+            .Keywords(L("storage sense, frequency, schedule, every week, every month"))
+            .Option("lowspace", L("Low disk space"), Reg.CuDword(StoragePolicy, "2048", 0))
+            .Option("daily", L("Every day"), Reg.CuDword(StoragePolicy, "2048", 1))
+            .Option("weekly", L("Every week"), Reg.CuDword(StoragePolicy, "2048", 7))
+            .Option("monthly", L("Every month"), Reg.CuDword(StoragePolicy, "2048", 30))
             .WindowsDefault("lowspace")
             .RecommendWhen(p => p.Tier == PerformanceTier.Low || p.SystemDisk is { } d && d.SizeBytes > 0 && d.SizeBytes <= SmallDisk ? "weekly" : null)
             .Tags("lowend")
             .Build();
 
-        yield return Tweak.Toggle("maintenance.storage.tempfiles", L("Nettoyage des fichiers temporaires des applications"),
-                L("Lors de son passage, l'Assistant de stockage supprime les fichiers temporaires que les applications n'utilisent plus."))
+        yield return Tweak.Toggle("maintenance.storage.tempfiles", L("Clean up apps' temporary files"),
+                L("When it runs, Storage Sense deletes temporary files that apps no longer use."))
             .In(Cat, GroupStorage)
-            .Keywords(L("storage sense, fichiers temporaires, temp, nettoyage automatique"))
+            .Keywords(L("storage sense, temporary files, temp, automatic cleanup"))
             .WhenOn(Reg.CuDword(StoragePolicy, "04", 1))
             .WhenOff(Reg.CuDword(StoragePolicy, "04", 0))
             .WindowsDefault(TweakDefinition.On)
@@ -114,30 +114,30 @@ internal static partial class MaintenanceTweaks
             .Tags("lowend")
             .Build();
 
-        yield return Tweak.Choice("maintenance.storage.recyclebin", L("Vidage automatique de la corbeille"),
-                L("Supprime définitivement les éléments restés dans la corbeille plus longtemps que la durée choisie (lors du passage de l'Assistant de stockage)."))
+        yield return Tweak.Choice("maintenance.storage.recyclebin", L("Automatically empty the Recycle Bin"),
+                L("Permanently deletes items that have been in the Recycle Bin longer than the chosen period (when Storage Sense runs)."))
             .In(Cat, GroupStorage)
-            .Keywords(L("corbeille, recycle bin, storage sense, vider la corbeille"))
-            .Option("never", L("Jamais"), Reg.CuDword(StoragePolicy, "08", 0))
-            .Option("d1", L("Après 1 jour"), Reg.CuDword(StoragePolicy, "08", 1), Reg.CuDword(StoragePolicy, "256", 1))
-            .Option("d14", L("Après 14 jours"), Reg.CuDword(StoragePolicy, "08", 1), Reg.CuDword(StoragePolicy, "256", 14))
-            .Option("d30", L("Après 30 jours"), Reg.CuDword(StoragePolicy, "08", 1), Reg.CuDword(StoragePolicy, "256", 30))
-            .Option("d60", L("Après 60 jours"), Reg.CuDword(StoragePolicy, "08", 1), Reg.CuDword(StoragePolicy, "256", 60))
+            .Keywords(L("recycle bin, storage sense, empty recycle bin, trash"))
+            .Option("never", L("Never"), Reg.CuDword(StoragePolicy, "08", 0))
+            .Option("d1", L("After 1 day"), Reg.CuDword(StoragePolicy, "08", 1), Reg.CuDword(StoragePolicy, "256", 1))
+            .Option("d14", L("After 14 days"), Reg.CuDword(StoragePolicy, "08", 1), Reg.CuDword(StoragePolicy, "256", 14))
+            .Option("d30", L("After 30 days"), Reg.CuDword(StoragePolicy, "08", 1), Reg.CuDword(StoragePolicy, "256", 30))
+            .Option("d60", L("After 60 days"), Reg.CuDword(StoragePolicy, "08", 1), Reg.CuDword(StoragePolicy, "256", 60))
             .WindowsDefault("d30")
             .Tags("lowend")
             .Build();
 
-        yield return Tweak.Choice("maintenance.storage.downloads", L("Nettoyage automatique des Téléchargements"),
-                L("Supprime les fichiers du dossier Téléchargements qui n'ont pas été ouverts depuis la durée choisie (lors du passage de l'Assistant de stockage)."))
+        yield return Tweak.Choice("maintenance.storage.downloads", L("Automatically clean up Downloads"),
+                L("Deletes files in the Downloads folder that haven't been opened for the chosen period (when Storage Sense runs)."))
             .In(Cat, GroupStorage)
-            .Keywords(L("téléchargements, downloads, storage sense, nettoyage automatique"))
-            .Option("never", L("Jamais"), Reg.CuDword(StoragePolicy, "32", 0))
-            .Option("d14", L("Après 14 jours"), Reg.CuDword(StoragePolicy, "32", 1), Reg.CuDword(StoragePolicy, "512", 14))
-            .Option("d30", L("Après 30 jours"), Reg.CuDword(StoragePolicy, "32", 1), Reg.CuDword(StoragePolicy, "512", 30))
-            .Option("d60", L("Après 60 jours"), Reg.CuDword(StoragePolicy, "32", 1), Reg.CuDword(StoragePolicy, "512", 60))
+            .Keywords(L("downloads, downloads folder, storage sense, automatic cleanup"))
+            .Option("never", L("Never"), Reg.CuDword(StoragePolicy, "32", 0))
+            .Option("d14", L("After 14 days"), Reg.CuDword(StoragePolicy, "32", 1), Reg.CuDword(StoragePolicy, "512", 14))
+            .Option("d30", L("After 30 days"), Reg.CuDword(StoragePolicy, "32", 1), Reg.CuDword(StoragePolicy, "512", 30))
+            .Option("d60", L("After 60 days"), Reg.CuDword(StoragePolicy, "32", 1), Reg.CuDword(StoragePolicy, "512", 60))
             .WindowsDefault("never")
             .Risk(RiskLevel.Moderate)
-            .Warning(L("Les fichiers concernés sont supprimés sans passer par la corbeille : rangez ailleurs ce que vous voulez garder."))
+            .Warning(L("The affected files are deleted without going to the Recycle Bin: move anything you want to keep somewhere else."))
             .Build();
     }
 
@@ -154,21 +154,21 @@ internal static partial class MaintenanceTweaks
         if (build == 0) return null;
         var product = build >= 22000 ? "Windows 11" : "Windows 10";
 
-        return Tweak.Toggle("maintenance.wu.targetversion", L("Verrouillage sur {0} {1}", product, display),
-                L("Bloque les mises à niveau de fonctionnalités (la nouvelle version annuelle de Windows) et garde ce PC sur {0} {1}. Les mises à jour de sécurité et les correctifs mensuels continuent d'être installés normalement. Stratégie officielle « Sélectionner la version cible des mises à jour de fonctionnalités » (Windows Update pour les entreprises).", product, display))
+        return Tweak.Toggle("maintenance.wu.targetversion", L("Lock to {0} {1}", product, display),
+                L("Blocks feature updates (the new yearly version of Windows) and keeps this PC on {0} {1}. Security updates and monthly fixes keep installing normally. Official “Select the target Feature Update version” policy (Windows Update for Business).", product, display))
             .In(Cat, GroupUpdates)
-            .Keywords(L("version cible, TargetReleaseVersion, bloquer mise à niveau, feature update, rester sur, 24h2, 25h2, mise à niveau"))
+            .Keywords(L("target version, TargetReleaseVersion, block upgrade, feature update, stay on version, 24h2, 25h2, upgrade"))
             .WhenOn(Reg.LmDword(WuPolicy, "TargetReleaseVersion", 1),
                     Reg.LmString(WuPolicy, "ProductVersion", product),
                     Reg.LmString(WuPolicy, "TargetReleaseVersionInfo", display))
             .WhenOff(Reg.LmDel(WuPolicy, "TargetReleaseVersion"),
                      Reg.LmDel(WuPolicy, "ProductVersion"),
                      Reg.LmDel(WuPolicy, "TargetReleaseVersionInfo"))
-            .Labels(L("Verrouillé"), L("Libre"))
+            .Labels(L("Locked"), L("Unlocked"))
             .WindowsDefault(TweakDefinition.Off)
             .Risk(RiskLevel.Moderate)
             .Requires(Requires.ProOrHigher)
-            .Warning(L("Chaque version n'est prise en charge qu'un temps limité (24 mois pour une version de fin d'année en édition Professionnel, 36 mois en Entreprise/Éducation). Retirez ce verrou avant la fin du support de {0}, sinon ce PC ne recevra plus de correctifs de sécurité.", display))
+            .Warning(L("Each version is only supported for a limited time (24 months for an end-of-year release on the Pro edition, 36 months on Enterprise/Education). Remove this lock before support for {0} ends, or this PC will stop receiving security fixes.", display))
             .Build();
     }
 }

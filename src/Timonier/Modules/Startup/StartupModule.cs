@@ -19,8 +19,8 @@ public sealed class StartupModule : IModule
 
     public void Register(ModuleRegistry r)
     {
-        r.AddCategory(new CategoryInfo(Category, L("Démarrage et services"), Glyph,
-            L("Applications lancées à l'ouverture de session, services Windows et tâches planifiées.")));
+        r.AddCategory(new CategoryInfo(Category, L("Startup & services"), Glyph,
+            L("Apps that run at sign-in, Windows services and scheduled tasks.")));
 
         r.AddTweaks(StartupTweaks.All());
 
@@ -32,21 +32,21 @@ public sealed class StartupModule : IModule
         r.AddAction(new ServiceControlAction());
         r.AddAction(new SetTaskEnabledAction());
 
-        r.AddPage(new PageInfo(PageId, L("Démarrage et services"), Glyph, NavSection.Tools, 20, () => new StartupPage())
+        r.AddPage(new PageInfo(PageId, L("Startup & services"), Glyph, NavSection.Tools, 20, () => new StartupPage())
         {
             CategoryId = Category,
-            Description = L("Applications au démarrage, services Windows et tâches planifiées : voir, activer, désactiver."),
-            Keywords = [L("démarrage, startup, ouverture de session, lancement automatique, services, tâches planifiées, démarrage lent, boot, autorun, msconfig, gestionnaire des tâches")],
+            Description = L("Startup apps, Windows services and scheduled tasks: view, enable, disable."),
+            Keywords = [L("startup, sign-in, login, autostart, services, scheduled tasks, slow startup, slow boot, boot, autorun, msconfig, task manager")],
         });
 
         // Contrôle de santé : lecture seule du registre et des dossiers Démarrage (exécuté dans l'interface, hors thread UI).
-        r.AddHealthCheck(HealthCheck.Sync("startup.items", L("Applications au démarrage"), Glyph, PageId, CheckStartup));
+        r.AddHealthCheck(HealthCheck.Sync("startup.items", L("Startup apps"), Glyph, PageId, CheckStartup));
 
-        r.AddQuickAction(new QuickAction("startup.open", L("Gérer les applications au démarrage"), Glyph,
-            L("Voir et désactiver les applications qui se lancent à l'ouverture de session."),
+        r.AddQuickAction(new QuickAction("startup.open", L("Manage startup apps"), Glyph,
+            L("See and disable the apps that run at sign-in."),
             () => { AppHost.Navigator.Navigate(PageId, "section:apps"); return Task.CompletedTask; })
         {
-            Keywords = [L("démarrage, startup, lancement automatique, accélérer le démarrage, démarrage lent")],
+            Keywords = [L("startup, autostart, speed up startup, faster boot, slow startup, slow boot")],
             Order = 30,
         });
 
@@ -63,57 +63,57 @@ public sealed class StartupModule : IModule
         var (enabled, total) = StartupInventory.Count();
         var low = AppHost.Profile?.Tier == PerformanceTier.Low;
         var threshold = low ? 8 : 12;
-        var summary = LP(enabled, "{0} application lancée au démarrage", "{0} applications lancées au démarrage");
+        var summary = LP(enabled, "{0} app runs at startup", "{0} apps run at startup");
         if (enabled > threshold)
             return new HealthResult(HealthStatus.Warning, summary,
                 low
-                    ? L("Au-delà de {0} applications sur un PC d'entrée de gamme, l'ouverture de session ralentit nettement. Désactivez celles dont vous n'avez pas besoin dès le démarrage.", threshold)
-                    : L("Au-delà de {0} applications, l'ouverture de session ralentit nettement. Désactivez celles dont vous n'avez pas besoin dès le démarrage.", threshold));
-        return new HealthResult(HealthStatus.Info, summary, LP(total - enabled, "{0} désactivée sur {1}.", "{0} désactivées sur {1}.", total));
+                    ? L("Beyond {0} apps on an entry-level PC, sign-in slows down noticeably. Disable the ones you don't need right at startup.", threshold)
+                    : L("Beyond {0} apps, sign-in slows down noticeably. Disable the ones you don't need right at startup.", threshold));
+        return new HealthResult(HealthStatus.Info, summary, LP(total - enabled, "{0} of {1} disabled.", "{0} of {1} disabled.", total));
     }
 
     private static void RegisterSearchEntries(ModuleRegistry r)
     {
         r.AddSearchEntry(new SearchEntry
         {
-            Id = "startup.section.apps", Title = L("Applications au démarrage"),
-            Subtitle = L("Activer ou désactiver les programmes lancés à l'ouverture de session"),
+            Id = "startup.section.apps", Title = L("Startup apps"),
+            Subtitle = L("Enable or disable the programs that run at sign-in"),
             Glyph = Glyph, PageId = PageId, PageParameter = "section:apps", Boost = 0.1,
-            Keywords = [L("applications demarrage, programmes au demarrage, startup apps, run, desactiver demarrage, autorun")],
+            Keywords = [L("startup apps, startup programs, run, disable startup, autorun, autostart")],
         });
         r.AddSearchEntry(new SearchEntry
         {
-            Id = "startup.section.services", Title = L("Services Windows"),
-            Subtitle = L("Type de démarrage, démarrer ou arrêter un service"),
+            Id = "startup.section.services", Title = L("Windows services"),
+            Subtitle = L("Startup type, start or stop a service"),
             Glyph = ServicesGlyph, PageId = PageId, PageParameter = "section:services",
-            Keywords = [L("services, service windows, services.msc, type de demarrage, arreter service, desactiver service")],
+            Keywords = [L("services, windows service, services.msc, startup type, stop service, disable service")],
         });
         r.AddSearchEntry(new SearchEntry
         {
-            Id = "startup.section.tasks", Title = L("Tâches planifiées"),
-            Subtitle = L("Tâches des applications lancées au démarrage ou à heure fixe"),
+            Id = "startup.section.tasks", Title = L("Scheduled tasks"),
+            Subtitle = L("App tasks that run at startup or at set times"),
             Glyph = TasksGlyph, PageId = PageId, PageParameter = "section:tasks",
-            Keywords = [L("taches planifiees, planificateur, scheduled tasks, task scheduler, mises a jour automatiques applications")],
+            Keywords = [L("scheduled tasks, scheduler, task scheduler, automatic app updates")],
         });
         r.AddSearchEntry(new SearchEntry
         {
-            Id = "startup.win.startupapps", Title = L("Applications de démarrage (Paramètres Windows)"),
-            Subtitle = L("Ouvre Paramètres › Applications › Démarrage"), Glyph = Glyph, Kind = SearchEntryKind.WindowsSetting,
-            Keywords = [L("parametres demarrage, startup apps settings")],
+            Id = "startup.win.startupapps", Title = L("Startup apps (Windows Settings)"),
+            Subtitle = L("Opens Settings › Apps › Startup"), Glyph = Glyph, Kind = SearchEntryKind.WindowsSetting,
+            Keywords = [L("startup settings, startup apps settings, startup apps")],
             Execute = () => ProcessRunner.OpenSettingsUri("ms-settings:startupapps"),
         });
         r.AddSearchEntry(new SearchEntry
         {
-            Id = "startup.tool.services", Title = L("Console Services (services.msc)"),
-            Subtitle = L("Outil d'administration des services de Windows"), Glyph = ServicesGlyph, Kind = SearchEntryKind.Tool,
-            Keywords = [L("services.msc, console services, gestionnaire de services")],
+            Id = "startup.tool.services", Title = L("Services console (services.msc)"),
+            Subtitle = L("Windows services administration tool"), Glyph = ServicesGlyph, Kind = SearchEntryKind.Tool,
+            Keywords = [L("services.msc, services console, service manager")],
             Execute = () => StartupUi.OpenConsole("services.msc"),
         });
         r.AddSearchEntry(new SearchEntry
         {
-            Id = "startup.tool.taskschd", Title = L("Planificateur de tâches (taskschd.msc)"),
-            Subtitle = L("Outil d'administration des tâches planifiées"), Glyph = TasksGlyph, Kind = SearchEntryKind.Tool,
-            Keywords = [L("taskschd.msc, planificateur de taches, task scheduler")],
+            Id = "startup.tool.taskschd", Title = L("Task Scheduler (taskschd.msc)"),
+            Subtitle = L("Scheduled tasks administration tool"), Glyph = TasksGlyph, Kind = SearchEntryKind.Tool,
+            Keywords = [L("taskschd.msc, task scheduler, scheduled tasks")],
             Execute = () => StartupUi.OpenConsole("taskschd.msc"),
         });
     }

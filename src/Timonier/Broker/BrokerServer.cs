@@ -149,7 +149,7 @@ public static partial class BrokerServer
                     }
                     if (req.Op == "exit")
                     {
-                        await SendAsync(new BrokerResponse { Id = req.Id, Ok = true, Message = L("Session administrateur fermée.") }).ConfigureAwait(false);
+                        await SendAsync(new BrokerResponse { Id = req.Id, Ok = true, Message = L("Admin session closed.") }).ConfigureAwait(false);
                         break;
                     }
                     // Les requêtes longues (SFC, DISM, winget…) tournent en parallèle de la lecture pour pouvoir être annulées.
@@ -205,11 +205,11 @@ public static partial class BrokerServer
                     "apply" => Apply(req, ctx),
                     "action" => await RunActionAsync(req, ctx).ConfigureAwait(false),
                     "undo" => Undo(req, ctx),
-                    _ => new BrokerResponse { Ok = false, Message = L("Opération inconnue.") },
+                    _ => new BrokerResponse { Ok = false, Message = L("Unknown operation.") },
                 };
             }
             catch (ValidationException ex) { response = new BrokerResponse { Ok = false, Message = ex.Message }; }
-            catch (OperationCanceledException) { response = new BrokerResponse { Ok = false, Cancelled = true, Message = L("Opération annulée.") }; }
+            catch (OperationCanceledException) { response = new BrokerResponse { Ok = false, Cancelled = true, Message = L("Operation canceled.") }; }
             catch (Exception ex)
             {
                 Log.Error("Broker", $"requête {req.Op}", ex);
@@ -228,16 +228,16 @@ public static partial class BrokerServer
 
         private BrokerResponse Apply(BrokerRequest req, ExecContext ctx)
         {
-            var tweak = registry.GetTweak(req.TweakId ?? "") ?? throw new ValidationException(L("Réglage inconnu."));
-            var option = tweak.GetOption(req.Option ?? "") ?? throw new ValidationException(L("Option inconnue."));
+            var tweak = registry.GetTweak(req.TweakId ?? "") ?? throw new ValidationException(L("Unknown setting."));
+            var option = tweak.GetOption(req.Option ?? "") ?? throw new ValidationException(L("Unknown option."));
             // Moindre privilège : un réglage qui ne demande pas l'admin ne s'exécute jamais dans le processus élevé.
-            if (!tweak.RequiresAdmin) throw new ValidationException(L("Ce réglage ne s'applique pas en mode administrateur."));
+            if (!tweak.RequiresAdmin) throw new ValidationException(L("This setting doesn't apply in administrator mode."));
             Log.Info("Broker", $"apply {tweak.Id}={option.Key}");
             var entry = TweakEngine.ApplyCore(tweak, option, null, ctx);
             return new BrokerResponse
             {
                 Ok = true,
-                Message = L("{0} : {1}", tweak.Title, option.Label),
+                Message = L("{0}: {1}", tweak.Title, option.Label),
                 JournalId = entry.Id,
                 Effect = (int)tweak.Effect,
             };
@@ -245,17 +245,17 @@ public static partial class BrokerServer
 
         private async Task<BrokerResponse> RunActionAsync(BrokerRequest req, ExecContext ctx)
         {
-            var handler = registry.GetAction(req.ActionId ?? "") ?? throw new ValidationException(L("Action inconnue."));
+            var handler = registry.GetAction(req.ActionId ?? "") ?? throw new ValidationException(L("Unknown action."));
             // Moindre privilège : une action qui ne demande pas l'admin ne s'exécute jamais dans le processus élevé.
-            if (!handler.RequiresAdmin) throw new ValidationException(L("Cette action ne s'exécute pas en mode administrateur."));
+            if (!handler.RequiresAdmin) throw new ValidationException(L("This action doesn't run in administrator mode."));
             var parameters = req.Params ?? [];
             Validate.ParameterBag(parameters);
             handler.ValidateParameters(parameters);
             if (handler.RequiresElevatedConfirmationFor(parameters) &&
-                !Native.ConfirmFromElevatedProcess(L("Timonier — confirmation administrateur"),
-                    L("{0}\n\nCette confirmation est affichée par le processus administrateur de Timonier. Continuer ?", handler.DescribeForConfirmation(parameters))))
+                !Native.ConfirmFromElevatedProcess(L("Timonier — administrator confirmation"),
+                    L("{0}\n\nThis confirmation is shown by Timonier's administrator process. Continue?", handler.DescribeForConfirmation(parameters))))
             {
-                return new BrokerResponse { Ok = false, Cancelled = true, Message = L("Action refusée à la confirmation.") };
+                return new BrokerResponse { Ok = false, Cancelled = true, Message = L("Action declined at confirmation.") };
             }
             Log.Info("Broker", $"action {handler.Id}");
             var result = await handler.ExecuteAsync(new ActionContext { Exec = ctx }, parameters).ConfigureAwait(false);
@@ -277,10 +277,10 @@ public static partial class BrokerServer
             List<string> errors;
             lock (_undoGate)
             {
-                entry = MachineJournalStore.Get(req.EntryId ?? Guid.Empty) ?? throw new ValidationException(L("Entrée de journal introuvable."));
-                if (entry.Undone) throw new ValidationException(L("Déjà annulé."));
+                entry = MachineJournalStore.Get(req.EntryId ?? Guid.Empty) ?? throw new ValidationException(L("History entry not found."));
+                if (entry.Undone) throw new ValidationException(L("Already undone."));
                 if (entry.UserSid is not null && entry.UserSid != clientSid)
-                    throw new ValidationException(L("Cette modification a été faite pour un autre compte utilisateur."));
+                    throw new ValidationException(L("This change was made for another user account."));
                 Log.Info("Broker", $"undo {entry.SourceId}");
                 errors = OperationExecutor.Undo(entry.Undo, ctx);
                 entry.Undone = true;
@@ -290,8 +290,8 @@ public static partial class BrokerServer
             }
             var effect = registry.GetTweak(entry.SourceId)?.Effect ?? Core.Model.ApplyEffect.None;
             return errors.Count == 0
-                ? new BrokerResponse { Ok = true, Message = L("Annulé : {0}", entry.Title), Effect = (int)effect }
-                : new BrokerResponse { Ok = false, Message = L("Annulation partielle : {0}", string.Join(" ; ", errors)) };
+                ? new BrokerResponse { Ok = true, Message = L("Undone: {0}", entry.Title), Effect = (int)effect }
+                : new BrokerResponse { Ok = false, Message = L("Partially undone: {0}", string.Join(" ; ", errors)) };
         }
 
         public async Task SendAsync(BrokerResponse response)

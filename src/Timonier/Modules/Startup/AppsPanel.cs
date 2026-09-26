@@ -27,14 +27,14 @@ internal sealed class AppsPanel : StackPanel, IStartupPanel
     {
         Children.Add(_summary);
 
-        _search = SearchBox(L("Rechercher une application ou un éditeur"), q => { _query = q; Render(); });
-        _filter.Add(L("Toutes"));
-        _filter.Add(L("Activées"));
-        _filter.Add(L("Désactivées"));
+        _search = SearchBox(L("Search for an app or publisher"), q => { _query = q; Render(); });
+        _filter.Add(LC("feminine plural", "All"));
+        _filter.Add(L("Enabled"));
+        _filter.Add(LC("feminine plural", "Disabled"));
         _filter.Select(0, notify: false);
         _filter.SelectionChanged += (_, _) => Render();
-        _refresh = Button(L("Actualiser"), "", "Pp.Button", async (_, _) => await ReloadAsync());
-        var settings = Button(L("Paramètres Windows"), "", "Pp.SubtleButton", (_, _) => OpenSettings());
+        _refresh = Button(L("Refresh"), "", "Pp.Button", async (_, _) => await ReloadAsync());
+        var settings = Button(L("Windows Settings"), "", "Pp.SubtleButton", (_, _) => OpenSettings());
         Children.Add(Toolbar(_search, _filter, _refresh, settings));
 
         Children.Add(_list);
@@ -57,7 +57,7 @@ internal sealed class AppsPanel : StackPanel, IStartupPanel
         if (!IsDataLoaded)
         {
             _list.Children.Clear();
-            _list.Children.Add(StateCard("", L("Recherche des applications au démarrage…"), busy: true));
+            _list.Children.Add(StateCard("", L("Looking for startup apps…"), busy: true));
         }
         try
         {
@@ -75,7 +75,7 @@ internal sealed class AppsPanel : StackPanel, IStartupPanel
         {
             Log.Error("Startup", "énumération des applications au démarrage", ex);
             _list.Children.Clear();
-            _list.Children.Add(StateCard("", L("Impossible de lire les applications au démarrage"), ex.Message));
+            _list.Children.Add(StateCard("", L("Couldn't read startup apps"), ex.Message));
         }
         finally
         {
@@ -87,7 +87,7 @@ internal sealed class AppsPanel : StackPanel, IStartupPanel
     public void Highlight(string tweakId) => _tweaks?.Highlight(tweakId);
 
     private static Border Footnote() => PageScaffold.InfoBar(
-        L("Désactiver une application ici revient à le faire dans le Gestionnaire des tâches : l'entrée reste en place et peut être réactivée à tout moment. Le changement prend effet à la prochaine ouverture de session. Une application peut aussi démarrer par un service ou une tâche planifiée : voyez les onglets correspondants."), "");
+        L("Disabling an app here is the same as doing it in Task Manager: the entry stays in place and can be enabled again at any time. The change takes effect at the next sign-in. An app can also start through a service or a scheduled task: see the corresponding tabs."), "");
 
     private void Render()
     {
@@ -109,8 +109,8 @@ internal sealed class AppsPanel : StackPanel, IStartupPanel
         if (list.Count == 0)
         {
             _list.Children.Add(toggleable.Count == 0
-                ? StateCard("", L("Aucune application ne se lance au démarrage"), L("Votre ouverture de session est aussi légère que possible."))
-                : StateCard("", L("Aucun résultat"), L("Aucune application ne correspond à la recherche ou au filtre choisi.")));
+                ? StateCard("", L("No apps run at startup"), L("Your sign-in is as light as it can be."))
+                : StateCard("", L("No results"), L("No apps match the search or the selected filter.")));
         }
         else
         {
@@ -121,10 +121,10 @@ internal sealed class AppsPanel : StackPanel, IStartupPanel
         var ro = _items.Where(i => i.IsReadOnly && (_query.Length == 0 || Matches(i, _query))).ToList();
         if (ro.Count > 0)
         {
-            var title = PageScaffold.Section(L("Entrées en lecture seule"));
+            var title = PageScaffold.Section(L("Read-only entries"));
             title.Margin = new Thickness(0, 22, 0, 4);
             _readOnly.Children.Add(title);
-            var cap = Caption(L("RunOnce : commandes exécutées une seule fois à la prochaine ouverture de session (souvent la fin d'une installation). Stratégie : programmes imposés par une stratégie de groupe. Elles ne se désactivent pas depuis le Gestionnaire des tâches."));
+            var cap = Caption(L("RunOnce: commands that run only once at the next sign-in (often the end of an installation). Policy: programs enforced by a Group Policy. They can't be disabled from Task Manager."));
             cap.Margin = new Thickness(0, 0, 0, 8);
             _readOnly.Children.Add(cap);
             foreach (var item in ro) _readOnly.Children.Add(Row(item));
@@ -153,23 +153,23 @@ internal sealed class AppsPanel : StackPanel, IStartupPanel
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        AddMetric(grid, 0, enabled.ToString(Culture), LP(enabled, "activée", "activées"), enabled > threshold ? "Pp.Warning" : "Pp.AccentText");
-        AddMetric(grid, 1, disabled.ToString(Culture), LP(disabled, "désactivée", "désactivées"), "Pp.TextSecondary");
-        AddMetric(grid, 2, missing.ToString(Culture), LP(missing, "introuvable", "introuvables"), missing > 0 ? "Pp.Warning" : "Pp.TextSecondary");
+        AddMetric(grid, 0, enabled.ToString(Culture), LP(enabled, "enabled", "enabled"), enabled > threshold ? "Pp.Warning" : "Pp.AccentText");
+        AddMetric(grid, 1, disabled.ToString(Culture), LP(disabled, "disabled", "disabled"), "Pp.TextSecondary");
+        AddMetric(grid, 2, missing.ToString(Culture), LP(missing, "missing", "missing"), missing > 0 ? "Pp.Warning" : "Pp.TextSecondary");
 
         string advice;
         if (enabled > threshold)
             advice = low
-                ? L("C'est beaucoup pour ce PC d'entrée de gamme : chaque application lancée au démarrage retarde l'ouverture de session et occupe de la mémoire. Gardez l'essentiel (antivirus, pilotes audio ou tactiles, synchronisation dont vous avez besoin).")
-                : L("C'est beaucoup : chaque application lancée au démarrage retarde l'ouverture de session et occupe de la mémoire. Gardez l'essentiel (antivirus, pilotes audio ou tactiles, synchronisation dont vous avez besoin).");
+                ? L("That's a lot for this entry-level PC: every app that runs at startup delays sign-in and takes up memory. Keep the essentials (antivirus, audio or touch drivers, sync you need).")
+                : L("That's a lot: every app that runs at startup delays sign-in and takes up memory. Keep the essentials (antivirus, audio or touch drivers, sync you need).");
         else if (enabled == 0)
-            advice = L("Aucune application ne se lance à l'ouverture de session.");
+            advice = L("No apps run at sign-in.");
         else
             advice = low
-                ? L("Sur un PC d'entrée de gamme, chaque application en moins au démarrage se ressent : désactivez ce qui ne vous sert pas dès l'ouverture de session.")
-                : L("Nombre raisonnable. Désactivez ce qui ne vous sert pas dès l'ouverture de session pour gagner quelques secondes.");
+                ? L("On an entry-level PC, every app removed from startup makes a difference: disable what you don't need right at sign-in.")
+                : L("Reasonable number. Disable what you don't need right at sign-in to save a few seconds.");
         if (missing > 0)
-            advice += " " + LP(missing, "{0} entrée pointe vers un fichier supprimé : vous pouvez la retirer.", "{0} entrées pointent vers un fichier supprimé : vous pouvez les retirer.");
+            advice += " " + LP(missing, "{0} entry points to a deleted file: you can remove it.", "{0} entries point to a deleted file: you can remove them.");
         var text = Caption(advice);
         text.FontSize = 13;
         text.VerticalAlignment = VerticalAlignment.Center;
@@ -211,16 +211,16 @@ internal sealed class AppsPanel : StackPanel, IStartupPanel
         var title = new TextBlock { Text = item.DisplayName, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 10, 2), TextTrimming = TextTrimming.CharacterEllipsis }
             .Styled("Pp.Body");
         titleLine.Children.Add(title);
-        if (item.Scope == StartupScope.Machine) titleLine.Children.Add(Badge(L("Tous les utilisateurs"), "Neutral", ""));
-        if (!item.Enabled && !item.IsReadOnly) titleLine.Children.Add(Badge(L("Désactivée")));
-        if (item.FileMissing) titleLine.Children.Add(Badge(L("Fichier introuvable"), "Warning", ""));
-        if (item.IsPolicyLocked) titleLine.Children.Add(Badge(item.Enabled ? L("Imposée par l'organisation") : L("Bloquée par l'organisation"), "Info", ""));
+        if (item.Scope == StartupScope.Machine) titleLine.Children.Add(Badge(L("All users"), "Neutral", ""));
+        if (!item.Enabled && !item.IsReadOnly) titleLine.Children.Add(Badge(L("Disabled")));
+        if (item.FileMissing) titleLine.Children.Add(Badge(L("File not found"), "Warning", ""));
+        if (item.IsPolicyLocked) titleLine.Children.Add(Badge(item.Enabled ? L("Enforced by your organization") : L("Blocked by your organization"), "Info", ""));
         body.Children.Add(titleLine);
 
-        var meta = new List<string> { item.Publisher is { Length: > 0 } pub ? pub : L("Éditeur inconnu"), item.SourceLabel };
-        if (!item.Enabled && item.DisabledSince is { } since) meta.Add(L("désactivée le {0}", Format.Day(since)));
+        var meta = new List<string> { item.Publisher is { Length: > 0 } pub ? pub : L("Unknown publisher"), item.SourceLabel };
+        if (!item.Enabled && item.DisabledSince is { } since) meta.Add(L("disabled on {0}", Format.Day(since)));
         var metaText = Caption(string.Join(" · ", meta));
-        metaText.ToolTip = item.Kind is StartupKind.Run or StartupKind.Run32 ? L("Nom de l'entrée : {0}", item.Name) : null;
+        metaText.ToolTip = item.Kind is StartupKind.Run or StartupKind.Run32 ? L("Entry name: {0}", item.Name) : null;
         body.Children.Add(metaText);
         var command = item.Kind == StartupKind.Packaged ? item.Command : item.TargetPath is not null && item.Kind == StartupKind.Folder
             ? $"{item.Command}  →  {item.TargetPath}" : item.Command;
@@ -234,28 +234,28 @@ internal sealed class AppsPanel : StackPanel, IStartupPanel
         var busy = new ProgressBar { IsIndeterminate = true, Width = 40, Height = 3, Margin = new Thickness(0, 0, 10, 0), Visibility = Visibility.Collapsed, VerticalAlignment = VerticalAlignment.Center };
         actions.Children.Add(busy);
         if (item.LocationPath is { Length: > 0 } location)
-            actions.Children.Add(IconButton("", L("Ouvrir l'emplacement"), (_, _) => RevealInExplorer(location)));
+            actions.Children.Add(IconButton("", L("Open file location"), (_, _) => RevealInExplorer(location)));
         else actions.Children.Add(new Border { Width = 34 });
         if (item.CanDelete)
         {
-            var del = IconButton("", item.NeedsAdmin ? L("Supprimer l'entrée (administrateur)") : L("Supprimer l'entrée"), async (s, _) => await DeleteAsync(item, (Button)s!));
+            var del = IconButton("", item.NeedsAdmin ? L("Delete entry (administrator)") : L("Delete entry"), async (s, _) => await DeleteAsync(item, (Button)s!));
             actions.Children.Add(del);
         }
         else actions.Children.Add(new Border { Width = 34 });
         if (item.CanToggle)
         {
-            var state = new TextBlock { Text = item.Enabled ? L("Activée") : L("Désactivée"), Width = 74, TextAlignment = TextAlignment.Right, Margin = new Thickness(10, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center }
+            var state = new TextBlock { Text = item.Enabled ? LC("feminine", "On") : L("Disabled"), Width = 74, TextAlignment = TextAlignment.Right, Margin = new Thickness(10, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center }
                 .Styled("Pp.Body");
             var toggle = new CheckBox { IsChecked = item.Enabled, VerticalAlignment = VerticalAlignment.Center }.Styled("Pp.ToggleSwitch");
-            System.Windows.Automation.AutomationProperties.SetName(toggle, L("Lancer {0} au démarrage", item.DisplayName));
-            if (item.NeedsAdmin) toggle.ToolTip = L("Entrée commune à tous les utilisateurs : droits administrateur requis.");
+            System.Windows.Automation.AutomationProperties.SetName(toggle, L("Run {0} at startup", item.DisplayName));
+            if (item.NeedsAdmin) toggle.ToolTip = L("Entry shared by all users: administrator rights required.");
             toggle.Click += async (_, _) => await ToggleAsync(item, toggle, state, busy);
             actions.Children.Add(state);
             actions.Children.Add(toggle);
         }
         else if (item.IsReadOnly)
         {
-            actions.Children.Add(Badge(item.Kind == StartupKind.RunOnce ? L("Une seule fois") : L("Stratégie"), "Neutral"));
+            actions.Children.Add(Badge(item.Kind == StartupKind.RunOnce ? L("Once") : L("Policy"), "Neutral"));
         }
         Grid.SetColumn(actions, 2);
         grid.Children.Add(actions);
@@ -284,7 +284,7 @@ internal sealed class AppsPanel : StackPanel, IStartupPanel
                 return;
             }
             toggle.IsChecked = item.Enabled;
-            state.Text = item.Enabled ? L("Activée") : L("Désactivée");
+            state.Text = item.Enabled ? LC("feminine", "On") : L("Disabled");
         }
         finally
         {
@@ -295,9 +295,9 @@ internal sealed class AppsPanel : StackPanel, IStartupPanel
 
     private async Task DeleteAsync(StartupItem item, Button button)
     {
-        var ok = await AppHost.Dialogs.ConfirmAsync(L("Supprimer l'entrée de démarrage ?"),
-            L("« {0} » sera retiré de la liste de démarrage ({1}).\n\nCommande : {2}\n\nLe programme lui-même n'est pas désinstallé, et l'entrée peut être restaurée depuis le journal de Timonier. Préférez la désactivation si vous n'êtes pas sûr : elle a le même effet au démarrage.", item.DisplayName, item.SourceLabel, item.Command),
-            L("Supprimer"), L("Annuler"), danger: true);
+        var ok = await AppHost.Dialogs.ConfirmAsync(L("Delete startup entry?"),
+            L("“{0}” will be removed from the startup list ({1}).\n\nCommand: {2}\n\nThe program itself isn't uninstalled, and the entry can be restored from Timonier's History. If you're not sure, disable it instead: it has the same effect at startup.", item.DisplayName, item.SourceLabel, item.Command),
+            L("Remove"), L("Undo"), danger: true);
         if (!ok) return;
         button.IsEnabled = false;
         var p = new Dictionary<string, string> { ["scope"] = item.ScopeParam, ["kind"] = item.KindParam, ["name"] = item.Name };
@@ -314,6 +314,6 @@ internal sealed class AppsPanel : StackPanel, IStartupPanel
     private static void OpenSettings()
     {
         try { ProcessRunner.OpenSettingsUri("ms-settings:startupapps"); }
-        catch (Exception ex) { AppHost.Toasts.Show(L("Impossible d'ouvrir les Paramètres : {0}", ex.Message), ToastKind.Error); }
+        catch (Exception ex) { AppHost.Toasts.Show(L("Couldn't open Settings: {0}", ex.Message), ToastKind.Error); }
     }
 }

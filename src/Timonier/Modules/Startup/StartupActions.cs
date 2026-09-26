@@ -24,7 +24,7 @@ public abstract class StartupItemActionBase : IActionHandler
     {
         var scope = Validate.OneOf(p, "scope", "user", "machine");
         if (!string.Equals(scope, Scope == StartupScope.User ? "user" : "machine", StringComparison.OrdinalIgnoreCase))
-            throw new ValidationException(L("Portée non autorisée pour cette action."));
+            throw new ValidationException(L("Scope not allowed for this action."));
         var kind = StartupInventory.ParseKind(Validate.OneOf(p, "kind", AllowedKinds));
         Validate.Required(p, "name", 400);
         // Valeur exacte (non rognée) : « Outil » et « Outil  » sont deux entrées Run distinctes, il ne faut pas agir sur l'autre.
@@ -53,10 +53,10 @@ public abstract class SetStartupItemEnabledBase : StartupItemActionBase
         var (kind, name) = Parse(p, ctx.Elevated ? ctx.UserSid : null);
         var enabled = Validate.OneOf(p, "enabled", "true", "false") == "true";
         var ops = StartupInventory.SetEnabledOps(Scope, kind, name, enabled, DateTime.UtcNow);
-        var entry = ctx.ApplyJournaled(Id, L("Démarrage : « {0} »", Label(name)), enabled ? L("Activée") : L("Désactivée"), ops);
+        var entry = ctx.ApplyJournaled(Id, L("Startup: “{0}”", Label(name)), enabled ? LC("feminine", "On") : L("Disabled"), ops);
         var msg = enabled
-            ? L("« {0} » se lancera à la prochaine ouverture de session.", Label(name))
-            : L("« {0} » ne se lancera plus à l'ouverture de session.", Label(name));
+            ? L("“{0}” will run at the next sign-in.", Label(name))
+            : L("“{0}” will no longer run at sign-in.", Label(name));
         return Task.FromResult(ActionResult.Ok(msg) with { JournalId = entry.Id });
     }
 }
@@ -64,7 +64,7 @@ public abstract class SetStartupItemEnabledBase : StartupItemActionBase
 public sealed class SetStartupItemEnabledUserAction : SetStartupItemEnabledBase
 {
     public override string Id => "startup.item.setenabled.user";
-    public override string Title => L("Activer ou désactiver une application au démarrage (votre compte)");
+    public override string Title => L("Enable or disable a startup app (your account)");
     protected override StartupScope Scope => StartupScope.User;
     protected override string[] AllowedKinds => ["run", "folder", "packaged"];
 }
@@ -72,7 +72,7 @@ public sealed class SetStartupItemEnabledUserAction : SetStartupItemEnabledBase
 public sealed class SetStartupItemEnabledAction : SetStartupItemEnabledBase
 {
     public override string Id => "startup.item.setenabled";
-    public override string Title => L("Activer ou désactiver une application au démarrage (tous les utilisateurs)");
+    public override string Title => L("Enable or disable a startup app (all users)");
     protected override StartupScope Scope => StartupScope.Machine;
     protected override string[] AllowedKinds => ["run", "run32", "folder"];
 }
@@ -84,8 +84,8 @@ public abstract class DeleteStartupItemBase : StartupItemActionBase
     {
         var (kind, name) = Parse(p, ctx.Elevated ? ctx.UserSid : null);
         var ops = StartupInventory.DeleteOps(Scope, kind, name);
-        var entry = ctx.ApplyJournaled(Id, L("Démarrage : suppression de « {0} »", Label(name)), L("Supprimée"), ops);
-        return Task.FromResult(ActionResult.Ok(L("Entrée « {0} » supprimée. Vous pouvez la restaurer depuis le journal.", Label(name)))
+        var entry = ctx.ApplyJournaled(Id, L("Startup: removal of “{0}”", Label(name)), L("Deleted"), ops);
+        return Task.FromResult(ActionResult.Ok(L("Entry “{0}” deleted. You can restore it from History.", Label(name)))
             with { JournalId = entry.Id });
     }
 }
@@ -93,7 +93,7 @@ public abstract class DeleteStartupItemBase : StartupItemActionBase
 public sealed class DeleteStartupItemUserAction : DeleteStartupItemBase
 {
     public override string Id => "startup.item.delete.user";
-    public override string Title => L("Supprimer une entrée de démarrage (votre compte)");
+    public override string Title => L("Delete a startup entry (your account)");
     protected override StartupScope Scope => StartupScope.User;
     protected override string[] AllowedKinds => ["run"];
 }
@@ -101,7 +101,7 @@ public sealed class DeleteStartupItemUserAction : DeleteStartupItemBase
 public sealed class DeleteStartupItemAction : DeleteStartupItemBase
 {
     public override string Id => "startup.item.delete";
-    public override string Title => L("Supprimer une entrée de démarrage (tous les utilisateurs)");
+    public override string Title => L("Delete a startup entry (all users)");
     protected override StartupScope Scope => StartupScope.Machine;
     protected override string[] AllowedKinds => ["run", "run32"];
 }
@@ -110,7 +110,7 @@ public sealed class DeleteStartupItemAction : DeleteStartupItemBase
 public sealed class SetServiceStartAction : IActionHandler
 {
     public string Id => "startup.service.setstart";
-    public string Title => L("Changer le type de démarrage d'un service");
+    public string Title => L("Change a service's startup type");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) => Parse(p);
@@ -126,12 +126,12 @@ public sealed class SetServiceStartAction : IActionHandler
     public Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
     {
         var (name, start) = Parse(p);
-        ctx.Progress?.Report(L("Service « {0} »…", name));
+        ctx.Progress?.Report(L("Service “{0}”…", name));
         var label = ServiceInventory.StartLabel(start);
-        var entry = ctx.ApplyJournaled(Id, L("Service « {0} » : type de démarrage", name), label, [new ServiceStartOp(name, start)]);
+        var entry = ctx.ApplyJournaled(Id, L("Service “{0}”: startup type", name), label, [new ServiceStartOp(name, start)]);
         var msg = start == ServiceStartKind.Disabled
-            ? L("Service « {0} » désactivé (et arrêté s'il était en cours).", name)
-            : L("Service « {0} » : démarrage {1}.", name, label.ToLower(Culture));
+            ? L("Service “{0}” disabled (and stopped if it was running).", name)
+            : L("Service “{0}”: startup {1}.", name, label.ToLower(Culture));
         return Task.FromResult(ActionResult.Ok(msg) with { JournalId = entry.Id });
     }
 }
@@ -142,7 +142,7 @@ public sealed class ServiceControlAction : IActionHandler
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(30);
 
     public string Id => "startup.service.control";
-    public string Title => L("Démarrer ou arrêter un service");
+    public string Title => L("Start or stop a service");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) => Parse(p);
@@ -166,29 +166,29 @@ public sealed class ServiceControlAction : IActionHandler
                 sc.Refresh();
                 if (sc.Status != ServiceControllerStatus.Stopped)
                 {
-                    if (!sc.CanStop) return ActionResult.Fail(L("Le service « {0} » n'accepte pas d'être arrêté.", name));
-                    ctx.Progress?.Report(L("Arrêt de « {0} »…", name));
+                    if (!sc.CanStop) return ActionResult.Fail(L("The service “{0}” can't be stopped.", name));
+                    ctx.Progress?.Report(L("Stopping “{0}”…", name));
                     sc.Stop();
                     await Task.Run(() => sc.WaitForStatus(ServiceControllerStatus.Stopped, Timeout), ctx.Cancellation);
                 }
-                if (command == "stop") return ActionResult.Ok(L("Service « {0} » arrêté.", name));
+                if (command == "stop") return ActionResult.Ok(L("Service “{0}” stopped.", name));
             }
             sc.Refresh();
-            if (sc.Status == ServiceControllerStatus.Running) return ActionResult.Ok(L("Le service « {0} » est déjà démarré.", name));
+            if (sc.Status == ServiceControllerStatus.Running) return ActionResult.Ok(L("The service “{0}” is already running.", name));
             if (Core.Platform.ServiceConfig.ReadStart(ServiceInventory.EnsureManageable(name, forStartType: true)) == ServiceStartKind.Disabled)
-                return ActionResult.Fail(L("Ce service est désactivé : choisissez d'abord un autre type de démarrage."));
-            ctx.Progress?.Report(L("Démarrage de « {0} »…", name));
+                return ActionResult.Fail(L("This service is disabled: choose another startup type first."));
+            ctx.Progress?.Report(L("Starting “{0}”…", name));
             sc.Start();
             await Task.Run(() => sc.WaitForStatus(ServiceControllerStatus.Running, Timeout), ctx.Cancellation);
-            return ActionResult.Ok(command == "restart" ? L("Service « {0} » redémarré.", name) : L("Service « {0} » démarré.", name));
+            return ActionResult.Ok(command == "restart" ? L("Service “{0}” restarted.", name) : L("Service “{0}” started.", name));
         }
         catch (System.ServiceProcess.TimeoutException)
         {
-            return ActionResult.Fail(L("Le service « {0} » n'a pas répondu dans les {1:0} secondes.", name, Timeout.TotalSeconds));
+            return ActionResult.Fail(L("The service “{0}” didn't respond within {1:0} seconds.", name, Timeout.TotalSeconds));
         }
         catch (InvalidOperationException ex)
         {
-            return ActionResult.Fail(L("Opération impossible sur « {0} » : {1}", name, (ex.InnerException ?? ex).Message));
+            return ActionResult.Fail(L("Operation failed on “{0}”: {1}", name, (ex.InnerException ?? ex).Message));
         }
     }
 }
@@ -197,7 +197,7 @@ public sealed class ServiceControlAction : IActionHandler
 public sealed class SetTaskEnabledAction : IActionHandler
 {
     public string Id => "startup.task.setenabled";
-    public string Title => L("Activer ou désactiver une tâche planifiée");
+    public string Title => L("Enable or disable a scheduled task");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) => Parse(p);
@@ -213,8 +213,8 @@ public sealed class SetTaskEnabledAction : IActionHandler
     public Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
     {
         var (path, enabled) = Parse(p);
-        var entry = ctx.ApplyJournaled(Id, L("Tâche planifiée {0}", path), enabled ? L("Activée") : L("Désactivée"), [new ScheduledTaskOp(path, enabled)]);
+        var entry = ctx.ApplyJournaled(Id, L("Scheduled task {0}", path), enabled ? LC("feminine", "On") : L("Disabled"), [new ScheduledTaskOp(path, enabled)]);
         var name = path[(path.LastIndexOf('\\') + 1)..];
-        return Task.FromResult(ActionResult.Ok(enabled ? L("Tâche « {0} » activée.", name) : L("Tâche « {0} » désactivée.", name)) with { JournalId = entry.Id });
+        return Task.FromResult(ActionResult.Ok(enabled ? L("Task “{0}” enabled.", name) : L("Task “{0}” disabled.", name)) with { JournalId = entry.Id });
     }
 }

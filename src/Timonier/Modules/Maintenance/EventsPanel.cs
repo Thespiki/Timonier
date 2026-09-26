@@ -12,7 +12,7 @@ internal sealed class EventsPanel
     public FrameworkElement Root { get; }
     public event Action<EventScan>? Scanned;
 
-    private readonly TextBlock _summary = MaintUi.Text(L("Lecture des journaux en attente…"), "Pp.Body");
+    private readonly TextBlock _summary = MaintUi.Text(L("Waiting to read the logs…"), "Pp.Body");
     private readonly ProgressBar _busyBar = MaintUi.BusyBar(100);
     private readonly Button _refresh;
     private readonly CheckBox _hideHarmless;
@@ -24,11 +24,11 @@ internal sealed class EventsPanel
 
     public EventsPanel()
     {
-        _refresh = MaintUi.Button(L("Actualiser"), "", "Pp.Button", async (_, _) => await LoadAsync());
-        var viewer = MaintUi.Button(L("Observateur d'événements"), "", "Pp.SubtleButton",
+        _refresh = MaintUi.Button(L("Refresh"), "", "Pp.Button", async (_, _) => await LoadAsync());
+        var viewer = MaintUi.Button(L("Event Viewer"), "", "Pp.SubtleButton",
             (_, _) => MaintUi.OpenTool(SystemTool.Mmc, Path.Combine(Environment.SystemDirectory, "eventvwr.msc")));
         viewer.Margin = new Thickness(8, 0, 0, 0);
-        _hideHarmless = new CheckBox { Content = L("Masquer les événements connus sans gravité"), IsChecked = true, Margin = new Thickness(0, 12, 0, 0) };
+        _hideHarmless = new CheckBox { Content = L("Hide known harmless events"), IsChecked = true, Margin = new Thickness(0, 12, 0, 0) };
         _hideHarmless.Checked += (_, _) => Render();
         _hideHarmless.Unchecked += (_, _) => Render();
 
@@ -48,7 +48,7 @@ internal sealed class EventsPanel
         top.Children.Add(head);
         top.Children.Add(_hideHarmless);
 
-        _more = MaintUi.Button(L("Afficher plus"), "", "Pp.SubtleButton", (_, _) => { _shown += PageSize; Render(); });
+        _more = MaintUi.Button(L("Show more"), "", "Pp.SubtleButton", (_, _) => { _shown += PageSize; Render(); });
         _more.HorizontalAlignment = HorizontalAlignment.Left;
         _more.Visibility = Visibility.Collapsed;
         _more.Margin = new Thickness(0, 4, 0, 0);
@@ -66,7 +66,7 @@ internal sealed class EventsPanel
         _busy = true;
         _refresh.IsEnabled = false;
         _busyBar.Visibility = Visibility.Visible;
-        _summary.Text = L("Lecture des journaux Système et Application…");
+        _summary.Text = L("Reading the System and Application logs…");
         try
         {
             _scan = await Task.Run(() => EventLogService.Load(CancellationToken.None));
@@ -77,7 +77,7 @@ internal sealed class EventsPanel
         catch (Exception ex)
         {
             Log.Error("Maintenance", "journal des événements", ex);
-            _summary.Text = L("Impossible de lire les journaux d'événements.");
+            _summary.Text = L("Couldn't read the event logs.");
             _list.Children.Clear();
         }
         finally
@@ -98,7 +98,7 @@ internal sealed class EventsPanel
         var critical = scan.Groups.Where(g => g.Critical).Sum(g => g.Count);
 
         _summary.Text = scan.Total == 0
-            ? L("Aucune erreur enregistrée ces 7 derniers jours.")
+            ? L("No errors logged in the last 7 days.")
             : Summary(scan, critical);
 
         if (scan.Error is { } error)
@@ -115,8 +115,8 @@ internal sealed class EventsPanel
             var i = MaintUi.Icon("", 28, "Pp.Success");
             i.HorizontalAlignment = HorizontalAlignment.Center;
             empty.Children.Add(i);
-            var t = MaintUi.Text(scan.Total == 0 ? L("Rien à signaler : aucune erreur ni événement critique.") :
-                LP(hidden, "Seulement des événements connus sans gravité ({0} type masqué).", "Seulement des événements connus sans gravité ({0} types masqués)."), "Pp.Body");
+            var t = MaintUi.Text(scan.Total == 0 ? L("Nothing to report: no errors or critical events.") :
+                LP(hidden, "Only known harmless events ({0} type hidden).", "Only known harmless events ({0} types hidden)."), "Pp.Body");
             t.Margin = new Thickness(0, 8, 0, 0);
             t.TextAlignment = TextAlignment.Center;
             empty.Children.Add(t);
@@ -129,10 +129,10 @@ internal sealed class EventsPanel
         var remaining = visible.Count - Math.Min(_shown, visible.Count);
         _more.Visibility = remaining > 0 ? Visibility.Visible : Visibility.Collapsed;
         if (_more.Content is StackPanel sp && sp.Children.Count == 2 && sp.Children[1] is TextBlock label)
-            label.Text = LP(remaining, "Afficher plus ({0} restant)", "Afficher plus ({0} restants)");
+            label.Text = LP(remaining, "Show more ({0} left)", "Show more ({0} left)");
         if (hide && hidden > 0)
         {
-            var note = MaintUi.Text(LP(hidden, "{0} type d'événements sans gravité masqué.", "{0} types d'événements sans gravité masqués."), "Pp.Caption");
+            var note = MaintUi.Text(LP(hidden, "{0} harmless event type hidden.", "{0} harmless event types hidden."), "Pp.Caption");
             note.Margin = new Thickness(2, 6, 0, 0);
             _list.Children.Add(note);
         }
@@ -143,13 +143,13 @@ internal sealed class EventsPanel
     {
         var parts = new List<string>
         {
-            scan.Capped ? LP(scan.Total, "{0}+ événement en 7 jours", "{0}+ événements en 7 jours")
-                : LP(scan.Total, "{0} événement en 7 jours", "{0} événements en 7 jours"),
-            LP(scan.Groups.Count, "{0} type différent", "{0} types différents"),
+            scan.Capped ? LP(scan.Total, "{0}+ event in 7 days", "{0}+ events in 7 days")
+                : LP(scan.Total, "{0} event in 7 days", "{0} events in 7 days"),
+            LP(scan.Groups.Count, "{0} different type", "{0} different types"),
         };
-        if (critical > 0) parts.Add(LP(critical, "dont {0} critique", "dont {0} critiques"));
+        if (critical > 0) parts.Add(LP(critical, "including {0} critical", "including {0} critical"));
         var text = string.Join(", ", parts);
-        return (scan.Capped ? L("{0} (limité aux plus récents)", text) : text) + ".";
+        return (scan.Capped ? L("{0} (limited to the most recent)", text) : text) + ".";
     }
 
     private static FrameworkElement BuildRow(EventGroup g)
@@ -165,21 +165,21 @@ internal sealed class EventsPanel
         title.Margin = new Thickness(0, 0, 8, 0);
         title.ToolTip = g.Provider;
         titleRow.Children.Add(title);
-        titleRow.Children.Add(MaintUi.Badge(LP(g.Count, "{0} fois", "{0} fois"), g.Count >= 10 ? "Pp.Warning" : "Pp.TextSecondary", g.Count >= 10 ? "Pp.WarningBackground" : "Pp.CardSecondary"));
-        var logBadge = MaintUi.Badge(g.Log == "System" ? LC("journal", "Système") : LC("journal", "Application"));
+        titleRow.Children.Add(MaintUi.Badge(LP(g.Count, "{0} time", "{0} times"), g.Count >= 10 ? "Pp.Warning" : "Pp.TextSecondary", g.Count >= 10 ? "Pp.WarningBackground" : "Pp.CardSecondary"));
+        var logBadge = MaintUi.Badge(g.Log == "System" ? LC("journal", "System") : LC("journal", "Application"));
         logBadge.Margin = new Thickness(6, 0, 0, 0);
         titleRow.Children.Add(logBadge);
         if (g.Critical)
         {
-            var c = MaintUi.Badge(L("Critique"), "Pp.Danger", "Pp.DangerBackground");
+            var c = MaintUi.Badge(L("Critical"), "Pp.Danger", "Pp.DangerBackground");
             c.Margin = new Thickness(6, 0, 0, 0);
             titleRow.Children.Add(c);
         }
 
         var texts = new StackPanel { Margin = new Thickness(12, 0, 0, 0) };
         texts.Children.Add(titleRow);
-        var last = MaintUi.Text(g.Last == DateTime.MinValue ? L("Dernière occurrence : inconnue")
-            : L("Dernière occurrence : {0} ({1})", Format.Date(g.Last), Format.Ago(g.Last)), "Pp.Caption");
+        var last = MaintUi.Text(g.Last == DateTime.MinValue ? L("Last occurrence: unknown")
+            : L("Last occurrence: {0} ({1})", Format.Date(g.Last), Format.Ago(g.Last)), "Pp.Caption");
         last.Margin = new Thickness(0, 3, 0, 0);
         texts.Children.Add(last);
         var message = MaintUi.Text(g.FirstLine, "Pp.Body");

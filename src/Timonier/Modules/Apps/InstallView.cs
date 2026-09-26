@@ -23,7 +23,7 @@ internal sealed class InstallView : StackPanel
     private const int FirstCategoryFilter = 4;
 
     private readonly AppsContext _ctx;
-    private readonly TextBox _search = AppsUi.SearchBox(L("Rechercher une application (nom, usage, éditeur…)"));
+    private readonly TextBox _search = AppsUi.SearchBox(L("Search for an app (name, use, publisher…)"));
     private readonly ComboBox _filter = new() { Width = 230, Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
     private readonly ContentControl _suggestHost = new() { Focusable = false };
     private readonly StackPanel _sections = new();
@@ -53,16 +53,16 @@ internal sealed class InstallView : StackPanel
         bar.Children.Add(_search);
         Children.Add(bar);
         _search.TextChanged += (_, _) => { _debounce.Stop(); _debounce.Start(); };
-        _filter.Items.Add(L("Toutes les catégories"));
-        _filter.Items.Add(L("Essentiels"));
-        _filter.Items.Add(L("Suggestions pour ce PC"));
-        _filter.Items.Add(L("Déjà installées"));
+        _filter.Items.Add(L("All categories"));
+        _filter.Items.Add(L("Essentials"));
+        _filter.Items.Add(L("Suggestions for this PC"));
+        _filter.Items.Add(LC("feminine plural (apps)", "Already installed"));
         foreach (var (name, _) in AppsCatalog.Categories) _filter.Items.Add(name);
         _filter.SelectedIndex = 0;
         _filter.SelectionChanged += (_, _) => ApplyFilter();
-        System.Windows.Automation.AutomationProperties.SetName(_filter, L("Filtrer par catégorie"));
+        System.Windows.Automation.AutomationProperties.SetName(_filter, L("Filter by category"));
 
-        var note = AppsUi.Caption(L("Installation silencieuse par winget depuis sa source communautaire ; les programmes sont téléchargés chez chaque éditeur. Installer vaut acceptation de la licence de chaque éditeur."));
+        var note = AppsUi.Caption(L("Silent installation by winget from its community source; programs are downloaded from each publisher. Installing means you accept each publisher's license."));
         note.Margin = new Thickness(2, 6, 0, 0);
         Children.Add(note);
 
@@ -73,8 +73,8 @@ internal sealed class InstallView : StackPanel
         Children.Add(_noResult);
 
         // Barre d'action.
-        _clearButton = AppsUi.Button(L("Tout désélectionner"), null, "Pp.SubtleButton", (_, _) => ClearSelection());
-        _installButton = AppsUi.Button(L("Installer"), "", "Pp.AccentButton", async (_, _) => await InstallSelectedAsync());
+        _clearButton = AppsUi.Button(L("Clear selection"), null, "Pp.SubtleButton", (_, _) => ClearSelection());
+        _installButton = AppsUi.Button(L("Install"), "", "Pp.AccentButton", async (_, _) => await InstallSelectedAsync());
         _installButton.Margin = new Thickness(8, 0, 0, 0);
         var actions = AppsUi.Row(_clearButton, _installButton);
         _selectionText.VerticalAlignment = VerticalAlignment.Center;
@@ -166,11 +166,11 @@ internal sealed class InstallView : StackPanel
         DockPanel.SetDock(tile, Dock.Left);
         head.Children.Add(tile);
         var titles = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        titles.Children.Add(AppsUi.Strong(L("Suggestions pour ce PC")));
+        titles.Children.Add(AppsUi.Strong(L("Suggestions for this PC")));
         var hw = new List<string>();
         if (p.ManufacturerKnown) hw.Add(p.Manufacturer + (p.Model.Length > 0 ? " " + p.Model : ""));
         hw.AddRange(p.Gpus.Select(g => g.Name).Where(n => n.Length > 0));
-        titles.Children.Add(AppsUi.Caption(hw.Count > 0 ? string.Join(" · ", hw) : L("Outils du constructeur et pilotes graphiques adaptés")));
+        titles.Children.Add(AppsUi.Caption(hw.Count > 0 ? string.Join(" · ", hw) : L("Manufacturer tools and matching graphics drivers")));
         head.Children.Add(titles);
         body.Children.Add(head);
 
@@ -185,14 +185,14 @@ internal sealed class InstallView : StackPanel
                 target.BringIntoView();
             });
             b.Margin = new Thickness(0, 0, 8, 6);
-            b.ToolTip = L("{0}\n\nAjouter à la sélection.", app.Description);
+            b.ToolTip = L("{0}\n\nAdd to selection.", app.Description);
             wrap.Children.Add(b);
         }
         foreach (var (label, url) in links)
         {
             var b = AppsUi.Button(label, "", "Pp.SubtleButton", (_, _) => OpenOfficialSite(url));
             b.Margin = new Thickness(0, 0, 8, 6);
-            b.ToolTip = L("Ouvre le site officiel dans votre navigateur : {0}", url);
+            b.ToolTip = L("Opens the official website in your browser: {0}", url);
             wrap.Children.Add(b);
         }
         body.Children.Add(wrap);
@@ -204,16 +204,16 @@ internal sealed class InstallView : StackPanel
     private static IEnumerable<(string Label, string Url)> GpuLinks(SystemProfile p)
     {
         if (p.Gpus.Any(g => g.Vendor == HardwareVendor.Nvidia))
-            yield return (L("Application NVIDIA (site officiel)"), "https://www.nvidia.com/fr-fr/software/nvidia-app/");
+            yield return (L("NVIDIA app (official website)"), "https://www.nvidia.com/fr-fr/software/nvidia-app/");
         if (p.Gpus.Any(g => g.Vendor == HardwareVendor.Amd))
-            yield return (L("Pilotes AMD Radeon (site officiel)"), "https://www.amd.com/fr/support/download/drivers.html");
+            yield return (L("AMD Radeon drivers (official website)"), "https://www.amd.com/fr/support/download/drivers.html");
     }
 
     /// <summary>Ouvre une adresse CONSTANTE du code (sites officiels des pilotes) dans le navigateur par défaut.</summary>
     private static void OpenOfficialSite(string url)
     {
         try { ProcessRunner.OpenUrl(url); }
-        catch (Exception ex) { AppHost.Toasts.Show(L("Impossible d'ouvrir le navigateur : {0}", ex.Message), ToastKind.Error); }
+        catch (Exception ex) { AppHost.Toasts.Show(L("Couldn't open the browser: {0}", ex.Message), ToastKind.Error); }
     }
 
     // ================================================================== Filtre
@@ -257,7 +257,7 @@ internal sealed class InstallView : StackPanel
             counter.Text = n.ToString();
         }
         _suggestHost.Visibility = terms.Length == 0 && filter == AllFilter ? Visibility.Visible : Visibility.Collapsed;
-        _noResult.Text = L("Aucune application du catalogue ne correspond à « {0} ». Le catalogue ne contient que des applications vérifiées ; pour les autres, utilisez winget ou le Microsoft Store.", _search.Text.Trim());
+        _noResult.Text = L("No app in the catalog matches “{0}”. The catalog only contains verified apps; for others, use winget or the Microsoft Store.", _search.Text.Trim());
         _noResult.Visibility = visible == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -271,8 +271,8 @@ internal sealed class InstallView : StackPanel
     private void UpdateActionBar()
     {
         var n = SelectedCount;
-        _selectionText.Text = n == 0 ? "" : LP(n, "{0} application sélectionnée", "{0} applications sélectionnées");
-        AppsUi.SetButtonText(_installButton, L("Installer ({0})", n));
+        _selectionText.Text = n == 0 ? "" : LP(n, "{0} app selected", "{0} apps selected");
+        AppsUi.SetButtonText(_installButton, L("Install ({0})", n));
         _installButton.IsEnabled = n > 0 && !_ctx.Activity.IsBusy && _ctx.WingetAvailable;
         _clearButton.IsEnabled = !_ctx.Activity.IsBusy;
         var show = n > 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -289,14 +289,14 @@ internal sealed class InstallView : StackPanel
         if (apps.Count == 0 || _ctx.Activity.IsBusy) return;
         if (apps.Count > WingetIds.Max)
         {
-            AppHost.Toasts.Show(L("Sélectionnez au plus {0} applications à la fois.", WingetIds.Max), ToastKind.Warning);
+            AppHost.Toasts.Show(L("Select at most {0} apps at a time.", WingetIds.Max), ToastKind.Warning);
             return;
         }
 
         var list = new StackPanel();
         list.Children.Add(AppsUi.Caption(apps.Count == 1
-            ? L("Cette application sera téléchargée chez son éditeur et installée sans fenêtre :")
-            : LP(apps.Count, "{0} application sera téléchargée chez son éditeur et installée sans fenêtre :", "Ces {0} applications seront téléchargées chez leurs éditeurs et installées une par une, sans fenêtre :")));
+            ? L("This app will be downloaded from its publisher and installed silently:")
+            : LP(apps.Count, "{0} app will be downloaded from its publisher and installed silently:", "These {0} apps will be downloaded from their publishers and installed one by one, silently:")));
         var items = new StackPanel { Margin = new Thickness(0, 10, 0, 10) };
         foreach (var a in apps)
         {
@@ -305,7 +305,7 @@ internal sealed class InstallView : StackPanel
             var name = AppsUi.Text(a.Name);
             name.FontWeight = FontWeights.SemiBold;
             name.FontSize = 13;
-            var id = AppsUi.Caption("  " + a.WingetId + (_installedIds.Contains(a.WingetId) ? " · " + L("déjà installée (mise à jour éventuelle)") : ""));
+            var id = AppsUi.Caption("  " + a.WingetId + (_installedIds.Contains(a.WingetId) ? " · " + L("already installed (will update if needed)") : ""));
             id.VerticalAlignment = VerticalAlignment.Center;
             var row = AppsUi.Row(icon, name, id);
             row.Margin = new Thickness(0, 2, 0, 2);
@@ -313,11 +313,11 @@ internal sealed class InstallView : StackPanel
         }
         var scroller = new ScrollViewer { Content = items, MaxHeight = 260, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
         list.Children.Add(scroller);
-        list.Children.Add(AppsUi.InfoBar(L("En installant, vous acceptez la licence de chaque éditeur. winget se connecte à Internet ; une autorisation administrateur est demandée une fois pour la session."), ""));
-        if (!await AppHost.Dialogs.ShowAsync(L("Installer des applications"), list, L("Installer ({0})", apps.Count))) return;
+        list.Children.Add(AppsUi.InfoBar(L("By installing, you accept each publisher's license. winget connects to the internet; you'll be asked for administrator permission once for the session."), ""));
+        if (!await AppHost.Dialogs.ShowAsync(L("Install apps"), list, L("Install ({0})", apps.Count))) return;
 
         var ids = string.Join(",", apps.Select(a => a.WingetId));
-        var title = apps.Count == 1 ? L("Installation de {0}", apps[0].Name) : LP(apps.Count, "Installation de {0} application", "Installation de {0} applications");
+        var title = apps.Count == 1 ? L("Installing {0}", apps[0].Name) : LP(apps.Count, "Installing {0} app", "Installing {0} apps");
         var outcome = await _ctx.Activity.RunAsync(title, WingetInstallAction.ActionId, new Dictionary<string, string> { ["ids"] = ids });
         if (outcome is null) return;
         if (outcome.Data is { } data)
@@ -346,7 +346,7 @@ internal sealed class InstallView : StackPanel
             Padding = new Thickness(12, 10, 14, 10);
             Cursor = Cursors.Hand;
 
-            _check = AppsUi.CheckBox(L("Sélectionner {0}", app.Name));
+            _check = AppsUi.CheckBox(L("Select {0}", app.Name));
             _check.VerticalAlignment = VerticalAlignment.Top;
             _check.Margin = new Thickness(0, 1, 10, 0);
             _check.Checked += (_, _) => OnSelection();
@@ -401,10 +401,10 @@ internal sealed class InstallView : StackPanel
         {
             _badges.Children.Clear();
             var p = AppHost.Profile;
-            if (installed) _badges.Children.Add(AppsUi.Badge(L("Installée"), "Pp.Success"));
-            if (App.IsRelevantFor(p)) _badges.Children.Add(AppsUi.Badge(L("Pour ce PC"), "Pp.Accent"));
-            if (p.Tier == PerformanceTier.Low && App.HasTag("lowend")) _badges.Children.Add(AppsUi.Badge(L("Léger"), "Pp.Info"));
-            if (p.Tier == PerformanceTier.Low && App.HasTag("heavy")) _badges.Children.Add(AppsUi.Badge(L("Exigeant"), "Pp.Warning"));
+            if (installed) _badges.Children.Add(AppsUi.Badge(L("Installed"), "Pp.Success"));
+            if (App.IsRelevantFor(p)) _badges.Children.Add(AppsUi.Badge(L("For this PC"), "Pp.Accent"));
+            if (p.Tier == PerformanceTier.Low && App.HasTag("lowend")) _badges.Children.Add(AppsUi.Badge(L("Lightweight"), "Pp.Info"));
+            if (p.Tier == PerformanceTier.Low && App.HasTag("heavy")) _badges.Children.Add(AppsUi.Badge(L("Demanding"), "Pp.Warning"));
         }
 
         private static bool IsInside(DependencyObject d, DependencyObject ancestor)
@@ -416,15 +416,15 @@ internal sealed class InstallView : StackPanel
 
         private static string TagWords(string tag) => tag switch
         {
-            "essentials" => L("essentiel, indispensable"),
-            "office" => L("bureautique, travail"),
-            "gaming" => L("jeu, jeux, gaming"),
-            "dev" => L("developpement, programmation, code"),
-            "family" => L("famille, enfants, ecole"),
-            "media" => L("multimedia, video, musique, photo"),
-            "security" => L("securite, confidentialite"),
-            "vendor" => L("constructeur, pilote, driver"),
-            "lowend" => L("leger, petit pc"),
+            "essentials" => L("essential, must-have, basics"),
+            "office" => L("office, work, productivity"),
+            "gaming" => L("game, games, gaming"),
+            "dev" => L("development, programming, code, developer"),
+            "family" => L("family, kids, children, school"),
+            "media" => L("multimedia, video, music, photo"),
+            "security" => L("security, privacy"),
+            "vendor" => L("manufacturer, driver, drivers, oem"),
+            "lowend" => L("lightweight, low-end pc, small pc"),
             _ => tag,
         };
     }

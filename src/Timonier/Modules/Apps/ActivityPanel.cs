@@ -39,8 +39,8 @@ internal sealed class ActivityPanel : ContentControl
         _statusIcon = new Border { Width = 28, Height = 28, CornerRadius = new CornerRadius(14), Child = _statusGlyph, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Top };
         _statusGlyph.HorizontalAlignment = HorizontalAlignment.Center;
 
-        _cancel = AppsUi.Button(L("Annuler"), "", "Pp.Button", (s, _) => { _cts?.Cancel(); ((Button)s).IsEnabled = false; _line.Text = L("Annulation…"); });
-        _close = AppsUi.Button(L("Fermer"), null, "Pp.SubtleButton", (_, _) => Visibility = Visibility.Collapsed);
+        _cancel = AppsUi.Button(L("Undo"), "", "Pp.Button", (s, _) => { _cts?.Cancel(); ((Button)s).IsEnabled = false; _line.Text = L("Undoing…"); });
+        _close = AppsUi.Button(L("Close"), null, "Pp.SubtleButton", (_, _) => Visibility = Visibility.Collapsed);
         var buttons = AppsUi.Row(_cancel, _close);
         buttons.VerticalAlignment = VerticalAlignment.Top;
 
@@ -49,7 +49,7 @@ internal sealed class ActivityPanel : ContentControl
             IsReadOnly = true, TextWrapping = TextWrapping.Wrap, MaxHeight = 220, FontSize = 12,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto, FontFamily = new System.Windows.Media.FontFamily("Cascadia Mono, Consolas"),
         };
-        _details = new Expander { Header = L("Détails de l'opération"), Content = _log, Margin = new Thickness(0, 8, 0, 0), IsExpanded = false };
+        _details = new Expander { Header = L("Operation details"), Content = _log, Margin = new Thickness(0, 8, 0, 0), IsExpanded = false };
         _details.Expanded += (_, _) => { _log.Text = _logText.ToString(); _log.ScrollToEnd(); };
 
         var text = new StackPanel();
@@ -77,11 +77,11 @@ internal sealed class ActivityPanel : ContentControl
     /// <summary>Lance une action (locale ou via le broker) en affichant sa progression ; null si une opération est déjà en cours.</summary>
     public async Task<ApplyOutcome?> RunAsync(string title, string actionId, Dictionary<string, string> parameters)
     {
-        if (IsBusy) { AppHost.Toasts.Show(L("Une opération est déjà en cours : patientez ou annulez-la."), ToastKind.Warning); return null; }
+        if (IsBusy) { AppHost.Toasts.Show(L("An operation is already in progress: wait or cancel it."), ToastKind.Warning); return null; }
         SetBusy(true);
         _cts = new CancellationTokenSource();
         _title.Text = title;
-        _line.Text = L("Préparation…");
+        _line.Text = L("Preparing…");
         _results.Children.Clear();
         _results.Visibility = Visibility.Collapsed;
         _logText.Clear();

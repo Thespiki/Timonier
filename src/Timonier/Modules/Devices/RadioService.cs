@@ -35,18 +35,18 @@ public static class RadioService
         {
             var result = await radio.SetStateAsync(on ? RadioState.On : RadioState.Off);
             return result == RadioAccessStatus.Allowed
-                ? (true, on ? L("{0} activé.", KindLabel(radio.Kind)) : L("{0} désactivé.", KindLabel(radio.Kind)))
+                ? (true, on ? L("{0} turned on.", KindLabel(radio.Kind)) : L("{0} turned off.", KindLabel(radio.Kind)))
                 : (false, result switch
                 {
-                    RadioAccessStatus.DeniedByUser => L("Windows refuse que les applications contrôlent les radios (réglage « Contrôle des radios » de la page Confidentialité)."),
-                    RadioAccessStatus.DeniedBySystem => L("Windows refuse ce changement (mode Avion géré par le système ou stratégie)."),
-                    _ => L("Windows n'a pas pu changer l'état de cette radio."),
+                    RadioAccessStatus.DeniedByUser => L("Windows doesn't allow apps to control radios (“Radios” setting on the Privacy page)."),
+                    RadioAccessStatus.DeniedBySystem => L("Windows refused this change (airplane mode managed by the system, or a policy)."),
+                    _ => L("Windows couldn't change the state of this radio."),
                 });
         }
         catch (Exception ex)
         {
             Log.Warn("Devices", "changement d'état radio : " + ex.Message);
-            return (false, L("Windows n'a pas pu changer l'état de cette radio."));
+            return (false, L("Windows couldn't change the state of this radio."));
         }
     }
 
@@ -54,8 +54,8 @@ public static class RadioService
     {
         RadioKind.WiFi => "Wi-Fi",
         RadioKind.Bluetooth => "Bluetooth",
-        RadioKind.MobileBroadband => L("Réseau mobile"),
-        RadioKind.FM => L("Radio FM"),
+        RadioKind.MobileBroadband => L("Cellular"),
+        RadioKind.FM => L("FM radio"),
         _ => L("Radio"),
     };
 

@@ -77,7 +77,7 @@ public static class PrivacyScore
     public static HealthResult ToHealth(PrivacyScoreResult result)
     {
         if (result.Total == 0)
-            return new HealthResult(HealthStatus.Unknown, L("Aucun réglage de confidentialité évaluable sur ce PC."));
+            return new HealthResult(HealthStatus.Unknown, L("No privacy settings can be evaluated on this PC."));
 
         var status = result.Level switch
         {
@@ -85,19 +85,19 @@ public static class PrivacyScore
             ScoreLevel.Medium => HealthStatus.Info,
             _ => HealthStatus.Warning,
         };
-        var summary = L("{0} % des réglages au niveau recommandé ({1} sur {2})", result.Percent, result.Compliant, result.Total);
+        var summary = L("{0}% of settings at the recommended level ({1} of {2})", result.Percent, result.Compliant, result.Total);
         var pending = result.Pending;
         string detail;
         if (pending.Count == 0)
         {
-            detail = L("Tous les réglages évalués suivent la recommandation de Timonier pour ce PC.");
+            detail = L("All evaluated settings follow Timonier's recommendation for this PC.");
         }
         else
         {
             var names = string.Join(", ", pending.Take(4).Select(p => p.Tweak.Title));
             detail = pending.Count > 4
-                ? LP(pending.Count - 4, "À revoir : {1} et {0} autre.", "À revoir : {1} et {0} autres.", names)
-                : L("À revoir : {0}.", names);
+                ? LP(pending.Count - 4, "To review: {1} and {0} more.", "To review: {1} and {0} more.", names)
+                : L("To review: {0}.", names);
         }
         return new HealthResult(status, summary, detail);
     }

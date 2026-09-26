@@ -33,10 +33,10 @@ internal sealed class PlanTweak
     public string CurrentLabel => Current switch
     {
         null => "…",
-        { Unknown: true } => Tweak.Kind == TweakKind.Action ? L("Action ponctuelle") : L("État inconnu"),
-        { OptionKey: { } k, Partial: true } => L("{0} (partiel)", Tweak.GetOption(k)?.Label ?? k),
+        { Unknown: true } => Tweak.Kind == TweakKind.Action ? L("One-time action") : L("Unknown state"),
+        { OptionKey: { } k, Partial: true } => L("{0} (partial)", Tweak.GetOption(k)?.Label ?? k),
         { OptionKey: { } k } => Tweak.GetOption(k)?.Label ?? k,
-        _ => L("État inconnu"),
+        _ => L("Unknown state"),
     };
 }
 
@@ -146,7 +146,7 @@ internal static class ProfilePlanner
                 foreach (var (id, option) in import.Tweaks)
                 {
                     if (registry.GetTweak(id) is not { } t || t.GetOption(option) is null) continue;
-                    Row(t).Wants.Add(new TweakWant(ImportSource, L("Fichier importé"), option));
+                    Row(t).Wants.Add(new TweakWant(ImportSource, L("Imported file"), option));
                 }
             }
             else
@@ -216,8 +216,8 @@ internal static class ProfilePlanner
             var lessSafe = plan.Tweaks.Count(t => t.LessSafe && !t.AtTarget);
             if (lessSafe > 0)
                 plan.Notices.Add(LP(lessSafe,
-                    "{0} réglage de sécurité du fichier demande une option que Timonier ne propose pas pour ce PC : il reste décoché. Ne le cochez que si vous savez pourquoi.",
-                    "{0} réglages de sécurité du fichier demandent une option que Timonier ne propose pas pour ce PC : ils restent décochés. Ne les cochez que si vous savez pourquoi."));
+                    "{0} security setting in the file requests an option that Timonier doesn't offer for this PC: it stays unchecked. Only check it if you know why.",
+                    "{0} security settings in the file request an option that Timonier doesn't offer for this PC: they stay unchecked. Only check them if you know why."));
         }
         return plan;
     }
@@ -257,7 +257,7 @@ internal static class ProfilePlanner
 
         if (import is not null)
         {
-            foreach (var id in import.Apps) Add(id, true, L("Fichier importé"));
+            foreach (var id in import.Apps) Add(id, true, L("Imported file"));
         }
         else
         {

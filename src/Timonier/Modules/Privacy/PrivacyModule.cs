@@ -16,27 +16,27 @@ public sealed class PrivacyModule : IModule
 
     public void Register(ModuleRegistry r)
     {
-        r.AddCategory(new CategoryInfo(Category, L("Confidentialité"), Glyph,
-            L("Télémétrie, publicité, recherche, IA, historique d'activité et autorisations des applications.")));
+        r.AddCategory(new CategoryInfo(Category, L("Privacy"), Glyph,
+            L("Telemetry, ads, search, AI, activity history and app permissions.")));
 
         r.AddTweaks(PrivacyTweaks.All());
 
-        r.AddPage(new PageInfo(PageId, L("Confidentialité"), Glyph, NavSection.Settings, 10, () => new PrivacyPage())
+        r.AddPage(new PageInfo(PageId, L("Privacy"), Glyph, NavSection.Settings, 10, () => new PrivacyPage())
         {
             CategoryId = Category,
-            Description = L("Score de confidentialité, télémétrie, publicité, Copilot et Recall, autorisations des applications."),
-            Keywords = [L("vie privée, télémétrie, confidentialité, privacy, données personnelles, espionnage, pistage, autorisations, publicité, suggestions, copilot, recall")],
+            Description = L("Privacy score, telemetry, ads, Copilot and Recall, app permissions."),
+            Keywords = [L("privacy, telemetry, personal data, spying, tracking, permissions, ads, advertising, suggestions, copilot, recall")],
         });
 
         // Contrôle de santé du tableau de bord : exécuté dans l'interface uniquement (hors thread UI), lecture seule.
-        r.AddHealthCheck(HealthCheck.Sync("privacy.score", L("Confidentialité"), Glyph, PageId,
+        r.AddHealthCheck(HealthCheck.Sync("privacy.score", L("Privacy"), Glyph, PageId,
             () => PrivacyScore.ToHealth(PrivacyScore.Compute(AppHost.Registry.TweaksIn(Category), AppHost.Profile))));
 
-        r.AddQuickAction(new QuickAction("privacy.apply-recommended", L("Appliquer le niveau de confidentialité recommandé"), Glyph,
-            L("Aligne les réglages de confidentialité sur les recommandations de Timonier pour ce PC, après confirmation. Tout reste annulable."),
+        r.AddQuickAction(new QuickAction("privacy.apply-recommended", L("Apply the recommended privacy level"), Glyph,
+            L("Aligns privacy settings with Timonier's recommendations for this PC, after confirmation. Everything can still be undone."),
             async () => await PrivacyRecommendations.RunAsync())
         {
-            Keywords = [L("confidentialité, vie privée, télémétrie, recommandé, privacy, protéger mes données")],
+            Keywords = [L("privacy, telemetry, recommended, protect my data, privacy settings")],
             Order = 20,
             RequiresAdmin = true,
         });
@@ -58,62 +58,62 @@ public sealed class PrivacyModule : IModule
         r.AddSearchEntry(new SearchEntry
         {
             Id = "privacy.score",
-            Title = L("Score de confidentialité"),
-            Subtitle = L("Part des réglages de confidentialité au niveau recommandé pour ce PC"),
+            Title = L("Privacy score"),
+            Subtitle = L("Share of privacy settings at the recommended level for this PC"),
             Glyph = Glyph,
-            Keywords = [L("score, niveau confidentialite, audit, bilan vie privee, privacy score")],
+            Keywords = [L("score, privacy level, audit, privacy check, privacy score, privacy report")],
             PageId = PageId,
         });
         r.AddSearchEntry(new SearchEntry
         {
             Id = "privacy.section.permissions",
-            Title = L("Autorisations des applications"),
-            Subtitle = L("Caméra, micro, position, contacts, calendrier… pour votre compte"),
+            Title = L("App permissions"),
+            Subtitle = L("Camera, microphone, location, contacts, calendar… for your account"),
             Glyph = Glyph,
-            Keywords = [L("autorisations, permissions, acces applications, camera, micro, contacts, calendrier, position")],
+            Keywords = [L("permissions, app access, camera, microphone, mic, contacts, calendar, location")],
             PageId = PageId,
             PageParameter = "section:permissions",
         });
         r.AddSearchEntry(new SearchEntry
         {
             Id = "privacy.section.telemetry",
-            Title = L("Télémétrie et données de diagnostic"),
-            Subtitle = L("Niveau de diagnostic, service DiagTrack, rapports d'erreurs, tâches de collecte"),
+            Title = L("Telemetry and diagnostic data"),
+            Subtitle = L("Diagnostic level, DiagTrack service, error reporting, collection tasks"),
             Glyph = "",
-            Keywords = [L("telemetrie, telemetry, diagnostic, diagtrack, collecte donnees")],
+            Keywords = [L("telemetry, diagnostics, diagtrack, data collection, diagnostic data")],
             PageId = PageId,
             PageParameter = "section:telemetry",
         });
         r.AddSearchEntry(new SearchEntry
         {
             Id = "privacy.section.ai",
-            Title = L("Copilot, Recall et recherche web"),
-            Subtitle = L("Bing dans la recherche, Copilot, Recall (Retrouver), Click to Do"),
+            Title = L("Copilot, Recall and web search"),
+            Subtitle = L("Bing in search, Copilot, Recall, Click to Do"),
             Glyph = "",
-            Keywords = [L("copilot, recall, ia, intelligence artificielle, bing, recherche web")],
+            Keywords = [L("copilot, recall, ai, artificial intelligence, bing, web search")],
             PageId = PageId,
             PageParameter = "section:search",
         });
         r.AddSearchEntry(new SearchEntry
         {
             Id = "privacy.section.ads",
-            Title = L("Publicités et suggestions de Windows"),
-            Subtitle = L("Identifiant de publicité, suggestions, applications installées automatiquement"),
+            Title = L("Windows ads and suggestions"),
+            Subtitle = L("Advertising ID, suggestions, automatically installed apps"),
             Glyph = "",
-            Keywords = [L("publicite, pub, suggestions, bloatware, applications sponsorisees")],
+            Keywords = [L("advertising, ads, suggestions, bloatware, sponsored apps, advertising id")],
             PageId = PageId,
             PageParameter = "section:ads",
         });
 
-        AddWindowsSetting(r, "privacy.win.privacy", L("Confidentialité et sécurité (Paramètres Windows)"),
-            L("Ouvre la page Confidentialité et sécurité des Paramètres"), "ms-settings:privacy",
-            [L("parametres confidentialite, privacy settings, confidentialite securite")]);
-        AddWindowsSetting(r, "privacy.win.diagnostics", L("Diagnostics et commentaires (Paramètres Windows)"),
-            L("Voir ou supprimer les données de diagnostic envoyées à Microsoft"), "ms-settings:privacy-feedback",
-            [L("supprimer donnees diagnostic, visionneuse donnees diagnostic, diagnostic data viewer, delete diagnostic data")]);
-        AddWindowsSetting(r, "privacy.win.activity", L("Historique des activités (Paramètres Windows)"),
-            L("Effacer l'historique des activités de ce compte"), "ms-settings:privacy-activityhistory",
-            [L("effacer historique activite, clear activity history")]);
+        AddWindowsSetting(r, "privacy.win.privacy", L("Privacy & security (Windows Settings)"),
+            L("Opens the Privacy & security page in Settings"), "ms-settings:privacy",
+            [L("privacy settings, privacy & security, privacy and security")]);
+        AddWindowsSetting(r, "privacy.win.diagnostics", L("Diagnostics & feedback (Windows Settings)"),
+            L("View or delete diagnostic data sent to Microsoft"), "ms-settings:privacy-feedback",
+            [L("delete diagnostic data, diagnostic data viewer, diagnostic data, view diagnostic data")]);
+        AddWindowsSetting(r, "privacy.win.activity", L("Activity history (Windows Settings)"),
+            L("Clear this account's activity history"), "ms-settings:privacy-activityhistory",
+            [L("clear activity history, activity history, delete activity history")]);
     }
 
     private static void AddWindowsSetting(ModuleRegistry r, string id, string title, string subtitle, string uri, string[] keywords) =>

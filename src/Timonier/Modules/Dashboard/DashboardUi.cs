@@ -121,9 +121,9 @@ internal static class DashUi
     {
         HealthStatus.Good => ("Pp.Success", "Pp.SuccessBackground", "", L("OK")),
         HealthStatus.Info => ("Pp.Info", "Pp.InfoBackground", "", L("Info")),
-        HealthStatus.Warning => ("Pp.Warning", "Pp.WarningBackground", "", L("À vérifier")),
-        HealthStatus.Critical => ("Pp.Danger", "Pp.DangerBackground", "", L("Critique")),
-        _ => ("Pp.Neutral", "Pp.NeutralBackground", "", L("Inconnu")),
+        HealthStatus.Warning => ("Pp.Warning", "Pp.WarningBackground", "", L("Needs review")),
+        HealthStatus.Critical => ("Pp.Danger", "Pp.DangerBackground", "", L("Critical")),
+        _ => ("Pp.Neutral", "Pp.NeutralBackground", "", L("Unknown")),
     };
 
     public static int Severity(HealthStatus s) => s switch

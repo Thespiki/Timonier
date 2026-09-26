@@ -60,29 +60,29 @@ public sealed class SecurityPage : UserControl, INavigationAware
 
         stack.Children.Add(new PageHeader
         {
-            Title = L("Sécurité"),
-            Subtitle = L("État de la protection de ce PC, pare-feu par application et renforcement de Windows."),
+            Title = L("Security"),
+            Subtitle = L("Protection status of this PC, per-app firewall and Windows hardening."),
             Glyph = SecurityModule.Glyph,
         });
 
-        _refreshButton = MakeButton(L("Actualiser"), "", "Pp.SubtleButton");
+        _refreshButton = MakeButton(L("Refresh"), "", "Pp.SubtleButton");
         _refreshButton.Click += async (_, _) => await RefreshAsync(includeFirewall: true);
         stack.Children.Add(BuildScoreCard());
 
-        stack.Children.Add(TopSection(L("État de sécurité")));
+        stack.Children.Add(TopSection(L("Security status")));
         stack.Children.Add(_statusHost);
         ShowStatusPlaceholder();
 
-        _firewallTitle = TopSection(L("Pare-feu : bloquer Internet pour une application"));
+        _firewallTitle = TopSection(L("Firewall: block internet for an app"));
         stack.Children.Add(_firewallTitle);
-        _blockButton = MakeButton(L("Choisir un programme…"), "", "Pp.AccentButton");
+        _blockButton = MakeButton(L("Choose a program…"), "", "Pp.AccentButton");
         _blockButton.Click += async (_, _) => await BlockProgramAsync();
         stack.Children.Add(BuildFirewallCard());
 
-        _hardeningTitle = TopSection(L("Renforcement de Windows"));
+        _hardeningTitle = TopSection(L("Windows hardening"));
         stack.Children.Add(_hardeningTitle);
         stack.Children.Add(PageScaffold.InfoBar(
-            L("Ces réglages réduisent la surface d'attaque de Windows. Chacun indique ses effets et ses risques, et reste annulable depuis le Journal. Timonier ne propose jamais de désactiver Defender, le pare-feu, l'UAC, SmartScreen ni Secure Boot."),
+            L("These settings reduce Windows' attack surface. Each one states its effects and risks, and can be undone from History. Timonier never offers to turn off Defender, the firewall, UAC, SmartScreen or Secure Boot."),
             ""));
         stack.Children.Add(_hardeningHost);
 
@@ -175,22 +175,22 @@ public sealed class SecurityPage : UserControl, INavigationAware
         _updated.Margin = new Thickness(0, 6, 0, 0);
 
         var progress = new ProgressBar { IsIndeterminate = true, Width = 140, Height = 3, VerticalAlignment = VerticalAlignment.Center };
-        var progressText = new TextBlock { Text = L("Analyse en cours…"), Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+        var progressText = new TextBlock { Text = L("Analyzing…"), Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
         progressText.SetResourceReference(StyleProperty, "Pp.Caption");
         _progressRow.Children.Add(progress);
         _progressRow.Children.Add(progressText);
 
         var explain = new TextBlock
         {
-            Text = L("Score pondéré : antivirus 25, pare-feu 20, UAC 15, chiffrement 10, SmartScreen 8, puis Secure Boot, intégrité de la mémoire, SMBv1, comptes intégrés… Un point « à vérifier » compte pour 40 %, un point critique pour 0 ; les états inconnus et purement informatifs ne pénalisent pas."),
+            Text = L("Weighted score: antivirus 25, firewall 20, UAC 15, encryption 10, SmartScreen 8, then Secure Boot, memory integrity, SMBv1, built-in accounts… An item “to check” counts for 40%, a critical item for 0; unknown and purely informational states don't count against you."),
             Margin = new Thickness(0, 10, 0, 0),
         };
         explain.SetResourceReference(StyleProperty, "Pp.Caption");
 
-        var openSecurity = MakeButton(L("Ouvrir Sécurité Windows"), SecurityModule.Glyph, "Pp.AccentButton");
+        var openSecurity = MakeButton(L("Open Windows Security"), SecurityModule.Glyph, "Pp.AccentButton");
         openSecurity.Click += (_, _) => OpenUri("windowsdefender:");
-        var scan = MakeButton(L("Analyse rapide"), "", "Pp.Button");
-        scan.ToolTip = L("Ouvre Protection contre les virus et menaces pour lancer une analyse rapide.");
+        var scan = MakeButton(L("Quick scan"), "", "Pp.Button");
+        scan.ToolTip = L("Opens Virus & threat protection to run a quick scan.");
         scan.Click += (_, _) => OpenUri("windowsdefender://threat/");
         var buttons = new WrapPanel { Margin = new Thickness(0, 14, 0, 0) };
         foreach (var b in new[] { openSecurity, scan, _refreshButton })
@@ -216,8 +216,8 @@ public sealed class SecurityPage : UserControl, INavigationAware
         Grid.SetColumn(text, 1);
         grid.Children.Add(text);
 
-        _headline.Text = L("Analyse de la sécurité…");
-        _summary.Text = L("Timonier lit l'état de l'antivirus, du pare-feu, du chiffrement et des protections de Windows.");
+        _headline.Text = L("Analyzing security…");
+        _summary.Text = L("Timonier is reading the state of the antivirus, firewall, encryption and Windows protections.");
         var card = PageScaffold.Card(grid);
         card.Padding = new Thickness(20, 18, 20, 18);
         return card;
@@ -229,18 +229,18 @@ public sealed class SecurityPage : UserControl, INavigationAware
         var warnings = report.WarningCount;
         var brush = critical > 0 || report.Score < 60 ? "Pp.Danger" : report.Score < 85 || warnings > 2 ? "Pp.Warning" : "Pp.Success";
         _ring.Update(report.Score, brush);
-        _headline.Text = critical > 0 ? L("Protection insuffisante")
-            : warnings == 0 ? L("Votre PC est bien protégé")
-            : report.Score >= 80 ? L("Bonne protection, quelques points à vérifier")
-            : L("Protection à renforcer");
+        _headline.Text = critical > 0 ? L("Insufficient protection")
+            : warnings == 0 ? L("Your PC is well protected")
+            : report.Score >= 80 ? L("Good protection, a few items to check")
+            : L("Protection needs strengthening");
         _summary.Text = critical == 0 && warnings == 0
-            ? L("Aucun point à corriger parmi les contrôles effectués.")
-            : L("{0} : utilisez les boutons de correction ci-dessous.", string.Join(" · ", new[]
+            ? L("Nothing to fix among the checks performed.")
+            : L("{0}: use the fix buttons below.", string.Join(" · ", new[]
             {
-                critical > 0 ? LP(critical, "{0} point critique", "{0} points critiques") : null,
-                warnings > 0 ? LP(warnings, "{0} point à vérifier", "{0} points à vérifier") : null,
+                critical > 0 ? LP(critical, "{0} critical item", "{0} critical items") : null,
+                warnings > 0 ? LP(warnings, "{0} item to check", "{0} items to check") : null,
             }.Where(s => s is not null)));
-        _updated.Text = LP(report.Items.Count, "Dernière analyse à {1} · {0} contrôle", "Dernière analyse à {1} · {0} contrôles",
+        _updated.Text = LP(report.Items.Count, "Last scan at {1} · {0} check", "Last scan at {1} · {0} checks",
             report.At.ToString("t", Culture));
         _updated.Visibility = Visibility.Visible;
     }
@@ -267,12 +267,12 @@ public sealed class SecurityPage : UserControl, INavigationAware
         catch (Exception ex)
         {
             Log.Error("Security", "analyse de sécurité", ex);
-            _headline.Text = L("Analyse impossible");
-            _summary.Text = L("L'état de sécurité n'a pas pu être lu : {0}", ex.Message);
+            _headline.Text = L("Analysis failed");
+            _summary.Text = L("The security status couldn't be read: {0}", ex.Message);
             if (_report is null)
             {
                 _statusHost.Children.Clear();
-                _statusHost.Children.Add(PageScaffold.InfoBar(L("L'analyse a échoué. Réessayez avec « Actualiser » ou ouvrez Sécurité Windows."),
+                _statusHost.Children.Add(PageScaffold.InfoBar(L("The scan failed. Try again with “Refresh” or open Windows Security."),
                     "", "Pp.InfoBar.Warning"));
             }
         }
@@ -291,7 +291,7 @@ public sealed class SecurityPage : UserControl, INavigationAware
     {
         var row = new StackPanel { Orientation = Orientation.Horizontal };
         row.Children.Add(new ProgressBar { IsIndeterminate = true, Width = 120, Height = 3, VerticalAlignment = VerticalAlignment.Center });
-        var t = new TextBlock { Text = L("Lecture de l'état de sécurité…"), Margin = new Thickness(12, 0, 0, 0) };
+        var t = new TextBlock { Text = L("Reading the security status…"), Margin = new Thickness(12, 0, 0, 0) };
         t.SetResourceReference(StyleProperty, "Pp.Caption");
         row.Children.Add(t);
         var card = PageScaffold.Card(row);
@@ -324,11 +324,11 @@ public sealed class SecurityPage : UserControl, INavigationAware
 
     private static (string Fg, string Bg, string Word) LevelStyle(SecLevel level) => level switch
     {
-        SecLevel.Good => ("Pp.Success", "Pp.SuccessBackground", LC("security level", "Bon")),
+        SecLevel.Good => ("Pp.Success", "Pp.SuccessBackground", LC("security level", "Good")),
         SecLevel.Info => ("Pp.Info", "Pp.InfoBackground", LC("security level", "Info")),
-        SecLevel.Warning => ("Pp.Warning", "Pp.WarningBackground", L("À vérifier")),
-        SecLevel.Critical => ("Pp.Danger", "Pp.DangerBackground", L("Critique")),
-        _ => ("Pp.Neutral", "Pp.NeutralBackground", L("Inconnu")),
+        SecLevel.Warning => ("Pp.Warning", "Pp.WarningBackground", L("Needs review")),
+        SecLevel.Critical => ("Pp.Danger", "Pp.DangerBackground", L("Critical")),
+        _ => ("Pp.Neutral", "Pp.NeutralBackground", L("Unknown")),
     };
 
     private FrameworkElement BuildStatusRow(SecItem item)
@@ -380,13 +380,13 @@ public sealed class SecurityPage : UserControl, INavigationAware
             if (fix.TweakId is { } tid && AppHost.Registry.GetTweak(tid) is null)
             {
                 button.IsEnabled = false;
-                button.ToolTip = L("Réglage non disponible dans cette version de Timonier.");
+                button.ToolTip = L("Setting not available in this version of Timonier.");
             }
             button.Click += async (_, _) => await RunFixAsync(item, fix, button);
             Grid.SetColumn(button, 2);
             grid.Children.Add(button);
         }
-        System.Windows.Automation.AutomationProperties.SetName(grid, L("{0} : {1}, {2}", item.Title, word, item.Status));
+        System.Windows.Automation.AutomationProperties.SetName(grid, L("{0}: {1}, {2}", item.Title, word, item.Status));
         return grid;
     }
 
@@ -408,7 +408,7 @@ public sealed class SecurityPage : UserControl, INavigationAware
             {
                 if (AppHost.Registry.GetTweak(tweakId) is not { } tweak)
                 {
-                    AppHost.Toasts.Show(L("Ce réglage n'est pas disponible dans cette version de Timonier."), ToastKind.Warning);
+                    AppHost.Toasts.Show(L("This setting isn't available in this version of Timonier."), ToastKind.Warning);
                     return;
                 }
                 if (AppHost.Engine.Unavailability(tweak) is { } reason)
@@ -417,12 +417,12 @@ public sealed class SecurityPage : UserControl, INavigationAware
                     return;
                 }
                 var option = tweak.GetOption(fix.Option ?? TweakDefinition.On) ?? tweak.Options[0];
-                var message = (tweak.Kind == TweakKind.Action ? L("Action : « {0} »", tweak.Title) : L("« {0} » → {1}", tweak.Title, option.Label)) +
+                var message = (tweak.Kind == TweakKind.Action ? L("Action: “{0}”", tweak.Title) : L("“{0}” → {1}", tweak.Title, option.Label)) +
                               "\n\n" + tweak.Description +
-                              (tweak.Warning is { } w ? "\n\n" + L("À savoir : {0}", w) : "") +
-                              (tweak.RequiresAdmin ? "\n\n" + L("Une autorisation administrateur sera demandée.") : "") +
-                              (tweak.IsReversible ? "\n" + L("La modification reste annulable depuis le Journal.") : "");
-                if (!await AppHost.Dialogs.ConfirmAsync(L("Corriger : {0}", item.Title), message, L("Appliquer"))) return;
+                              (tweak.Warning is { } w ? "\n\n" + L("Good to know: {0}", w) : "") +
+                              (tweak.RequiresAdmin ? "\n\n" + L("Administrator permission will be requested.") : "") +
+                              (tweak.IsReversible ? "\n" + L("The change can be undone from History.") : "");
+                if (!await AppHost.Dialogs.ConfirmAsync(L("Fix: {0}", item.Title), message, L("Apply"))) return;
                 var outcome = await AppHost.Engine.ApplyAsync(tweak, option.Key);
                 AppHost.Toasts.ShowOutcome(outcome);
                 changed = outcome.Success;
@@ -430,8 +430,8 @@ public sealed class SecurityPage : UserControl, INavigationAware
             }
             if (fix.ActionId is { } actionId)
             {
-                if (!await AppHost.Dialogs.ConfirmAsync(L("{0} : {1}", fix.Label, item.Title),
-                        (fix.Confirm ?? item.Detail) + "\n\n" + L("Une autorisation administrateur sera demandée."), fix.Label))
+                if (!await AppHost.Dialogs.ConfirmAsync(L("{0}: {1}", fix.Label, item.Title),
+                        (fix.Confirm ?? item.Detail) + "\n\n" + L("Administrator permission will be requested."), fix.Label))
                     return;
                 var outcome = await AppHost.Engine.RunActionAsync(actionId);
                 AppHost.Toasts.ShowOutcome(outcome);
@@ -441,7 +441,7 @@ public sealed class SecurityPage : UserControl, INavigationAware
         catch (Exception ex)
         {
             Log.Error("Security", "correction " + item.Key, ex);
-            AppHost.Toasts.Show(L("Impossible d'appliquer la correction : {0}", ex.Message), ToastKind.Error);
+            AppHost.Toasts.Show(L("Couldn't apply the fix: {0}", ex.Message), ToastKind.Error);
         }
         finally
         {
@@ -456,7 +456,7 @@ public sealed class SecurityPage : UserControl, INavigationAware
         catch (Exception ex)
         {
             Log.Warn("Security", $"ouverture de {uri} : {ex.Message}");
-            AppHost.Toasts.Show(L("Sécurité Windows n'a pas pu être ouvert sur ce PC."), ToastKind.Warning);
+            AppHost.Toasts.Show(L("Windows Security couldn't be opened on this PC."), ToastKind.Warning);
         }
     }
 
@@ -466,12 +466,12 @@ public sealed class SecurityPage : UserControl, INavigationAware
     {
         var intro = new TextBlock
         {
-            Text = L("Empêche un programme de se connecter à Internet et au réseau local : jeu hors ligne, logiciel qui se met à jour sans prévenir, outil qui n'a pas à communiquer… Timonier crée des règles du pare-feu Windows (sortantes et entrantes) regroupées sous « Timonier » et ne modifie jamais les autres règles."),
+            Text = L("Prevents a program from connecting to the internet and the local network: offline game, software that updates without warning, a tool that has no reason to communicate… Timonier creates Windows Firewall rules (outbound and inbound) grouped under “Timonier” and never changes other rules."),
         };
         intro.SetResourceReference(StyleProperty, "Pp.Body");
         var limits = new TextBlock
         {
-            Text = L("Sans effet si le pare-feu Windows est désactivé ou remplacé par un pare-feu tiers. Les applications du Microsoft Store ainsi que les programmes de Windows et de Microsoft Defender ne peuvent pas être bloqués ici."),
+            Text = L("No effect if Windows Firewall is turned off or replaced by a third-party firewall. Microsoft Store apps as well as Windows and Microsoft Defender programs can't be blocked here."),
             Margin = new Thickness(0, 6, 0, 0),
         };
         limits.SetResourceReference(StyleProperty, "Pp.Caption");
@@ -489,7 +489,7 @@ public sealed class SecurityPage : UserControl, INavigationAware
         Grid.SetColumn(_blockButton, 1);
         top.Children.Add(_blockButton);
 
-        var listTitle = new TextBlock { Text = L("Applications bloquées par Timonier"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 14, 0, 4) };
+        var listTitle = new TextBlock { Text = L("Apps blocked by Timonier"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 14, 0, 4) };
         listTitle.SetResourceReference(StyleProperty, "Pp.Body");
 
         var stack = new StackPanel();
@@ -497,7 +497,7 @@ public sealed class SecurityPage : UserControl, INavigationAware
         stack.Children.Add(Divider(new Thickness(0, 14, 0, 0)));
         stack.Children.Add(listTitle);
         stack.Children.Add(_firewallList);
-        SetFirewallMessage(L("Lecture des règles…"));
+        SetFirewallMessage(L("Reading rules…"));
 
         var card = PageScaffold.Card(stack);
         card.Padding = new Thickness(18, 16, 18, 14);
@@ -522,7 +522,7 @@ public sealed class SecurityPage : UserControl, INavigationAware
         catch (Exception ex)
         {
             Log.Error("Security", "lecture des règles de pare-feu", ex);
-            SetFirewallMessage(L("Les règles du pare-feu n'ont pas pu être lues : {0}", ex.Message));
+            SetFirewallMessage(L("The firewall rules couldn't be read: {0}", ex.Message));
         }
     }
 
@@ -530,7 +530,7 @@ public sealed class SecurityPage : UserControl, INavigationAware
     {
         if (rules.Count == 0)
         {
-            SetFirewallMessage(L("Aucune application n'est bloquée par Timonier pour le moment."));
+            SetFirewallMessage(L("No apps are blocked by Timonier yet."));
             return;
         }
         _firewallList.Children.Clear();
@@ -548,17 +548,17 @@ public sealed class SecurityPage : UserControl, INavigationAware
             var nameRow = new WrapPanel();
             nameRow.Children.Add(name);
             foreach (var dir in group.Select(r => r.Direction).Distinct().OrderByDescending(d => d))
-                nameRow.Children.Add(Badge(dir == "Out" ? LC("direction", "Sortant") : LC("direction", "Entrant"), "Pp.NeutralBackground", "Pp.Neutral"));
-            if (group.Any(r => !r.Enabled)) nameRow.Children.Add(Badge(L("Règle désactivée"), "Pp.WarningBackground", "Pp.Warning"));
-            if (first.Legacy) nameRow.Children.Add(Badge(L("Créée sous le nom PC Pilot"), "Pp.NeutralBackground", "Pp.Neutral"));
+                nameRow.Children.Add(Badge(dir == "Out" ? LC("direction", "Outbound") : LC("direction", "Inbound"), "Pp.NeutralBackground", "Pp.Neutral"));
+            if (group.Any(r => !r.Enabled)) nameRow.Children.Add(Badge(L("Rule disabled"), "Pp.WarningBackground", "Pp.Warning"));
+            if (first.Legacy) nameRow.Children.Add(Badge(L("Created under the name PC Pilot"), "Pp.NeutralBackground", "Pp.Neutral"));
 
-            var path = new TextBlock { Text = first.Application ?? L("(programme inconnu)"), TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap, ToolTip = first.Application };
+            var path = new TextBlock { Text = first.Application ?? L("(unknown program)"), TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap, ToolTip = first.Application };
             path.SetResourceReference(StyleProperty, "Pp.Caption");
             var texts = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
             texts.Children.Add(nameRow);
             texts.Children.Add(path);
 
-            var unblock = MakeButton(L("Débloquer"), "", "Pp.Button");
+            var unblock = MakeButton(L("Unblock"), "", "Pp.Button");
             unblock.VerticalAlignment = VerticalAlignment.Center;
             unblock.Margin = new Thickness(12, 0, 0, 0);
             unblock.Click += async (_, _) => await UnblockAsync(first.Name, display, unblock);
@@ -581,8 +581,8 @@ public sealed class SecurityPage : UserControl, INavigationAware
         if (_firewallBusy) return;
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Title = L("Choisir le programme à bloquer"),
-            Filter = L("Programmes (*.exe)") + "|*.exe",
+            Title = L("Choose the program to block"),
+            Filter = L("Programs (*.exe)") + "|*.exe",
             CheckFileExists = true,
             DereferenceLinks = true,
             InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
@@ -597,8 +597,8 @@ public sealed class SecurityPage : UserControl, INavigationAware
             return;
         }
         var exe = System.IO.Path.GetFileName(path);
-        if (!await AppHost.Dialogs.ConfirmAsync(L("Bloquer l'accès réseau"),
-                L("« {0} » ne pourra plus se connecter à Internet ni au réseau local (connexions sortantes et entrantes), sur tous les types de réseau.\n\nEmplacement : {1}\n\nVous pourrez le débloquer à tout moment depuis cette page. Une autorisation administrateur sera demandée.", exe, path), L("Bloquer")))
+        if (!await AppHost.Dialogs.ConfirmAsync(L("Block network access"),
+                L("“{0}” will no longer be able to connect to the internet or the local network (outbound and inbound connections), on all network types.\n\nLocation: {1}\n\nYou can unblock it at any time from this page. Administrator permission will be requested.", exe, path), L("Block")))
             return;
 
         _firewallBusy = true;
@@ -620,9 +620,9 @@ public sealed class SecurityPage : UserControl, INavigationAware
     private async Task UnblockAsync(string ruleName, string display, Button button)
     {
         if (_firewallBusy) return;
-        if (!await AppHost.Dialogs.ConfirmAsync(L("Débloquer l'application"),
-                L("« {0} » pourra de nouveau accéder au réseau. Seules les règles « Timonier » de cette application sont supprimées.", display),
-                L("Débloquer")))
+        if (!await AppHost.Dialogs.ConfirmAsync(L("Unblock the app"),
+                L("“{0}” will be able to access the network again. Only this app's “Timonier” rules are deleted.", display),
+                L("Unblock")))
             return;
         _firewallBusy = true;
         button.IsEnabled = false;
@@ -660,8 +660,8 @@ public sealed class SecurityPage : UserControl, INavigationAware
                 var hint = new TextBlock
                 {
                     Text = LP(tweaks.Count,
-                        "{0} règle de Microsoft Defender (audit ou blocage) est réservée au mode avancé : activez-le dans les paramètres de Timonier pour l'afficher.",
-                        "{0} règles de Microsoft Defender (audit ou blocage) sont réservées au mode avancé : activez-le dans les paramètres de Timonier pour les afficher."),
+                        "{0} Microsoft Defender rule (audit or block) is reserved for advanced mode: turn it on in Timonier's settings to show it.",
+                        "{0} Microsoft Defender rules (audit or block) are reserved for advanced mode: turn it on in Timonier's settings to show them."),
                     Margin = new Thickness(2, 0, 0, 0),
                 };
                 hint.SetResourceReference(StyleProperty, "Pp.Caption");
@@ -678,7 +678,7 @@ public sealed class SecurityPage : UserControl, INavigationAware
         catch (Exception ex)
         {
             Log.Error("Security", "liste de réglages " + group, ex);
-            _hardeningHost.Children.Add(PageScaffold.InfoBar(L("La section « {0} » n'a pas pu être affichée.", group), "", "Pp.InfoBar.Warning"));
+            _hardeningHost.Children.Add(PageScaffold.InfoBar(L("The “{0}” section couldn't be displayed.", group), "", "Pp.InfoBar.Warning"));
         }
         HandlePendingNavigation();
         Dispatcher.InvokeAsync(() => BuildNextList(index + 1), DispatcherPriority.Background);

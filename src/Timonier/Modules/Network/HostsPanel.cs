@@ -16,7 +16,7 @@ internal sealed class HostsPanel : UserControl
     private const int MaxOtherRows = 150;
 
     private readonly TextBox _hostBox = new() { MinWidth = 300 };
-    private readonly CheckBox _www = new() { Content = L("Bloquer aussi la variante www."), IsChecked = true, Margin = new Thickness(0, 10, 0, 0) };
+    private readonly CheckBox _www = new() { Content = L("Also block the www. variant"), IsChecked = true, Margin = new Thickness(0, 10, 0, 0) };
     private readonly TextBlock _error = NetUi.Text("", "Pp.Caption", new Thickness(0, 6, 0, 0));
     private readonly Button _add;
     private readonly ProgressBar _busy = NetUi.Busy();
@@ -32,17 +32,17 @@ internal sealed class HostsPanel : UserControl
         var root = new StackPanel();
 
         root.Children.Add(NetUi.InfoBar(
-            L("Le fichier hosts associe des noms de sites à des adresses, avant même toute requête DNS. Pour bloquer un site sur tout le PC (tous les navigateurs et applications, tous les comptes), Timonier y ajoute des lignes « 0.0.0.0 site » dans sa propre section, sans jamais modifier le reste du fichier. Un VPN ou le DNS sécurisé d'un navigateur ne contournent pas ce blocage. Limites : les sous-domaines ne sont pas couverts (m.site.com, video.site.com) et une application qui contacte directement une adresse IP n'est pas bloquée."),
+            L("The hosts file maps site names to addresses, even before any DNS query. To block a site across the whole PC (all browsers and apps, all accounts), Timonier adds “0.0.0.0 site” lines to its own section, without ever modifying the rest of the file. A VPN or a browser's secure DNS doesn't bypass this block. Limits: subdomains aren't covered (m.site.com, video.site.com), and an app that contacts an IP address directly isn't blocked."),
             "", "Pp.InfoBar"));
 
         // --- Ajout
         var addCard = new StackPanel();
-        addCard.Children.Add(new TextBlock { Text = L("Bloquer un site"), FontWeight = FontWeights.SemiBold }.Styled("Pp.CardTitle"));
-        addCard.Children.Add(NetUi.Text(L("Saisissez un nom de domaine (ex. exemple.com) ou collez l'adresse d'une page."), "Pp.Caption", new Thickness(0, 2, 0, 10)));
-        System.Windows.Automation.AutomationProperties.SetName(_hostBox, L("Site à bloquer"));
+        addCard.Children.Add(new TextBlock { Text = L("Block a site"), FontWeight = FontWeights.SemiBold }.Styled("Pp.CardTitle"));
+        addCard.Children.Add(NetUi.Text(L("Enter a domain name (e.g. example.com) or paste a page address."), "Pp.Caption", new Thickness(0, 2, 0, 10)));
+        System.Windows.Automation.AutomationProperties.SetName(_hostBox, L("Site to block"));
         _hostBox.TextChanged += (_, _) => ValidateInput();
         _hostBox.KeyDown += async (_, e) => { if (e.Key == Key.Enter && _add!.IsEnabled) await AddAsync(); };
-        _add = NetUi.Button(L("Bloquer"), "", "Pp.AccentButton", async (_, _) => await AddAsync());
+        _add = NetUi.Button(L("Block"), "", "Pp.AccentButton", async (_, _) => await AddAsync());
         _add.Margin = new Thickness(10, 0, 0, 0);
         _add.IsEnabled = false;
         var addRow = new DockPanel();
@@ -60,11 +60,11 @@ internal sealed class HostsPanel : UserControl
         root.Children.Add(_othersHost);
 
         root.Children.Add(NetUi.InfoBar(
-            L("Microsoft Defender peut signaler une modification massive du fichier hosts (surtout si elle vise des domaines Microsoft) : c'est une technique souvent employée par les logiciels malveillants. Timonier limite sa section à {0} entrées et refuse de bloquer les domaines de Windows Update, Defender et SmartScreen.", HostsFile.MaxManagedEntries),
+            L("Microsoft Defender may flag a large-scale change to the hosts file (especially if it targets Microsoft domains): it's a technique often used by malware. Timonier limits its section to {0} entries and refuses to block Windows Update, Defender and SmartScreen domains.", HostsFile.MaxManagedEntries),
             "", "Pp.InfoBar.Warning"));
 
         var footer = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
-        var openFolder = NetUi.Button(L("Ouvrir le dossier du fichier"), "", "Pp.Button", (_, _) => OpenFolder());
+        var openFolder = NetUi.Button(L("Open containing folder"), "", "Pp.Button", (_, _) => OpenFolder());
         DockPanel.SetDock(openFolder, Dock.Right);
         footer.Children.Add(openFolder);
         _backupText.VerticalAlignment = VerticalAlignment.Center;
@@ -100,7 +100,7 @@ internal sealed class HostsPanel : UserControl
     private async Task ReloadAsync()
     {
         _managedHost.Children.Clear();
-        _managedHost.Children.Add(NetUi.EmptyState("", L("Lecture du fichier hosts…")));
+        _managedHost.Children.Add(NetUi.EmptyState("", L("Reading the hosts file…")));
         var snap = await Task.Run(HostsFile.Read);
         Render(snap);
     }
@@ -111,12 +111,12 @@ internal sealed class HostsPanel : UserControl
         _managedHost.Children.Clear();
         _othersHost.Children.Clear();
         _backupText.Text = snap.BackupTime is { } t
-            ? L("Sauvegarde automatique : hosts.timonier.bak ({0})", Format.Date(t))
-            : L("Une sauvegarde (hosts.timonier.bak) est créée avant chaque modification.");
+            ? L("Automatic backup: hosts.timonier.bak ({0})", Format.Date(t))
+            : L("A backup (hosts.timonier.bak) is created before every change.");
 
         if (snap.Error is not null)
         {
-            _managedHost.Children.Add(NetUi.EmptyState("", L("Fichier hosts illisible"), snap.Error));
+            _managedHost.Children.Add(NetUi.EmptyState("", L("Hosts file unreadable"), snap.Error));
             return;
         }
 
@@ -125,19 +125,19 @@ internal sealed class HostsPanel : UserControl
         var header = new DockPanel { Margin = new Thickness(2, 22, 0, 8) };
         if (managed.Count > 0)
         {
-            var clear = NetUi.Button(L("Tout débloquer"), "", "Pp.DangerButton", async (_, _) => await ClearAsync(managed.Count));
+            var clear = NetUi.Button(L("Unblock all"), "", "Pp.DangerButton", async (_, _) => await ClearAsync(managed.Count));
             DockPanel.SetDock(clear, Dock.Right);
             header.Children.Add(clear);
             _actionControls.Add(clear);
         }
-        var title = new TextBlock { Text = L("Sites bloqués par Timonier ({0} / {1})", managed.Count, HostsFile.MaxManagedEntries), VerticalAlignment = VerticalAlignment.Center }.Styled("Pp.SectionTitle");
+        var title = new TextBlock { Text = L("Sites blocked by Timonier ({0} / {1})", managed.Count, HostsFile.MaxManagedEntries), VerticalAlignment = VerticalAlignment.Center }.Styled("Pp.SectionTitle");
         title.Margin = new Thickness(0);
         header.Children.Add(title);
         _managedHost.Children.Add(header);
 
         if (managed.Count == 0)
         {
-            _managedHost.Children.Add(NetUi.EmptyState("", L("Aucun site bloqué"), L("Les sites que vous bloquez ici apparaîtront dans cette liste.")));
+            _managedHost.Children.Add(NetUi.EmptyState("", L("No blocked sites"), L("Sites you block here will appear in this list.")));
         }
         else
         {
@@ -147,7 +147,7 @@ internal sealed class HostsPanel : UserControl
                 var host = managed[i];
                 if (i > 0) list.Children.Add(NetUi.Divider(new Thickness(0, 4, 0, 4)));
                 var row = new DockPanel();
-                var remove = NetUi.Button(L("Débloquer"), null, "Pp.SubtleButton", async (_, _) => await RemoveAsync(host));
+                var remove = NetUi.Button(L("Unblock"), null, "Pp.SubtleButton", async (_, _) => await RemoveAsync(host));
                 DockPanel.SetDock(remove, Dock.Right);
                 _actionControls.Add(remove);
                 row.Children.Add(remove);
@@ -162,18 +162,18 @@ internal sealed class HostsPanel : UserControl
         // --- Autres entrées (lecture seule)
         var others = snap.Others.Where(e => !(e.Host is "localhost" && e.IsBlock)).ToList();
         var redirects = others.Where(e => !e.IsBlock).ToList();
-        _othersHost.Children.Add(NetUi.Section(L("Autres entrées du fichier ({0})", others.Count)));
+        _othersHost.Children.Add(NetUi.Section(L("Other entries in the file ({0})", others.Count)));
         if (redirects.Count > 0)
         {
             _othersHost.Children.Add(NetUi.InfoBar(
                 LP(redirects.Count,
-                    "{0} entrée redirige un nom vers une autre adresse. C'est normal pour un serveur local, un logiciel de développement ou certains outils d'entreprise ; si vous ne l'avez pas ajoutée, cela peut signaler un logiciel indésirable qui détourne des sites.",
-                    "{0} entrées redirigent un nom vers une autre adresse. C'est normal pour un serveur local, un logiciel de développement ou certains outils d'entreprise ; si vous ne les avez pas ajoutées, cela peut signaler un logiciel indésirable qui détourne des sites."),
+                    "{0} entry redirects a name to another address. This is normal for a local server, development software or some business tools; if you didn't add it, it may indicate unwanted software hijacking sites.",
+                    "{0} entries redirect a name to another address. This is normal for a local server, development software or some business tools; if you didn't add them, it may indicate unwanted software hijacking sites."),
                 "", "Pp.InfoBar.Warning"));
         }
         if (others.Count == 0)
         {
-            _othersHost.Children.Add(NetUi.Text(L("Aucune autre entrée active : le fichier ne contient que des commentaires (état d'origine de Windows)."), "Pp.Caption", new Thickness(2, 0, 0, 8)));
+            _othersHost.Children.Add(NetUi.Text(L("No other active entries: the file only contains comments (Windows' original state)."), "Pp.Caption", new Thickness(2, 0, 0, 8)));
             return;
         }
         var otherList = new StackPanel();
@@ -187,14 +187,14 @@ internal sealed class HostsPanel : UserControl
             var h = NetUi.Text(e.Host);
             Grid.SetColumn(h, 1);
             g.Children.Add(h);
-            var badge = e.IsBlock ? NetUi.Badge(L("Blocage")) : NetUi.Badge(L("Redirection"), "Warning");
+            var badge = e.IsBlock ? NetUi.Badge(LC("noun (badge)", "Block")) : NetUi.Badge(L("Redirect"), "Warning");
             Grid.SetColumn(badge, 2);
             g.Children.Add(badge);
             otherList.Children.Add(g);
         }
         if (others.Count > MaxOtherRows)
-            otherList.Children.Add(NetUi.Text(LP(others.Count - MaxOtherRows, "… et {0} autre entrée.", "… et {0} autres entrées."), "Pp.Caption", new Thickness(0, 6, 0, 0)));
-        otherList.Children.Add(NetUi.Text(L("Ces lignes n'ont pas été ajoutées par Timonier : elles ne sont jamais modifiées."), "Pp.Caption", new Thickness(0, 8, 0, 0)));
+            otherList.Children.Add(NetUi.Text(LP(others.Count - MaxOtherRows, "… and {0} other entry.", "… and {0} other entries."), "Pp.Caption", new Thickness(0, 6, 0, 0)));
+        otherList.Children.Add(NetUi.Text(L("These lines weren't added by Timonier: they are never modified."), "Pp.Caption", new Thickness(0, 8, 0, 0)));
         _othersHost.Children.Add(NetUi.Card(otherList));
     }
 
@@ -210,10 +210,10 @@ internal sealed class HostsPanel : UserControl
 
     private async Task ClearAsync(int count)
     {
-        if (!await AppHost.Dialogs.ConfirmAsync(L("Débloquer tous les sites"),
-                LP(count, "{0} entrée ajoutée par Timonier va être retirée du fichier hosts. Les autres lignes du fichier ne sont pas modifiées.",
-                    "Les {0} entrées ajoutées par Timonier vont être retirées du fichier hosts. Les autres lignes du fichier ne sont pas modifiées."),
-                L("Tout débloquer"), danger: true))
+        if (!await AppHost.Dialogs.ConfirmAsync(L("Unblock all sites"),
+                LP(count, "{0} entry added by Timonier will be removed from the hosts file. Other lines in the file aren't modified.",
+                    "The {0} entries added by Timonier will be removed from the hosts file. Other lines in the file aren't modified."),
+                L("Unblock all"), danger: true))
             return;
         await RunAsync(NetworkActionIds.HostsClear, []);
     }
@@ -236,7 +236,7 @@ internal sealed class HostsPanel : UserControl
         catch (Exception ex)
         {
             Log.Warn("Network", "ouverture du dossier etc : " + ex.Message);
-            AppHost.Toasts.Show(L("Impossible d'ouvrir le dossier."), ToastKind.Error);
+            AppHost.Toasts.Show(L("Couldn't open the folder."), ToastKind.Error);
         }
     }
 }

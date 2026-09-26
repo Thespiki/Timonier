@@ -11,8 +11,8 @@ namespace Timonier.Modules.Users;
 internal static class UsersTweaks
 {
     private const string C = UsersModule.Category;
-    public static string GroupLogon => L("Écran de connexion");
-    public static string GroupAccounts => L("Comptes et verrouillage");
+    public static string GroupLogon => L("Sign-in screen");
+    public static string GroupAccounts => L("Accounts and lockout");
 
     /// <summary>HKLM\…\Policies\System (stratégies de sécurité locales « Ouverture de session interactive »).</summary>
     private const string PolSys = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System";
@@ -21,58 +21,58 @@ internal static class UsersTweaks
 
     public static IEnumerable<TweakDefinition> All()
     {
-        yield return Tweak.Toggle("users.logon.lastuser", L("Nom du dernier utilisateur à l'écran de connexion"),
-                L("Affiche le nom (et l'image) du dernier compte connecté sur l'écran de connexion. Masqué, il faut taper le nom du compte en plus du mot de passe : une personne qui trouve le PC ne sait pas quels comptes existent."))
+        yield return Tweak.Toggle("users.logon.lastuser", L("Last user's name on the sign-in screen"),
+                L("Shows the name (and picture) of the last signed-in account on the sign-in screen. When hidden, you have to type the account name as well as the password: someone who finds the PC doesn't know which accounts exist."))
             .In(C, GroupLogon)
-            .Keywords(L("dernier utilisateur, nom d'utilisateur, écran de connexion, dontdisplaylastusername, last user, logon screen, masquer compte"))
+            .Keywords(L("last user, username, sign-in screen, dontdisplaylastusername, logon screen, login screen, hide account"))
             .Tags("security", "office")
-            .Labels(L("Affiché"), L("Masqué"))
-            .Warning(L("Il faudra saisir le nom exact du compte à chaque connexion ; la connexion par code PIN ou Windows Hello peut ne plus être proposée directement."))
+            .Labels(L("Shown"), L("Hidden"))
+            .Warning(L("You'll have to type the exact account name at every sign-in; signing in with a PIN or Windows Hello may no longer be offered directly."))
             .WhenOn(Reg.LmDword(PolSys, "DontDisplayLastUserName", 0))
             .WhenOff(Reg.LmDword(PolSys, "DontDisplayLastUserName", 1))
             .WindowsDefault(On)
             .Build();
 
-        yield return Tweak.Choice("users.logon.lockedinfo", L("Informations affichées quand la session est verrouillée"),
-                L("Ce que l'écran de verrouillage montre du compte connecté : par défaut, son nom et parfois son adresse e-mail."))
+        yield return Tweak.Choice("users.logon.lockedinfo", L("Info shown when the session is locked"),
+                L("What the lock screen shows about the signed-in account: by default, its name and sometimes its email address."))
             .In(C, GroupLogon)
-            .Keywords(L("écran de verrouillage, session verrouillée, nom affiché, dontdisplaylockeduserid, lock screen, adresse e-mail"))
+            .Keywords(L("lock screen, locked session, display name, dontdisplaylockeduserid, email address"))
             .Tags("security", "office")
-            .Option("default", L("Par défaut (nom et adresse)"), Reg.LmDel(PolSys, "DontDisplayLockedUserId"))
-            .Option("name", L("Nom affiché uniquement"), Reg.LmDword(PolSys, "DontDisplayLockedUserId", 2))
-            .Option("none", L("Aucune information"), Reg.LmDword(PolSys, "DontDisplayLockedUserId", 3))
+            .Option("default", L("Default (name and address)"), Reg.LmDel(PolSys, "DontDisplayLockedUserId"))
+            .Option("name", L("Display name only"), Reg.LmDword(PolSys, "DontDisplayLockedUserId", 2))
+            .Option("none", L("No information"), Reg.LmDword(PolSys, "DontDisplayLockedUserId", 3))
             .WindowsDefault("default")
             .Build();
 
-        yield return Tweak.Toggle("users.logon.accountdetails", L("Adresse e-mail du compte à l'écran de connexion"),
-                L("Pour un compte Microsoft, Windows peut afficher l'adresse e-mail sous le nom sur l'écran de connexion. Bloquée, l'adresse n'apparaît plus, ce qui évite de l'exposer sur un PC partagé ou en public."))
+        yield return Tweak.Toggle("users.logon.accountdetails", L("Account email address on the sign-in screen"),
+                L("For a Microsoft account, Windows can show the email address under the name on the sign-in screen. When blocked, the address no longer appears, which avoids exposing it on a shared or public PC."))
             .In(C, GroupLogon)
-            .Keywords(L("adresse e-mail, email, écran de connexion, compte microsoft, account details, vie privée"))
+            .Keywords(L("email address, email, sign-in screen, microsoft account, account details, privacy"))
             .Tags("security", "office", "kiosk")
-            .Labels(L("Affichée"), L("Masquée"))
+            .Labels(LC("feminine", "Shown"), LC("feminine", "Hidden"))
             .Requires(new Requirement { MinBuild = 14393 })
             .WhenOn(Reg.LmDel(WinSystem, "BlockUserFromShowingAccountDetailsOnSignin"))
             .WhenOff(Reg.LmDword(WinSystem, "BlockUserFromShowingAccountDetailsOnSignin", 1))
             .WindowsDefault(On)
             .Build();
 
-        yield return Tweak.Toggle("users.logon.fastswitch", L("Changement rapide d'utilisateur"),
-                L("Permet d'ouvrir un autre compte sans fermer la session en cours (menu Démarrer › icône du compte, écran de verrouillage). Désactivé, chacun doit se déconnecter avant que quelqu'un d'autre se connecte : utile sur un PC familial peu puissant, où plusieurs sessions ouvertes consomment de la mémoire."))
+        yield return Tweak.Toggle("users.logon.fastswitch", L("Fast user switching"),
+                L("Lets you sign in to another account without closing the current session (Start menu › account icon, lock screen). When off, everyone must sign out before someone else signs in: useful on a low-powered family PC, where several open sessions use up memory."))
             .In(C, GroupLogon)
-            .Keywords(L("changer d'utilisateur, fast user switching, hidefastuserswitching, plusieurs sessions, switch user"))
+            .Keywords(L("switch user, fast user switching, hidefastuserswitching, multiple sessions"))
             .Tags("family", "kiosk", "lowend")
-            .Labels(L("Autorisé"), L("Masqué"))
-            .Warning(L("Les points d'entrée sont masqués, mais une session déjà ouverte n'est pas fermée."))
+            .Labels(L("Allowed"), L("Hidden"))
+            .Warning(L("The entry points are hidden, but a session that's already open isn't closed."))
             .WhenOn(Reg.LmDel(PolSys, "HideFastUserSwitching"))
             .WhenOff(Reg.LmDword(PolSys, "HideFastUserSwitching", 1))
             .WindowsDefault(On)
             .RecommendWhen(p => p.HardwareLoaded && p.RamGb is > 0 and < 6 ? Off : null)
             .Build();
 
-        yield return Tweak.Toggle("users.logon.firstanimation", L("Animation de première connexion"),
-                L("Écrans « Bonjour » / « Nous préparons tout pour vous » affichés à la première connexion d'un nouveau compte. Désactivée, la préparation du profil a lieu quand même, mais derrière un écran plus sobre."))
+        yield return Tweak.Toggle("users.logon.firstanimation", L("First sign-in animation"),
+                L("The “Hi” / “We're getting everything ready for you” screens shown the first time a new account signs in. When off, the profile is still set up, but behind a plainer screen."))
             .In(C, GroupLogon)
-            .Keywords(L("première connexion, animation, bonjour, nouveau compte, first logon animation, first sign-in"))
+            .Keywords(L("first sign-in, first logon animation, animation, hi, new account"))
             .Tags("lowend", "kiosk")
             .WhenOn(Reg.LmDel(PolSys, "EnableFirstLogonAnimation"))
             .WhenOff(Reg.LmDword(PolSys, "EnableFirstLogonAnimation", 0))
@@ -80,64 +80,64 @@ internal static class UsersTweaks
             .RecommendWhen(p => p.Tier == PerformanceTier.Low ? Off : null)
             .Build();
 
-        yield return Tweak.Toggle("users.logon.arso", L("Reconnexion automatique après une mise à jour"),
-                L("Après un redémarrage lancé par Windows Update, Windows utilise vos informations de connexion pour terminer la configuration de votre session puis la verrouille aussitôt, afin que vos applications soient prêtes au retour."))
+        yield return Tweak.Toggle("users.logon.arso", L("Automatic sign-in after an update"),
+                L("After a restart triggered by Windows Update, Windows uses your sign-in info to finish setting up your session, then locks it immediately so your apps are ready when you're back."))
             .In(C, GroupLogon)
-            .Keywords(L("arso, reconnexion automatique, après mise à jour, sign-in info, restart sign on, terminer la configuration"))
+            .Keywords(L("arso, automatic sign-in, after update, sign-in info, restart sign on, finish setup"))
             .Tags("security")
-            .Labels(L("Activée"), L("Désactivée"))
+            .Labels(LC("feminine", "On"), L("Disabled"))
             .WhenOn(Reg.LmDel(PolSys, "DisableAutomaticRestartSignOn"))
             .WhenOff(Reg.LmDword(PolSys, "DisableAutomaticRestartSignOn", 1))
             .WindowsDefault(On)
             .Build();
 
-        yield return Tweak.Toggle("users.logon.domainlocalusers", L("Comptes locaux sur l'écran de connexion"),
-                L("Sur un PC joint à un domaine Active Directory, Windows n'affiche pas la liste des comptes locaux à la connexion. Cette stratégie l'affiche, par exemple pour un compte local de secours ou de démonstration."))
+        yield return Tweak.Toggle("users.logon.domainlocalusers", L("Local accounts on the sign-in screen"),
+                L("On a PC joined to an Active Directory domain, Windows doesn't show the list of local accounts at sign-in. This policy shows it, for example for a backup or demo local account."))
             .In(C, GroupLogon)
-            .Keywords(L("comptes locaux, domaine, enumerate local users, liste des utilisateurs, active directory"))
+            .Keywords(L("local accounts, domain, enumerate local users, user list, active directory"))
             .Tags("office")
-            .Requires(Requires.When(p => p.IsDomainJoined, L("Concerne uniquement les PC joints à un domaine Active Directory.")))
-            .Labels(L("Affichés"), L("Masqués"))
+            .Requires(Requires.When(p => p.IsDomainJoined, L("Only applies to PCs joined to an Active Directory domain.")))
+            .Labels(LC("plural", "Shown"), LC("plural", "Hidden"))
             .WhenOn(Reg.LmDword(WinSystem, "EnumerateLocalUsers", 1))
             .WhenOff(Reg.LmDel(WinSystem, "EnumerateLocalUsers"))
             .WindowsDefault(Off)
             .Build();
 
-        yield return Tweak.Toggle("users.accounts.addmsa", L("Ajout de comptes Microsoft"),
-                L("Autorise l'ajout de comptes Microsoft sur ce PC (et la conversion d'un compte local en compte Microsoft). Bloqué, seuls des comptes locaux peuvent être créés ; les comptes Microsoft déjà présents continuent de fonctionner."))
+        yield return Tweak.Toggle("users.accounts.addmsa", L("Adding Microsoft accounts"),
+                L("Allows adding Microsoft accounts on this PC (and converting a local account to a Microsoft account). When blocked, only local accounts can be created; existing Microsoft accounts keep working."))
             .In(C, GroupAccounts)
-            .Keywords(L("compte microsoft, nouveau compte, noconnecteduser, microsoft account, bloquer comptes microsoft, compte local"))
+            .Keywords(L("microsoft account, new account, add account, noconnecteduser, block microsoft accounts, local account"))
             .Tags("kiosk", "office")
-            .Labels(L("Autorisé"), L("Bloqué"))
-            .Warning(L("Le contrôle parental Microsoft (Famille) exige que l'enfant ait un compte Microsoft : ne bloquez pas l'ajout si vous comptez l'utiliser."))
+            .Labels(L("Allowed"), L("Blocked"))
+            .Warning(L("Microsoft parental controls (Family) require the child to have a Microsoft account: don't block adding accounts if you plan to use them."))
             .WhenOn(Reg.LmDel(PolSys, "NoConnectedUser"))
             .WhenOff(Reg.LmDword(PolSys, "NoConnectedUser", 1))
             .WindowsDefault(On)
             .Build();
 
-        yield return Tweak.Toggle("users.accounts.securityquestions", L("Questions de sécurité des comptes locaux"),
-                L("Demande trois questions de sécurité à la création d'un compte local, pour pouvoir réinitialiser son mot de passe depuis l'écran de connexion. Pratique, mais les réponses (ville de naissance, nom d'un animal…) sont souvent faciles à deviner pour un proche."))
+        yield return Tweak.Toggle("users.accounts.securityquestions", L("Security questions for local accounts"),
+                L("Asks for three security questions when a local account is created, so its password can be reset from the sign-in screen. Handy, but the answers (city of birth, pet's name…) are often easy for someone close to you to guess."))
             .In(C, GroupAccounts)
-            .Keywords(L("questions de sécurité, mot de passe oublié, security questions, réinitialiser mot de passe, password reset"))
+            .Keywords(L("security questions, forgot password, reset password, password reset"))
             .Tags("security")
-            .Labels(L("Utilisées"), L("Désactivées"))
+            .Labels(L("Used"), LC("feminine plural", "Disabled"))
             .Requires(new Requirement { MinBuild = 18362 })
-            .Warning(L("Sans questions de sécurité, un mot de passe local oublié ne peut être réinitialisé que par un autre administrateur (ou avec un disque de réinitialisation)."))
+            .Warning(L("Without security questions, a forgotten local password can only be reset by another administrator (or with a password reset disk)."))
             .WhenOn(Reg.LmDel(WinSystem, "NoLocalPasswordResetQuestions"))
             .WhenOff(Reg.LmDword(WinSystem, "NoLocalPasswordResetQuestions", 1))
             .WindowsDefault(On)
             .Build();
 
-        yield return Tweak.Choice("users.accounts.inactivity", L("Verrouillage automatique après inactivité"),
-                L("Verrouille la session quand le clavier et la souris ne sont plus utilisés pendant la durée choisie, même si l'économiseur d'écran est désactivé (stratégie « Limite d'inactivité de l'ordinateur »). Protège un PC laissé allumé. Selon les versions de Windows, un redémarrage peut être nécessaire pour la prise en compte."))
+        yield return Tweak.Choice("users.accounts.inactivity", L("Automatic lock after inactivity"),
+                L("Locks the session when the keyboard and mouse haven't been used for the chosen time, even if the screen saver is off (“Machine inactivity limit” policy). Protects a PC left on. Depending on the Windows version, a restart may be needed for it to take effect."))
             .In(C, GroupAccounts)
-            .Keywords(L("verrouillage automatique, inactivité, verrouiller session, inactivitytimeoutsecs, auto lock, mise en veille écran"))
+            .Keywords(L("automatic lock, auto lock, inactivity, idle, lock session, inactivitytimeoutsecs, screen timeout"))
             .Tags("security", "office", "family")
-            .Option("default", L("Non défini (Windows)"), Reg.LmDel(PolSys, "InactivityTimeoutSecs"))
-            .Option("5", L("Après 5 minutes"), Reg.LmDword(PolSys, "InactivityTimeoutSecs", 300))
-            .Option("10", L("Après 10 minutes"), Reg.LmDword(PolSys, "InactivityTimeoutSecs", 600))
-            .Option("15", L("Après 15 minutes"), Reg.LmDword(PolSys, "InactivityTimeoutSecs", 900))
-            .Option("30", L("Après 30 minutes"), Reg.LmDword(PolSys, "InactivityTimeoutSecs", 1800))
+            .Option("default", L("Not set (Windows)"), Reg.LmDel(PolSys, "InactivityTimeoutSecs"))
+            .Option("5", L("After 5 minutes"), Reg.LmDword(PolSys, "InactivityTimeoutSecs", 300))
+            .Option("10", L("After 10 minutes"), Reg.LmDword(PolSys, "InactivityTimeoutSecs", 600))
+            .Option("15", L("After 15 minutes"), Reg.LmDword(PolSys, "InactivityTimeoutSecs", 900))
+            .Option("30", L("After 30 minutes"), Reg.LmDword(PolSys, "InactivityTimeoutSecs", 1800))
             .WindowsDefault("default")
             .Build();
     }

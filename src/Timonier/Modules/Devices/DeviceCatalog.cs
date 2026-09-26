@@ -22,45 +22,45 @@ public static class DeviceCatalog
 {
     private static readonly Dictionary<string, DeviceClassInfo> Classes = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["Display"] = new("Display", L("Cartes graphiques"), "", 10),
-        ["Monitor"] = new("Monitor", L("Écrans"), "", 11),
-        ["MEDIA"] = new("MEDIA", L("Contrôleurs audio, vidéo et jeu"), "", 20),
-        ["AudioEndpoint"] = new("AudioEndpoint", L("Entrées et sorties audio"), "", 21),
-        ["Camera"] = new("Camera", L("Caméras"), "", 22),
-        ["Image"] = new("Image", L("Périphériques d'image"), "", 23),
-        ["Net"] = new("Net", L("Cartes réseau"), "", 30),
+        ["Display"] = new("Display", L("Graphics cards"), "", 10),
+        ["Monitor"] = new("Monitor", L("Monitors"), "", 11),
+        ["MEDIA"] = new("MEDIA", L("Sound, video and game controllers"), "", 20),
+        ["AudioEndpoint"] = new("AudioEndpoint", L("Audio inputs and outputs"), "", 21),
+        ["Camera"] = new("Camera", L("Cameras"), "", 22),
+        ["Image"] = new("Image", L("Imaging devices"), "", 23),
+        ["Net"] = new("Net", L("Network adapters"), "", 30),
         ["Bluetooth"] = new("Bluetooth", "Bluetooth", "", 31),
-        ["Keyboard"] = new("Keyboard", L("Claviers"), "", 40),
-        ["Mouse"] = new("Mouse", L("Souris et pavés tactiles"), "", 41),
-        ["HIDClass"] = new("HIDClass", L("Périphériques d'interface utilisateur (HID)"), "", 42),
-        ["Biometric"] = new("Biometric", L("Biométrie (Windows Hello)"), "", 43),
-        ["SmartCardReader"] = new("SmartCardReader", L("Lecteurs de cartes à puce"), "", 44),
-        ["Printer"] = new("Printer", L("Imprimantes"), "", 50),
-        ["PrintQueue"] = new("PrintQueue", L("Files d'impression"), "", 51),
-        ["WPD"] = new("WPD", L("Appareils portables (téléphones, lecteurs)"), "", 52),
-        ["USB"] = new("USB", L("Contrôleurs USB"), "", 60),
-        ["USBDevice"] = new("USBDevice", L("Périphériques USB"), "", 61),
-        ["Ports"] = new("Ports", L("Ports (COM et LPT)"), "", 62),
-        ["DiskDrive"] = new("DiskDrive", L("Lecteurs de disque"), "", 70),
-        ["CDROM"] = new("CDROM", L("Lecteurs de CD/DVD"), "", 71),
-        ["SCSIAdapter"] = new("SCSIAdapter", L("Contrôleurs de stockage"), "", 72),
-        ["HDC"] = new("HDC", L("Contrôleurs IDE/SATA"), "", 73),
-        ["Volume"] = new("Volume", L("Volumes de stockage"), "", 74),
-        ["VolumeSnapshot"] = new("VolumeSnapshot", L("Clichés instantanés de volume"), "", 75),
-        ["SDHost"] = new("SDHost", L("Lecteurs de cartes mémoire"), "", 76),
-        ["Sensor"] = new("Sensor", L("Capteurs"), "", 80),
-        ["Battery"] = new("Battery", L("Batteries et alimentation"), "", 81),
-        ["Processor"] = new("Processor", L("Processeurs"), "", 90),
-        ["System"] = new("System", L("Périphériques système"), "", 91),
-        ["Computer"] = new("Computer", L("Ordinateur"), "", 92),
-        ["Firmware"] = new("Firmware", L("Micrologiciel"), "", 93),
-        ["SecurityDevices"] = new("SecurityDevices", L("Périphériques de sécurité (TPM)"), "", 94),
-        ["SoftwareDevice"] = new("SoftwareDevice", L("Périphériques logiciels"), "", 95),
-        ["SoftwareComponent"] = new("SoftwareComponent", L("Composants logiciels"), "", 96),
-        ["Extension"] = new("Extension", L("Extensions de pilotes"), "", 97),
+        ["Keyboard"] = new("Keyboard", L("Keyboards"), "", 40),
+        ["Mouse"] = new("Mouse", L("Mice and touchpads"), "", 41),
+        ["HIDClass"] = new("HIDClass", L("Human Interface Devices (HID)"), "", 42),
+        ["Biometric"] = new("Biometric", L("Biometrics (Windows Hello)"), "", 43),
+        ["SmartCardReader"] = new("SmartCardReader", L("Smart card readers"), "", 44),
+        ["Printer"] = new("Printer", L("Printers"), "", 50),
+        ["PrintQueue"] = new("PrintQueue", L("Print queues"), "", 51),
+        ["WPD"] = new("WPD", L("Portable devices (phones, players)"), "", 52),
+        ["USB"] = new("USB", L("USB controllers"), "", 60),
+        ["USBDevice"] = new("USBDevice", L("USB devices"), "", 61),
+        ["Ports"] = new("Ports", L("Ports (COM and LPT)"), "", 62),
+        ["DiskDrive"] = new("DiskDrive", L("Disk drives"), "", 70),
+        ["CDROM"] = new("CDROM", L("CD/DVD drives"), "", 71),
+        ["SCSIAdapter"] = new("SCSIAdapter", L("Storage controllers"), "", 72),
+        ["HDC"] = new("HDC", L("IDE/SATA controllers"), "", 73),
+        ["Volume"] = new("Volume", L("Storage volumes"), "", 74),
+        ["VolumeSnapshot"] = new("VolumeSnapshot", L("Volume shadow copies"), "", 75),
+        ["SDHost"] = new("SDHost", L("Memory card readers"), "", 76),
+        ["Sensor"] = new("Sensor", L("Sensors"), "", 80),
+        ["Battery"] = new("Battery", L("Batteries and power"), "", 81),
+        ["Processor"] = new("Processor", L("Processors"), "", 90),
+        ["System"] = new("System", L("System devices"), "", 91),
+        ["Computer"] = new("Computer", L("Computer"), "", 92),
+        ["Firmware"] = new("Firmware", L("Firmware"), "", 93),
+        ["SecurityDevices"] = new("SecurityDevices", L("Security devices (TPM)"), "", 94),
+        ["SoftwareDevice"] = new("SoftwareDevice", L("Software devices"), "", 95),
+        ["SoftwareComponent"] = new("SoftwareComponent", L("Software components"), "", 96),
+        ["Extension"] = new("Extension", L("Driver extensions"), "", 97),
     };
 
-    private static readonly DeviceClassInfo Unknown = new("", L("Autres périphériques"), "", 200);
+    private static readonly DeviceClassInfo Unknown = new("", L("Other devices"), "", 200);
 
     public static DeviceClassInfo ClassInfo(string? pnpClass) =>
         string.IsNullOrWhiteSpace(pnpClass) ? Unknown
@@ -73,41 +73,41 @@ public static class DeviceCatalog
     public static (string Summary, string Advice)? Problem(int code) => code switch
     {
         0 => null,
-        1 => (L("Périphérique mal configuré (code 1)."), L("Mettez à jour le pilote depuis Windows Update ou le site du fabricant.")),
-        3 => (L("Pilote endommagé ou mémoire insuffisante (code 3)."), L("Fermez des applications, puis réinstallez le pilote si le problème persiste.")),
-        10 => (L("Le périphérique ne peut pas démarrer (code 10)."), L("Pilote inadapté ou matériel défaillant : réinstallez le pilote du fabricant, débranchez et rebranchez le périphérique.")),
-        12 => (L("Ressources insuffisantes (code 12)."), L("Conflit de ressources avec un autre périphérique : désactivez un périphérique inutilisé ou mettez à jour le BIOS/UEFI.")),
-        14 => (L("Redémarrage nécessaire (code 14)."), L("Redémarrez le PC pour que ce périphérique fonctionne.")),
-        16 => (L("Ressources non identifiées (code 16)."), L("Mettez à jour le pilote ; contactez le fabricant si le problème persiste.")),
-        18 => (L("Pilotes à réinstaller (code 18)."), L("Réinstallez le pilote (Windows Update, section Mises à jour facultatives, ou site du fabricant).")),
-        19 => (L("Configuration du registre incomplète ou endommagée (code 19)."), L("Désinstallez le périphérique depuis le Gestionnaire de périphériques puis redémarrez.")),
-        21 => (L("Suppression en cours (code 21)."), L("Windows retire ce périphérique : patientez quelques secondes puis actualisez.")),
-        22 => (L("Périphérique désactivé (code 22)."), L("Il a été désactivé volontairement : réactivez-le si vous en avez besoin.")),
-        24 => (L("Périphérique absent ou pilote incomplet (code 24)."), L("Vérifiez le branchement ; réinstallez le pilote si le périphérique est bien connecté.")),
-        28 => (L("Aucun pilote installé (code 28)."), L("Installez le pilote : Windows Update (Mises à jour facultatives) ou site du fabricant du PC.")),
-        29 => (L("Désactivé par le micrologiciel (code 29)."), L("Ce périphérique est désactivé dans le BIOS/UEFI : il faut le réactiver dans l'utilitaire de configuration du PC.")),
-        31 => (L("Pilote impossible à charger (code 31)."), L("Réinstallez ou mettez à jour le pilote.")),
-        32 => (L("Service du pilote désactivé (code 32)."), L("Le service de ce pilote est désactivé : réinstallez le pilote pour le rétablir.")),
-        33 or 34 or 35 or 36 => (L("Problème de ressources matérielles (code {0}).", code), L("Mettez à jour le BIOS/UEFI du PC ou contactez le fabricant.")),
-        37 => (L("Échec d'initialisation du pilote (code 37)."), L("Réinstallez le pilote du fabricant.")),
-        38 => (L("Ancienne instance du pilote encore en mémoire (code 38)."), L("Redémarrez le PC.")),
-        39 => (L("Pilote endommagé ou manquant (code 39)."), L("Réinstallez le pilote ; si le problème persiste, un logiciel (antivirus, filtre) peut être en cause.")),
-        40 => (L("Informations du service de pilote invalides (code 40)."), L("Réinstallez le pilote.")),
-        41 => (L("Pilote chargé mais matériel introuvable (code 41)."), L("Débranchez et rebranchez le périphérique, ou réinstallez le pilote.")),
-        42 => (L("Périphérique en double détecté (code 42)."), L("Redémarrez le PC.")),
-        43 => (L("Arrêté car il a signalé des problèmes (code 43)."), L("Souvent une panne matérielle ou un pilote défaillant : mettez à jour le pilote, testez un autre port USB.")),
-        44 => (L("Arrêté par une application ou un service (code 44)."), L("Redémarrez le PC.")),
-        45 => (L("Périphérique non connecté (code 45)."), L("Il a déjà été branché mais ne l'est plus : rien à faire s'il est débranché volontairement.")),
-        46 => (L("Arrêt de Windows en cours (code 46)."), L("Le périphérique sera disponible au prochain démarrage.")),
-        47 => (L("Préparé pour un retrait sécurisé (code 47)."), L("Débranchez-le puis rebranchez-le.")),
-        48 => (L("Pilote bloqué (code 48)."), L("Ce pilote est incompatible avec cette version de Windows : installez une version récente du fabricant.")),
-        49 => (L("Registre système trop volumineux (code 49)."), L("Désinstallez les périphériques qui ne sont plus utilisés, puis redémarrez.")),
-        50 => (L("Propriétés non appliquées (code 50)."), L("Redémarrez le PC.")),
-        51 => (L("En attente d'un autre périphérique (code 51)."), L("Il démarrera quand le périphérique dont il dépend sera prêt.")),
-        52 => (L("Signature du pilote non vérifiée (code 52)."), L("Installez un pilote signé depuis Windows Update ou le site du fabricant.")),
-        53 => (L("Réservé au débogueur du noyau (code 53)."), L("Désactivez le débogage du noyau si ce n'est pas volontaire.")),
-        54 => (L("Échec, réinitialisation en cours (code 54)."), L("Patientez puis actualisez ; redémarrez si le problème persiste.")),
-        _ => (L("Problème signalé par Windows (code {0}).", code), L("Consultez les propriétés du périphérique dans le Gestionnaire de périphériques.")),
+        1 => (L("Device not configured correctly (code 1)."), L("Update the driver from Windows Update or the manufacturer's website.")),
+        3 => (L("Driver corrupted or not enough memory (code 3)."), L("Close some apps, then reinstall the driver if the problem persists.")),
+        10 => (L("The device can't start (code 10)."), L("Unsuitable driver or faulty hardware: reinstall the manufacturer's driver, then unplug the device and plug it back in.")),
+        12 => (L("Not enough resources (code 12)."), L("Resource conflict with another device: disable an unused device or update the BIOS/UEFI.")),
+        14 => (L("Restart required (code 14)."), L("Restart the PC for this device to work.")),
+        16 => (L("Unidentified resources (code 16)."), L("Update the driver; contact the manufacturer if the problem persists.")),
+        18 => (L("Drivers need to be reinstalled (code 18)."), L("Reinstall the driver (Windows Update, Optional updates section, or the manufacturer's website).")),
+        19 => (L("Registry configuration incomplete or corrupted (code 19)."), L("Uninstall the device from Device Manager, then restart.")),
+        21 => (L("Removal in progress (code 21)."), L("Windows is removing this device: wait a few seconds, then refresh.")),
+        22 => (L("Device disabled (code 22)."), L("It was disabled on purpose: re-enable it if you need it.")),
+        24 => (L("Device missing or driver incomplete (code 24)."), L("Check the connection; reinstall the driver if the device is properly connected.")),
+        28 => (L("No driver installed (code 28)."), L("Install the driver: Windows Update (Optional updates) or the PC manufacturer's website.")),
+        29 => (L("Disabled by the firmware (code 29)."), L("This device is disabled in the BIOS/UEFI: you need to re-enable it in the PC's setup utility.")),
+        31 => (L("Driver can't be loaded (code 31)."), L("Reinstall or update the driver.")),
+        32 => (L("Driver service disabled (code 32)."), L("This driver's service is disabled: reinstall the driver to restore it.")),
+        33 or 34 or 35 or 36 => (L("Hardware resource problem (code {0}).", code), L("Update the PC's BIOS/UEFI or contact the manufacturer.")),
+        37 => (L("Driver initialization failed (code 37)."), L("Reinstall the manufacturer's driver.")),
+        38 => (L("Previous instance of the driver still in memory (code 38)."), L("Restart the PC.")),
+        39 => (L("Driver corrupted or missing (code 39)."), L("Reinstall the driver; if the problem persists, some software (antivirus, filter) may be the cause.")),
+        40 => (L("Invalid driver service information (code 40)."), L("Reinstall the driver.")),
+        41 => (L("Driver loaded but hardware not found (code 41)."), L("Unplug the device and plug it back in, or reinstall the driver.")),
+        42 => (L("Duplicate device detected (code 42)."), L("Restart the PC.")),
+        43 => (L("Stopped because it reported problems (code 43)."), L("Often a hardware failure or a faulty driver: update the driver, try another USB port.")),
+        44 => (L("Stopped by an app or a service (code 44)."), L("Restart the PC.")),
+        45 => (L("Device not connected (code 45)."), L("It was connected before but isn't anymore: nothing to do if you unplugged it on purpose.")),
+        46 => (L("Windows is shutting down (code 46)."), L("The device will be available at the next startup.")),
+        47 => (L("Prepared for safe removal (code 47)."), L("Unplug it, then plug it back in.")),
+        48 => (L("Driver blocked (code 48)."), L("This driver isn't compatible with this version of Windows: install a recent version from the manufacturer.")),
+        49 => (L("System registry too large (code 49)."), L("Uninstall devices you no longer use, then restart.")),
+        50 => (L("Properties not applied (code 50)."), L("Restart the PC.")),
+        51 => (L("Waiting for another device (code 51)."), L("It will start when the device it depends on is ready.")),
+        52 => (L("Driver signature not verified (code 52)."), L("Install a signed driver from Windows Update or the manufacturer's website.")),
+        53 => (L("Reserved for the kernel debugger (code 53)."), L("Turn off kernel debugging if it isn't intentional.")),
+        54 => (L("Failed, reset in progress (code 54)."), L("Wait, then refresh; restart if the problem persists.")),
+        _ => (L("Problem reported by Windows (code {0}).", code), L("Check the device's properties in Device Manager.")),
     };
 
     /// <summary>Code « normal » à ne pas compter comme une panne (désactivation volontaire, périphérique débranché).</summary>
@@ -118,36 +118,36 @@ public static class DeviceCatalog
     /// <summary>Classes que Timonier refuse de désactiver, avec la raison affichée à l'utilisateur.</summary>
     public static readonly IReadOnlyList<(string Class, string Title, string Reason)> ProtectedClasses =
     [
-        ("System", L("Périphériques système"), L("Bus, horloges, contrôleurs d'interruptions, ACPI : les désactiver peut empêcher Windows de démarrer.")),
-        ("Computer", L("Ordinateur"), L("Représente la carte mère elle-même.")),
-        ("Processor", L("Processeurs"), L("Indispensables au fonctionnement du PC.")),
-        ("SCSIAdapter", L("Contrôleurs de stockage"), L("Le disque système (NVMe, RAID…) en dépend : le PC ne démarrerait plus.")),
-        ("HDC", L("Contrôleurs IDE/SATA"), L("Le disque système peut en dépendre : le PC ne démarrerait plus.")),
-        ("DiskDrive", L("Disques internes et disque système"), L("Seuls les disques USB externes qui ne contiennent pas Windows peuvent être désactivés.")),
-        ("Volume", L("Volumes de stockage"), L("Partitions utilisées par Windows ; utilisez plutôt la gestion des disques.")),
-        ("VolumeSnapshot", L("Clichés instantanés"), L("Utilisés par la restauration du système et les sauvegardes.")),
-        ("SecurityDevices", L("TPM et sécurité"), L("Le TPM protège BitLocker, Windows Hello et le démarrage sécurisé.")),
-        ("Firmware", L("Micrologiciel"), L("Composants du BIOS/UEFI : risque de dysfonctionnement au démarrage.")),
-        ("Battery", L("Batteries et adaptateur secteur"), L("Windows ne saurait plus gérer la charge ni l'arrêt en cas de batterie faible.")),
-        ("SoftwareDevice", L("Périphériques logiciels"), L("Composants virtuels gérés par Windows lui-même.")),
-        ("SoftwareComponent", L("Composants logiciels"), L("Modules logiciels rattachés aux pilotes, sans matériel propre.")),
-        ("Extension", L("Extensions de pilotes"), L("Compléments de configuration, sans matériel propre.")),
-        ("LegacyDriver", L("Pilotes hérités"), L("Pilotes non Plug-and-Play : à gérer comme des services.")),
+        ("System", L("System devices"), L("Buses, clocks, interrupt controllers, ACPI: disabling them can prevent Windows from starting.")),
+        ("Computer", L("Computer"), L("Represents the motherboard itself.")),
+        ("Processor", L("Processors"), L("Essential for the PC to work.")),
+        ("SCSIAdapter", L("Storage controllers"), L("The system disk (NVMe, RAID…) depends on them: the PC would no longer start.")),
+        ("HDC", L("IDE/SATA controllers"), L("The system disk may depend on them: the PC would no longer start.")),
+        ("DiskDrive", L("Internal disks and system disk"), L("Only external USB drives that don't contain Windows can be disabled.")),
+        ("Volume", L("Storage volumes"), L("Partitions used by Windows; use Disk Management instead.")),
+        ("VolumeSnapshot", L("Shadow copies"), L("Used by System Restore and backups.")),
+        ("SecurityDevices", L("TPM and security"), L("The TPM protects BitLocker, Windows Hello and Secure Boot.")),
+        ("Firmware", L("Firmware"), L("BIOS/UEFI components: risk of startup problems.")),
+        ("Battery", L("Batteries and AC adapter"), L("Windows could no longer manage charging or shut down when the battery is low.")),
+        ("SoftwareDevice", L("Software devices"), L("Virtual components managed by Windows itself.")),
+        ("SoftwareComponent", L("Software components"), L("Software modules attached to drivers, with no hardware of their own.")),
+        ("Extension", L("Driver extensions"), L("Configuration add-ons, with no hardware of their own.")),
+        ("LegacyDriver", L("Legacy drivers"), L("Non-Plug and Play drivers: manage them as services.")),
     ];
 
     /// <summary>Classes dont la désactivation est confirmée par le processus administrateur (risque de perdre le contrôle du PC).</summary>
     public static readonly IReadOnlyList<(string Class, string Why)> SensitiveClasses =
     [
-        ("Keyboard", L("le clavier ne répondra plus")),
-        ("Mouse", L("la souris ou le pavé tactile ne répondra plus")),
-        ("HIDClass", L("claviers, souris, écrans tactiles ou boutons peuvent en dépendre")),
-        ("Display", L("l'affichage passera sur le pilote de base de Windows (basse résolution, sans accélération)")),
-        ("Net", L("la connexion réseau ou Internet sera coupée")),
-        ("USB", L("tous les périphériques branchés sur ce contrôleur ou ce concentrateur seront coupés, y compris clavier et souris")),
-        ("Bluetooth", L("les claviers, souris et écouteurs Bluetooth seront déconnectés")),
-        ("Biometric", L("la connexion par Windows Hello (empreinte, visage) ne fonctionnera plus")),
-        ("SmartCardReader", L("la connexion par carte à puce ne fonctionnera plus")),
-        ("SDHost", L("les cartes mémoire ne seront plus lues et, sur les PC à stockage eMMC, le disque interne peut en dépendre")),
+        ("Keyboard", L("the keyboard will stop responding")),
+        ("Mouse", L("the mouse or touchpad will stop responding")),
+        ("HIDClass", L("keyboards, mice, touchscreens or buttons may depend on it")),
+        ("Display", L("the display will fall back to the Windows basic driver (low resolution, no acceleration)")),
+        ("Net", L("the network or internet connection will be cut")),
+        ("USB", L("all devices plugged into this controller or hub will be cut off, including the keyboard and mouse")),
+        ("Bluetooth", L("Bluetooth keyboards, mice and headphones will be disconnected")),
+        ("Biometric", L("Windows Hello sign-in (fingerprint, face) will stop working")),
+        ("SmartCardReader", L("smart card sign-in will stop working")),
+        ("SDHost", L("memory cards will no longer be read and, on PCs with eMMC storage, the internal disk may depend on it")),
     ];
 
     /// <summary>
@@ -161,18 +161,18 @@ public static class DeviceCatalog
         {
             return instanceId.StartsWith(@"USBSTOR\", StringComparison.OrdinalIgnoreCase)
                 ? (DeviceProtection.None, null)
-                : (DeviceProtection.Protected, L("Disque interne : Timonier ne désactive que les disques USB externes."));
+                : (DeviceProtection.Protected, L("Internal disk: Timonier only disables external USB drives."));
         }
         foreach (var (c, _, reason) in ProtectedClasses)
             if (c.Equals(cls, StringComparison.OrdinalIgnoreCase)) return (DeviceProtection.Protected, reason);
         // Pilotes ACPI de batterie / adaptateur secteur parfois rangés hors de la classe Battery.
         if (instanceId.StartsWith(@"ACPI\PNP0C0A", StringComparison.OrdinalIgnoreCase) ||
             instanceId.StartsWith(@"ACPI\ACPI0003", StringComparison.OrdinalIgnoreCase))
-            return (DeviceProtection.Protected, L("Batterie ou adaptateur secteur : Windows doit pouvoir gérer l'alimentation."));
+            return (DeviceProtection.Protected, L("Battery or AC adapter: Windows must be able to manage power."));
         foreach (var (c, why) in SensitiveClasses)
-            if (c.Equals(cls, StringComparison.OrdinalIgnoreCase)) return (DeviceProtection.Sensitive, L("Attention : {0}.", why));
+            if (c.Equals(cls, StringComparison.OrdinalIgnoreCase)) return (DeviceProtection.Sensitive, L("Warning: {0}.", why));
         if (cls.Length == 0)
-            return (DeviceProtection.Sensitive, L("Classe inconnue : Timonier ne peut pas évaluer le rôle de ce périphérique."));
+            return (DeviceProtection.Sensitive, L("Unknown class: Timonier can't assess what this device does."));
         return (DeviceProtection.None, null);
     }
 }

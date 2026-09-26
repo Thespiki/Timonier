@@ -37,12 +37,12 @@ public static partial class PowerApi
 
     // Modes d'alimentation (Paramètres > Système > Alimentation > Mode d'alimentation).
     public static readonly PowerMode ModeEfficiency = new("efficiency", new("961cc777-2547-4f9d-8174-7d86181b8a7a"),
-        L("Meilleure efficacité énergétique"), L("Économie"), "");
-    public static readonly PowerMode ModeBalanced = new("balanced", Guid.Empty, L("Équilibré"), L("Équilibré"), "");
+        L("Best power efficiency"), L("Power saving"), "");
+    public static readonly PowerMode ModeBalanced = new("balanced", Guid.Empty, L("Balanced"), L("Balanced"), "");
     public static readonly PowerMode ModeBetterPerformance = new("better", new("3af9b8d9-7c97-431d-ad78-34a8bfea439f"),
-        L("Performances améliorées"), L("Performances+"), "");
+        L("Better performance"), L("Performance+"), "");
     public static readonly PowerMode ModePerformance = new("performance", new("ded574b5-45a0-4f42-8737-46345c09c238"),
-        L("Meilleures performances"), L("Performances"), "");
+        L("Best performance"), L("Performance"), "");
 
     /// <summary>Modes proposés par Timonier (ceux de Windows 11).</summary>
     public static readonly PowerMode[] Modes = [ModeEfficiency, ModeBalanced, ModePerformance];

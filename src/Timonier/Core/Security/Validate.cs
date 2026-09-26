@@ -30,27 +30,27 @@ public static partial class Validate
     /// <summary>Contrôles communs à tout sac de paramètres (taille, noms, caractères de contrôle).</summary>
     public static void ParameterBag(IReadOnlyDictionary<string, string> p)
     {
-        if (p.Count > MaxParameters) throw new ValidationException(L("Trop de paramètres."));
+        if (p.Count > MaxParameters) throw new ValidationException(L("Too many parameters."));
         foreach (var (k, v) in p)
         {
-            if (!KeyRx().IsMatch(k)) throw new ValidationException(L("Nom de paramètre invalide : {0}", k));
-            if (v is null || v.Length > MaxValueLength) throw new ValidationException(L("Paramètre « {0} » trop long.", k));
+            if (!KeyRx().IsMatch(k)) throw new ValidationException(L("Invalid parameter name: {0}", k));
+            if (v is null || v.Length > MaxValueLength) throw new ValidationException(L("Parameter “{0}” is too long.", k));
             if (v.Any(c => char.IsControl(c) && c is not '\n' and not '\r' and not '\t'))
-                throw new ValidationException(L("Paramètre « {0} » : caractères de contrôle interdits.", k));
+                throw new ValidationException(L("Parameter “{0}”: control characters aren't allowed.", k));
         }
     }
 
     public static string Required(IReadOnlyDictionary<string, string> p, string key, int maxLength = 260)
     {
-        if (!p.TryGetValue(key, out var v) || string.IsNullOrWhiteSpace(v)) throw new ValidationException(L("Paramètre manquant : {0}", key));
-        if (v.Length > maxLength) throw new ValidationException(L("Paramètre « {0} » trop long (max {1}).", key, maxLength));
+        if (!p.TryGetValue(key, out var v) || string.IsNullOrWhiteSpace(v)) throw new ValidationException(L("Missing parameter: {0}", key));
+        if (v.Length > maxLength) throw new ValidationException(L("Parameter “{0}” is too long (max {1}).", key, maxLength));
         return v.Trim();
     }
 
     public static string? Optional(IReadOnlyDictionary<string, string> p, string key, int maxLength = 260)
     {
         if (!p.TryGetValue(key, out var v) || string.IsNullOrWhiteSpace(v)) return null;
-        if (v.Length > maxLength) throw new ValidationException(L("Paramètre « {0} » trop long (max {1}).", key, maxLength));
+        if (v.Length > maxLength) throw new ValidationException(L("Parameter “{0}” is too long (max {1}).", key, maxLength));
         return v.Trim();
     }
 
@@ -58,14 +58,14 @@ public static partial class Validate
     {
         var v = Required(p, key, 128);
         return allowed.FirstOrDefault(a => string.Equals(a, v, StringComparison.OrdinalIgnoreCase))
-               ?? throw new ValidationException(L("Valeur non autorisée pour « {0} ».", key));
+               ?? throw new ValidationException(L("Value not allowed for “{0}”.", key));
     }
 
     public static int Int(IReadOnlyDictionary<string, string> p, string key, int min, int max)
     {
         var v = Required(p, key, 12);
         if (!int.TryParse(v, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var i) || i < min || i > max)
-            throw new ValidationException(L("« {0} » doit être un entier entre {1} et {2}.", key, min, max));
+            throw new ValidationException(L("“{0}” must be an integer between {1} and {2}.", key, min, max));
         return i;
     }
 
@@ -76,52 +76,52 @@ public static partial class Validate
         {
             "true" or "1" or "True" => true,
             "false" or "0" or "False" => false,
-            _ => throw new ValidationException(L("« {0} » doit valoir true ou false.", key)),
+            _ => throw new ValidationException(L("“{0}” must be true or false.", key)),
         };
     }
 
     public static Guid Guid(IReadOnlyDictionary<string, string> p, string key) =>
-        System.Guid.TryParse(Required(p, key, 64), out var g) ? g : throw new ValidationException(L("« {0} » n'est pas un GUID valide.", key));
+        System.Guid.TryParse(Required(p, key, 64), out var g) ? g : throw new ValidationException(L("“{0}” isn't a valid GUID.", key));
 
     public static IPAddress IpAddress(string value, bool allowV6 = true)
     {
         if (!IPAddress.TryParse(value.Trim(), out var ip) || (!allowV6 && ip.AddressFamily != AddressFamily.InterNetwork))
-            throw new ValidationException(L("Adresse IP invalide : {0}", value));
+            throw new ValidationException(L("Invalid IP address: {0}", value));
         // Refuse les formes ambiguës acceptées par TryParse (ex. "1" ou "1.2") : on exige la forme canonique IPv4.
         if (ip.AddressFamily == AddressFamily.InterNetwork && ip.ToString() != value.Trim())
-            throw new ValidationException(L("Adresse IPv4 non canonique : {0}", value));
+            throw new ValidationException(L("Non-canonical IPv4 address: {0}", value));
         return ip;
     }
 
     public static string HostName(string value)
     {
         var v = value.Trim().TrimEnd('.');
-        if (!HostNameRx().IsMatch(v)) throw new ValidationException(L("Nom d'hôte invalide : {0}", value));
+        if (!HostNameRx().IsMatch(v)) throw new ValidationException(L("Invalid host name: {0}", value));
         return v.ToLowerInvariant();
     }
 
     public static string WingetId(string value) =>
-        WingetIdRx().IsMatch(value) && value.Contains('.') ? value : throw new ValidationException(L("Identifiant winget invalide : {0}", value));
+        WingetIdRx().IsMatch(value) && value.Contains('.') ? value : throw new ValidationException(L("Invalid winget ID: {0}", value));
 
     public static string Aumid(string value) =>
-        AumidRx().IsMatch(value) && value.Length <= 256 ? value : throw new ValidationException(L("Identifiant d'application (AUMID) invalide : {0}", value));
+        AumidRx().IsMatch(value) && value.Length <= 256 ? value : throw new ValidationException(L("Invalid app ID (AUMID): {0}", value));
 
     /// <summary>Nom de compte local Windows : 1–20 caractères, sans caractères réservés.</summary>
     public static string LocalUserName(string value)
     {
         var v = value.Trim();
         if (!UserNameRx().IsMatch(v) || v.EndsWith('.') || v.All(c => c is '.' or ' '))
-            throw new ValidationException(L("Nom d'utilisateur invalide (1 à 20 caractères : lettres, chiffres, espace, . _ -)."));
+            throw new ValidationException(L("Invalid user name (1 to 20 characters: letters, digits, space, . _ -)."));
         string[] reserved = ["administrator", "administrateur", "guest", "invité", "system", "defaultaccount", "wdagutilityaccount"];
-        if (reserved.Contains(v.ToLowerInvariant())) throw new ValidationException(L("Ce nom est réservé par Windows."));
+        if (reserved.Contains(v.ToLowerInvariant())) throw new ValidationException(L("This name is reserved by Windows."));
         return v;
     }
 
     public static string Sid(string value) =>
-        SidRx().IsMatch(value) ? value : throw new ValidationException(L("SID invalide."));
+        SidRx().IsMatch(value) ? value : throw new ValidationException(L("Invalid SID."));
 
     public static string DeviceInstanceId(string value) =>
-        DeviceIdRx().IsMatch(value) && !value.Contains("..") ? value : throw new ValidationException(L("Identifiant de périphérique invalide."));
+        DeviceIdRx().IsMatch(value) && !value.Contains("..") ? value : throw new ValidationException(L("Invalid device ID."));
 
     /// <summary>
     /// Fichier local existant, chemin absolu, pas de chemin réseau (UNC), pas de flux de données alternatif.
@@ -131,12 +131,12 @@ public static partial class Validate
     {
         var v = value.Trim().Trim('"');
         if (v.Length < 4 || v.Length > 1024 || v.StartsWith(@"\\") || !Path.IsPathFullyQualified(v))
-            throw new ValidationException(L("Chemin de fichier local absolu requis."));
-        if (v.IndexOf(':', 2) >= 0) throw new ValidationException(L("Chemin refusé (flux alternatif)."));
+            throw new ValidationException(L("An absolute local file path is required."));
+        if (v.IndexOf(':', 2) >= 0) throw new ValidationException(L("Path rejected (alternate data stream)."));
         var full = Path.GetFullPath(v);
-        if (!File.Exists(full)) throw new ValidationException(L("Fichier introuvable : {0}", full));
+        if (!File.Exists(full)) throw new ValidationException(L("File not found: {0}", full));
         if (allowedExtensions.Length > 0 && !allowedExtensions.Contains(Path.GetExtension(full), StringComparer.OrdinalIgnoreCase))
-            throw new ValidationException(L("Type de fichier non autorisé : {0}", Path.GetExtension(full)));
+            throw new ValidationException(L("File type not allowed: {0}", Path.GetExtension(full)));
         return full;
     }
 
@@ -144,9 +144,9 @@ public static partial class Validate
     {
         var v = value.Trim().Trim('"');
         if (v.Length < 3 || v.Length > 1024 || v.StartsWith(@"\\") || !Path.IsPathFullyQualified(v) || v.IndexOf(':', 2) >= 0)
-            throw new ValidationException(L("Chemin de dossier local absolu requis."));
+            throw new ValidationException(L("An absolute local folder path is required."));
         var full = Path.GetFullPath(v);
-        if (!Directory.Exists(full)) throw new ValidationException(L("Dossier introuvable : {0}", full));
+        if (!Directory.Exists(full)) throw new ValidationException(L("Folder not found: {0}", full));
         return full;
     }
 }

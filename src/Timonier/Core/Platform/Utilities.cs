@@ -36,7 +36,7 @@ public static class Format
 
     public static string Bytes(long bytes)
     {
-        string[] units = [LC("unité", "o"), LC("unité", "Ko"), LC("unité", "Mo"), LC("unité", "Go"), LC("unité", "To")];
+        string[] units = [LC("unit", "B"), LC("unit", "KB"), LC("unit", "MB"), LC("unit", "GB"), LC("unit", "TB")];
         double v = bytes;
         var i = 0;
         while (Math.Abs(v) >= 1024 && i < units.Length - 1) { v /= 1024; i++; }
@@ -46,7 +46,7 @@ public static class Format
     public static string Percent(double ratio) => ratio.ToString("P0", Culture);
 
     /// <summary>Date et heure (ex. « 3 mars 2026 à 14:05 »).</summary>
-    public static string Date(DateTime d) => L("{0} à {1}", Day(d), d.ToString("t", Culture));
+    public static string Date(DateTime d) => L("{0} at {1}", Day(d), d.ToString("t", Culture));
 
     /// <summary>Date longue sans le jour de la semaine, dans le format de la culture (ex. « 3 mars 2026 », « March 3, 2026 »).</summary>
     public static string Day(DateTime d) => d.ToString(LongDateWithoutWeekday(), Culture);
@@ -59,7 +59,7 @@ public static class Format
     }
 
     public static string Duration(TimeSpan t) =>
-        t.TotalDays >= 1 ? L("{0} j {1} h", (int)t.TotalDays, t.Hours)
+        t.TotalDays >= 1 ? L("{0} d {1} h", (int)t.TotalDays, t.Hours)
         : t.TotalHours >= 1 ? L("{0} h {1} min", (int)t.TotalHours, t.Minutes)
         : t.TotalMinutes >= 1 ? L("{0} min", (int)t.TotalMinutes)
         : L("{0} s", Math.Max(0, (int)t.TotalSeconds));
@@ -68,6 +68,6 @@ public static class Format
     public static string Ago(DateTime past)
     {
         var d = DateTime.Now - past;
-        return d.TotalMinutes < 1 ? L("à l'instant") : L("il y a {0}", Duration(d));
+        return d.TotalMinutes < 1 ? L("just now") : L("{0} ago", Duration(d));
     }
 }

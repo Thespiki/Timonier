@@ -89,7 +89,7 @@ internal static class EventLogService
             catch (Exception ex) when (ex is EventLogException or UnauthorizedAccessException)
             {
                 Log.Warn("Maintenance", $"journal {log} : {ex.Message}");
-                error = L("Le journal « {0} » n'a pas pu être lu.", (log == "System" ? LC("journal", "Système") : LC("journal", "Application")));
+                error = L("The “{0}” log couldn't be read.", (log == "System" ? LC("journal", "System") : LC("journal", "Application")));
             }
         }
         var list = groups.Values
@@ -105,7 +105,7 @@ internal static class EventLogService
         string? text = null;
         try { text = record.FormatDescription(); }
         catch (EventLogException) { }
-        if (string.IsNullOrWhiteSpace(text)) return L("(description indisponible : le fournisseur de cet événement n'est pas installé)");
+        if (string.IsNullOrWhiteSpace(text)) return L("(description unavailable: the provider of this event isn't installed)");
         var line = text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault() ?? "";
         return line.Length > 220 ? line[..220] + "…" : line;
     }
@@ -116,34 +116,34 @@ internal static class EventLogService
         var p = provider.ToLowerInvariant();
         return (p, id) switch
         {
-            ("microsoft-windows-kernel-power", 41) => new(L("Le PC a redémarré sans s'éteindre proprement (coupure de courant, bouton d'alimentation maintenu, blocage ou écran bleu). Isolé, c'est sans gravité ; fréquent, cela évoque l'alimentation, la surchauffe ou un pilote."), HintTone.Attention),
-            ("eventlog", 6008) => new(L("L'arrêt précédent du système était inattendu (voir aussi Kernel-Power 41)."), HintTone.Info),
-            ("microsoft-windows-wer-systemerrorreporting", 1001) or ("bugcheck", 1001) => new(L("Le PC a redémarré après un écran bleu. Si cela se répète, notez le code d'arrêt et mettez à jour les pilotes ; les vidages mémoire permettent le diagnostic."), HintTone.Attention),
-            ("disk", 7) => new(L("Un disque signale un secteur défectueux : sauvegardez vos données et vérifiez l'état du disque."), HintTone.Attention),
-            ("disk", 51) => new(L("Erreur d'accès au disque pendant une opération de pagination : câble, disque fatigué, ou clé USB/disque externe retiré."), HintTone.Attention),
-            ("disk", 153) => new(L("Une opération de lecture/écriture a dû être relancée. Isolée, c'est bénin ; répétée, le disque ou son câble peut faiblir."), HintTone.Info),
-            ("ntfs", 55) or ("ntfs", 98) or ("microsoft-windows-ntfs", 55) or ("microsoft-windows-ntfs", 98) => new(L("Le système de fichiers a détecté une incohérence : lancez « Analyser le disque système » dans la section Réparation."), HintTone.Attention),
-            ("microsoft-windows-whea-logger", _) => new(L("Erreur matérielle signalée par le processeur, la mémoire ou le bus PCI Express. Les erreurs « corrigées » répétées méritent une mise à jour du BIOS et des pilotes."), HintTone.Attention),
-            ("application error", 1000) => new(L("Une application s'est fermée brutalement (plantage). Son nom figure au début du message ; mettez-la à jour ou réinstallez-la si cela se répète."), HintTone.Info),
-            ("application hang", 1002) => new(L("Une application a cessé de répondre et a été fermée."), HintTone.Info),
-            (".net runtime", 1026) => new(L("Une application .NET s'est arrêtée à cause d'une erreur interne non gérée. Le nom de l'application figure dans le message."), HintTone.Info),
-            ("microsoft-windows-distributedcom", 10016) => new(L("Avertissement d'autorisations DCOM connu et sans gravité : Microsoft recommande de l'ignorer."), HintTone.Harmless),
-            ("microsoft-windows-distributedcom", 10010) => new(L("Un composant ne s'est pas enregistré à temps au démarrage ; généralement sans conséquence visible."), HintTone.Harmless),
+            ("microsoft-windows-kernel-power", 41) => new(L("The PC restarted without shutting down cleanly (power outage, power button held down, freeze or blue screen). Once in a while, it's harmless; if it happens often, it points to the power supply, overheating or a driver."), HintTone.Attention),
+            ("eventlog", 6008) => new(L("The previous system shutdown was unexpected (see also Kernel-Power 41)."), HintTone.Info),
+            ("microsoft-windows-wer-systemerrorreporting", 1001) or ("bugcheck", 1001) => new(L("The PC restarted after a blue screen. If it happens again, note the stop code and update your drivers; memory dumps help with diagnosis."), HintTone.Attention),
+            ("disk", 7) => new(L("A disk reports a bad sector: back up your data and check the disk's health."), HintTone.Attention),
+            ("disk", 51) => new(L("Disk access error during a paging operation: cable, worn-out disk, or USB drive/external disk removed."), HintTone.Attention),
+            ("disk", 153) => new(L("A read/write operation had to be retried. Once in a while, it's harmless; if it keeps happening, the disk or its cable may be failing."), HintTone.Info),
+            ("ntfs", 55) or ("ntfs", 98) or ("microsoft-windows-ntfs", 55) or ("microsoft-windows-ntfs", 98) => new(L("The file system detected an inconsistency: run “Scan system disk” in the Repair section."), HintTone.Attention),
+            ("microsoft-windows-whea-logger", _) => new(L("Hardware error reported by the processor, memory or PCI Express bus. Repeated “corrected” errors call for a BIOS and driver update."), HintTone.Attention),
+            ("application error", 1000) => new(L("An app closed abruptly (crash). Its name appears at the start of the message; update or reinstall it if this happens again."), HintTone.Info),
+            ("application hang", 1002) => new(L("An app stopped responding and was closed."), HintTone.Info),
+            (".net runtime", 1026) => new(L("A .NET app stopped because of an unhandled internal error. The app's name is in the message."), HintTone.Info),
+            ("microsoft-windows-distributedcom", 10016) => new(L("Known, harmless DCOM permissions warning: Microsoft recommends ignoring it."), HintTone.Harmless),
+            ("microsoft-windows-distributedcom", 10010) => new(L("A component didn't register in time at startup; usually no visible effect."), HintTone.Harmless),
             ("service control manager", 7000) or ("service control manager", 7009) or ("service control manager", 7011) =>
-                new(L("Un service n'a pas démarré ou a répondu trop lentement. Sans gravité si tout fonctionne ; sinon, le nom du service est dans le message."), HintTone.Info),
+                new(L("A service didn't start or responded too slowly. Harmless if everything works; otherwise, the service name is in the message."), HintTone.Info),
             ("service control manager", 7023) or ("service control manager", 7024) or ("service control manager", 7031) or ("service control manager", 7034) =>
-                new(L("Un service s'est arrêté de façon inattendue ; Windows le redémarre souvent automatiquement."), HintTone.Info),
-            ("microsoft-windows-windowsupdateclient", 20) => new(L("L'installation d'une mise à jour a échoué. Windows réessaiera ; si l'échec se répète, lancez la réparation de l'image (DISM)."), HintTone.Attention),
-            ("volsnap", 25) or ("volsnap", 36) => new(L("Des points de restauration ont été supprimés faute d'espace réservé suffisant."), HintTone.Info),
-            ("display", 4101) => new(L("Le pilote graphique a cessé de répondre puis a récupéré. Si cela se répète, mettez à jour le pilote graphique."), HintTone.Attention),
-            ("schannel", _) => new(L("Erreur de connexion sécurisée (TLS) lors d'un échange réseau ; généralement sans gravité."), HintTone.Harmless),
-            ("sidebyside", 33) => new(L("Une application n'a pas trouvé une bibliothèque Visual C++ : réinstallez-la ou installez le « Microsoft Visual C++ Redistributable »."), HintTone.Info),
-            ("microsoft-windows-perflib", _) or ("perflib", _) => new(L("Un compteur de performances d'un logiciel est défectueux ; sans gravité."), HintTone.Harmless),
-            ("microsoft-windows-security-spp", 8198) => new(L("Échec ponctuel de vérification de la licence Windows ; sans gravité si Windows est activé."), HintTone.Harmless),
-            ("microsoft-windows-time-service", _) => new(L("Le service de temps n'a pas pu joindre son serveur ; vous pouvez resynchroniser l'heure dans la section Réparation."), HintTone.Info),
-            ("microsoft-windows-dns-client", _) => new(L("Délai dépassé lors d'une résolution de nom : sans gravité si Internet fonctionne."), HintTone.Harmless),
-            ("microsoft-windows-kernel-pnp", 219) => new(L("Un pilote de périphérique n'a pas pu être chargé au démarrage ; souvent sans conséquence."), HintTone.Harmless),
-            ("microsoft-windows-kernel-boot", _) => new(L("Information de démarrage de Windows ; généralement sans gravité."), HintTone.Harmless),
+                new(L("A service stopped unexpectedly; Windows often restarts it automatically."), HintTone.Info),
+            ("microsoft-windows-windowsupdateclient", 20) => new(L("An update failed to install. Windows will try again; if it keeps failing, run the image repair (DISM)."), HintTone.Attention),
+            ("volsnap", 25) or ("volsnap", 36) => new(L("Restore points were deleted because there wasn't enough reserved space."), HintTone.Info),
+            ("display", 4101) => new(L("The graphics driver stopped responding and then recovered. If this happens again, update the graphics driver."), HintTone.Attention),
+            ("schannel", _) => new(L("Secure connection (TLS) error during a network exchange; usually harmless."), HintTone.Harmless),
+            ("sidebyside", 33) => new(L("An app couldn't find a Visual C++ library: reinstall it or install the “Microsoft Visual C++ Redistributable”."), HintTone.Info),
+            ("microsoft-windows-perflib", _) or ("perflib", _) => new(L("A program's performance counter is faulty; harmless."), HintTone.Harmless),
+            ("microsoft-windows-security-spp", 8198) => new(L("One-off Windows license check failure; harmless if Windows is activated."), HintTone.Harmless),
+            ("microsoft-windows-time-service", _) => new(L("The time service couldn't reach its server; you can resync the time in the Repair section."), HintTone.Info),
+            ("microsoft-windows-dns-client", _) => new(L("Timeout during name resolution: harmless if the internet works."), HintTone.Harmless),
+            ("microsoft-windows-kernel-pnp", 219) => new(L("A device driver couldn't be loaded at startup; often without consequence."), HintTone.Harmless),
+            ("microsoft-windows-kernel-boot", _) => new(L("Windows startup information; usually harmless."), HintTone.Harmless),
             _ => null,
         };
     }

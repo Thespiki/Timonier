@@ -38,6 +38,21 @@ public static class Program
         }
 #endif
 
+        // Redémarrage demandé par l'application (ex. changement de langue) : on attend la fin de l'instance précédente.
+        var restartIndex = Array.IndexOf(args, "--restart");
+        if (restartIndex >= 0 && restartIndex + 1 < args.Length && int.TryParse(args[restartIndex + 1], out var previousPid) && previousPid > 0)
+        {
+            try
+            {
+                using var previous = System.Diagnostics.Process.GetProcessById(previousPid);
+                if (previous.MainModule?.FileName is { } path && string.Equals(path, AppPaths.ExecutablePath, StringComparison.OrdinalIgnoreCase))
+                    previous.WaitForExit(15_000);
+            }
+            catch (ArgumentException) { }                 // déjà terminée
+            catch (InvalidOperationException) { }
+            catch (System.ComponentModel.Win32Exception) { }
+        }
+
         using var mutex = new Mutex(true, MutexName, out var isFirstInstance);
         if (!isFirstInstance)
         {

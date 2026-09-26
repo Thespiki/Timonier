@@ -55,15 +55,15 @@
                             Visibility="{Binding RecommendationText, Converter={StaticResource StringToVisibility}}">
                     <TextBlock Style="{StaticResource Pp.Icon}" FontSize="12" Text="&#xE734;" Foreground="{DynamicResource Pp.AccentText}" Margin="0,0,6,0" />
                     <TextBlock Style="{StaticResource Pp.Caption}" Text="{Binding RecommendationText}" Foreground="{DynamicResource Pp.AccentText}" VerticalAlignment="Center" />
-                    <Button Style="{StaticResource Pp.LinkButton}" Content="{loc:L 'Appliquer'}" Margin="8,0,0,0" Command="{Binding ApplyRecommendedCommand}"
+                    <Button Style="{StaticResource Pp.LinkButton}" Content="{loc:L 'Apply'}" Margin="8,0,0,0" Command="{Binding ApplyRecommendedCommand}"
                             IsEnabled="{Binding CanInteract}" />
                 </StackPanel>
 
                 <Button Style="{StaticResource Pp.LinkButton}" HorizontalAlignment="Left" Margin="-2,6,0,0" Command="{Binding ToggleDetailsCommand}"
-                        ToolTip="{loc:L 'Liste exacte des modifications effectuées par ce réglage'}">
+                        ToolTip="{loc:L 'Exact list of the changes this setting makes'}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Style="{StaticResource Pp.Icon}" FontSize="10" Text="&#xE946;" Foreground="{DynamicResource Pp.AccentText}" Margin="0,0,4,0" />
-                        <TextBlock Text="{loc:L 'Ce que ça change'}" />
+                        <TextBlock Text="{loc:L 'What it changes'}" />
                     </StackPanel>
                 </Button>
 

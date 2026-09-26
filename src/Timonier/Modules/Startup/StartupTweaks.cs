@@ -6,16 +6,16 @@ namespace Timonier.Modules.Startup;
 /// <summary>Réglages liés à l'ouverture de session (compte courant, sans élévation).</summary>
 internal static class StartupTweaks
 {
-    private static string Group => L("Ouverture de session");
+    private static string Group => L("Sign-in");
     private const string StartupToast = @"Software\Microsoft\Windows\CurrentVersion\Notifications\Settings\Windows.SystemToast.StartupApp";
     private const string Winlogon = @"Software\Microsoft\Windows NT\CurrentVersion\Winlogon";
 
     public static IEnumerable<TweakDefinition> All()
     {
-        yield return Tweak.Toggle("startup.notify.newapp", L("Notification d'ajout au démarrage"),
-                L("Windows affiche une notification lorsqu'une application s'inscrit pour se lancer à l'ouverture de session. Pratique pour repérer les logiciels qui s'ajoutent au démarrage sans vous le demander. Correspond à « Notification d'application de démarrage » dans Paramètres › Système › Notifications."))
+        yield return Tweak.Toggle("startup.notify.newapp", L("Startup app notification"),
+                L("Windows shows a notification when an app registers itself to run at sign-in. Handy for spotting software that adds itself to startup without asking you. Matches “Startup app notification” in Settings › System › Notifications."))
             .In(StartupModule.Category, Group)
-            .Keywords(L("notification, nouvelle application, startup app notification, alerte démarrage, surveiller démarrage"))
+            .Keywords(L("notification, new app, startup app notification, startup alert, monitor startup"))
             .Tags("lowend", "office")
             .Requires(Requires.Windows11_22H2)
             .WhenOn(Reg.CuDword(StartupToast, "Enabled", 1))
@@ -23,13 +23,13 @@ internal static class StartupTweaks
             .Detect(() => RegistryAccess.ReadDword(RegHive.CurrentUser, StartupToast, "Enabled") == 1 ? TweakDefinition.On : TweakDefinition.Off)
             .WindowsDefault(TweakDefinition.Off)
             .Recommend(TweakDefinition.On)
-            .Warning(L("La notification n'apparaît que si les notifications de Windows sont activées."))
+            .Warning(L("The notification only appears if Windows notifications are turned on."))
             .Build();
 
-        yield return Tweak.Toggle("startup.restartapps", L("Relancer mes applications à la reconnexion"),
-                L("À la fermeture de session ou au redémarrage, Windows mémorise les applications ouvertes qui le permettent et les relance à la connexion suivante. Pratique pour reprendre son travail, mais cela alourdit l'ouverture de session. Correspond à « Enregistrer automatiquement mes applications redémarrables » dans Paramètres › Comptes › Options de connexion."))
+        yield return Tweak.Toggle("startup.restartapps", L("Restart my apps when I sign back in"),
+                L("When you sign out or restart, Windows remembers the open apps that support it and restarts them at the next sign-in. Handy for picking up where you left off, but it makes sign-in heavier. Matches “Automatically save my restartable apps and restart them when I sign back in” in Settings › Accounts › Sign-in options."))
             .In(StartupModule.Category, Group)
-            .Keywords(L("restart apps, rouvrir applications, reprendre applications, restaurer session, applications redémarrables"))
+            .Keywords(L("restart apps, reopen apps, resume apps, restore session, restartable apps"))
             .Tags("lowend", "office")
             .WhenOn(Reg.CuDword(Winlogon, "RestartApps", 1))
             .WhenOff(Reg.CuDword(Winlogon, "RestartApps", 0))

@@ -71,7 +71,7 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
         PcName.Text = p.MachineName;
         PcModel.Text = p.HardwareLoaded || p.Model.Length > 0
             ? $"{p.Manufacturer} · {p.Model}".Trim(' ', '·')
-            : L("Analyse du matériel…");
+            : L("Scanning hardware…");
         PcWindows.Text = $"{p.ProductName} {p.DisplayVersion}";
     }
 
@@ -103,9 +103,9 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
         {
             var header = section.Key switch
             {
-                NavSection.Settings => L("Réglages"),
-                NavSection.Control => L("Contrôle et sécurité"),
-                NavSection.Tools => L("Outils"),
+                NavSection.Settings => L("Settings"),
+                NavSection.Control => L("Control and security"),
+                NavSection.Tools => L("Tools"),
                 NavSection.App => "Timonier",
                 _ => null,
             };
@@ -144,7 +144,7 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
         var entry = _entries.FirstOrDefault(e => e.Id == pageId);
         if (entry is null)
         {
-            Show(L("Page introuvable : {0}", pageId), ToastKind.Warning);
+            Show(L("Page not found: {0}", pageId), ToastKind.Warning);
             return;
         }
 
@@ -156,7 +156,7 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
                 Log.Error("Nav", "création de la page " + pageId, ex);
                 var err = new UserControl();
                 var stack = PageScaffold.Create(err, entry.Title, null, entry.Glyph);
-                stack.Children.Add(PageScaffold.InfoBar(L("Cette page n'a pas pu être chargée : {0}", ex.Message), "", "Pp.InfoBar.Danger"));
+                stack.Children.Add(PageScaffold.InfoBar(L("This page couldn't be loaded: {0}", ex.Message), "", "Pp.InfoBar.Danger"));
                 page = err;
             }
             _pages[pageId] = page;
@@ -230,7 +230,7 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
         {
             SearchResults.Items.Add(new ListBoxItem
             {
-                Content = new TextBlock { Text = L("Aucun résultat. Essayez un autre mot (ex. « caméra », « démarrage », « télémétrie »)."), Style = (Style)FindResource("Pp.Caption") },
+                Content = new TextBlock { Text = L("No results. Try another word (e.g., “camera”, “startup”, “telemetry”)."), Style = (Style)FindResource("Pp.Caption") },
                 IsEnabled = false,
             });
         }
@@ -268,7 +268,7 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
                 Padding = new Thickness(10, 3, 10, 3),
                 MinHeight = 26,
                 FontSize = 12,
-                ToolTip = L("Appliquer directement, sans ouvrir la page"),
+                ToolTip = L("Apply directly, without opening the page"),
             };
             button.Click += async (_, e) =>
             {
@@ -286,11 +286,11 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
             {
                 Text = doc.Kind switch
                 {
-                    SearchEntryKind.Tweak => LC("search result", "Réglage"),
+                    SearchEntryKind.Tweak => LC("search result", "Setting"),
                     SearchEntryKind.Page => LC("search result", "Page"),
-                    SearchEntryKind.WindowsSetting => LC("search result", "Paramètres Windows"),
-                    SearchEntryKind.Tool => LC("search result", "Outil"),
-                    _ => LC("search result", "Fonction"),
+                    SearchEntryKind.WindowsSetting => LC("search result", "Windows Settings"),
+                    SearchEntryKind.Tool => LC("search result", "Tool"),
+                    _ => LC("search result", "Feature"),
                 },
                 Style = (Style)FindResource("Pp.Caption"),
                 Foreground = (Brush)FindResource("Pp.TextTertiary"),
@@ -357,7 +357,7 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
                     if (entry.Execute is not null) entry.Execute();
                     else if (entry.PageId is not null) Navigate(entry.PageId, entry.PageParameter);
                 }
-                catch (Exception ex) { Show(L("Impossible d'ouvrir : {0}", ex.Message), ToastKind.Error); }
+                catch (Exception ex) { Show(L("Couldn't open: {0}", ex.Message), ToastKind.Error); }
                 break;
         }
     }
@@ -374,21 +374,21 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
     private async Task<bool> ConfirmElevationAsync()
     {
         if (!AppHost.Settings.ConfirmBeforeAdminActions) return true;
-        return await Dispatcher.InvokeAsync(() => ConfirmAsync(L("Autorisation administrateur"),
-            L("Cette action modifie des paramètres protégés de Windows : Windows va demander votre autorisation (UAC).\n\nTimonier ouvrira une session administrateur limitée : elle n'exécute que les actions de son catalogue, se ferme automatiquement après {0} min d'inactivité et peut être fermée à tout moment depuis le bandeau en bas à gauche.", AppHost.Settings.BrokerIdleMinutes), L("Continuer"))).Task.Unwrap();
+        return await Dispatcher.InvokeAsync(() => ConfirmAsync(L("Administrator permission"),
+            L("This action changes protected Windows settings: Windows will ask for your permission (UAC).\n\nTimonier will open a limited admin session: it only runs the actions in its catalog, closes automatically after {0} min of inactivity, and can be closed at any time from the banner at the bottom left.", AppHost.Settings.BrokerIdleMinutes), L("Continue"))).Task.Unwrap();
     }
 
     private void UpdateAdminBar()
     {
         AdminBar.Visibility = AppHost.Broker.IsRunning ? Visibility.Visible : Visibility.Collapsed;
-        AdminText.Text = L("Session administrateur active\nFermeture auto. après {0} min d'inactivité", AppHost.Settings.BrokerIdleMinutes);
+        AdminText.Text = L("Admin session active\nCloses automatically after {0} min of inactivity", AppHost.Settings.BrokerIdleMinutes);
     }
 
     private async void CloseAdmin_Click(object sender, RoutedEventArgs e) => await AppHost.Broker.StopAsync();
 
     private async void Reboot_Click(object sender, RoutedEventArgs e)
     {
-        if (await ConfirmAsync(L("Redémarrer maintenant ?"), L("Enregistrez votre travail : le PC redémarrera dans 5 secondes."), L("Redémarrer")))
+        if (await ConfirmAsync(L("Restart now?"), L("Save your work: the PC will restart in 5 seconds."), L("Restart")))
             await SystemEffects.RebootNowAsync();
     }
 
@@ -440,7 +440,7 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
     {
         if (DateTime.UtcNow < _lockUntil)
         {
-            LockError.Text = L("Trop d'essais. Réessayez dans {0} s.", (int)(_lockUntil - DateTime.UtcNow).TotalSeconds + 1);
+            LockError.Text = L("Too many attempts. Try again in {0} s.", (int)(_lockUntil - DateTime.UtcNow).TotalSeconds + 1);
             return;
         }
         if (PinHasher.Verify(LockPin.Password, AppHost.Settings.AppPinHash))
@@ -452,7 +452,7 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
         LockPin.Clear();
         _lockFailures++;
         if (_lockFailures >= 5) _lockUntil = DateTime.UtcNow.AddSeconds(30 * (_lockFailures - 4));
-        LockError.Text = L("Code incorrect.");
+        LockError.Text = L("Incorrect code.");
     }
 
     // ================================================================== Dialogues
@@ -464,7 +464,7 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
     public async Task<bool> ShowAsync(string title, FrameworkElement content, string primary = "", string? secondary = "", bool danger = false)
     {
         if (primary.Length == 0) primary = L("OK");
-        if (secondary is { Length: 0 }) secondary = L("Annuler");
+        if (secondary is { Length: 0 }) secondary = L("Undo");
         await _dialogGate.WaitAsync();
         try
         {
@@ -489,7 +489,7 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
 
     public Task<bool> ConfirmAsync(string title, string message, string primary = "", string secondary = "", bool danger = false) =>
         ShowAsync(title, new TextBlock { Text = message, Style = (Style)FindResource("Pp.Body") },
-            primary.Length == 0 ? L("Continuer") : primary, secondary, danger);
+            primary.Length == 0 ? L("Continue") : primary, secondary, danger);
 
     public Task AlertAsync(string title, string message) =>
         ShowAsync(title, new TextBlock { Text = message, Style = (Style)FindResource("Pp.Body") }, L("OK"), null);
@@ -505,7 +505,7 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
         panel.Children.Add(error);
         string Value() => password ? passwordBox.Password : textBox.Text;
 
-        var gateTask = ShowAsync(title, panel, L("OK"), L("Annuler"));
+        var gateTask = ShowAsync(title, panel, L("OK"), L("Undo"));
         _dialogValidator = () =>
         {
             var message2 = validate?.Invoke(Value());
@@ -617,7 +617,7 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
 
         if (outcome.JournalId is { } id)
         {
-            Show(outcome.Message, ToastKind.Success, L("Annuler"), () => _ = UndoAsync(id));
+            Show(outcome.Message, ToastKind.Success, L("Undo"), () => _ = UndoAsync(id));
         }
         else if (outcome.Message.Length > 0)
         {
@@ -627,20 +627,20 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
         if (outcome.Effect.HasFlag(ApplyEffect.Reboot))
         {
             SystemEffects.MarkReboot();
-            Show(L("Ce changement sera effectif après le redémarrage du PC."), ToastKind.Info);
+            Show(L("This change will take effect after the PC restarts."), ToastKind.Info);
         }
         else if (outcome.Effect.HasFlag(ApplyEffect.SignOut))
         {
             SystemEffects.MarkSignOut();
-            Show(L("Ce changement sera effectif à la prochaine ouverture de session."), ToastKind.Info, L("Se déconnecter maintenant"), async () =>
+            Show(L("This change will take effect the next time you sign in."), ToastKind.Info, L("Sign out now"), async () =>
             {
-                if (await ConfirmAsync(L("Se déconnecter ?"), L("Enregistrez votre travail avant de continuer."), L("Se déconnecter")))
+                if (await ConfirmAsync(L("Sign out?"), L("Save your work before continuing."), L("Sign out")))
                     await SystemEffects.SignOutNowAsync();
             });
         }
         else if (outcome.Effect.HasFlag(ApplyEffect.RestartExplorer))
         {
-            Show(L("L'Explorateur Windows doit être relancé pour afficher ce changement."), ToastKind.Info, L("Relancer l'Explorateur"),
+            Show(L("File Explorer must be restarted to show this change."), ToastKind.Info, L("Restart Explorer"),
                 () => _ = SystemEffects.RestartExplorerAsync());
         }
     }
@@ -650,7 +650,7 @@ public partial class MainWindow : Window, INavigator, IDialogService, IToastServ
         var entry = AppHost.Engine.JournalAll().FirstOrDefault(e => e.Id == id);
         if (entry is null)
         {
-            Show(L("Entrée de journal introuvable."), ToastKind.Warning);
+            Show(L("History entry not found."), ToastKind.Warning);
             return;
         }
         var outcome = await AppHost.Engine.UndoAsync(entry);

@@ -16,17 +16,17 @@ public sealed class GuidedAccessModule : IModule
 
     public void Register(ModuleRegistry r)
     {
-        r.AddPage(new PageInfo(PageId, L("Accès guidé"), Glyph, NavSection.Control, 50, () => new GuidedPage())
+        r.AddPage(new PageInfo(PageId, L("Guided access"), Glyph, NavSection.Control, 50, () => new GuidedPage())
         {
-            Description = L("Verrouiller le PC sur une seule application jusqu'à la saisie d'un code."),
-            Keywords = [L("accès guidé, guided access, verrouiller une application, mode enfant, une seule application, bloquer touche windows, alt tab, prêter son pc, contrôle parental, épingler une application")],
+            Description = L("Lock the PC to a single app until a code is entered."),
+            Keywords = [L("guided access, lock an app, kids mode, child mode, single app, block windows key, alt tab, lend your pc, parental controls, pin an app")],
         });
 
-        r.AddQuickAction(new QuickAction("guided.start", L("Démarrer l'accès guidé"), Glyph,
-            L("Verrouiller le PC sur une application jusqu'à la saisie d'un code."),
+        r.AddQuickAction(new QuickAction("guided.start", L("Start guided access"), Glyph,
+            L("Lock the PC to one app until a code is entered."),
             () => { AppHost.Navigator.Navigate(PageId); return Task.CompletedTask; })
         {
-            Keywords = [L("accès guidé, mode enfant, verrouiller une application, prêter le pc")],
+            Keywords = [L("guided access, kids mode, child mode, lock an app, lend your pc")],
             Order = 60,
         });
 
@@ -35,36 +35,36 @@ public sealed class GuidedAccessModule : IModule
         r.AddUiStartupTask("guided.taskbar-recovery", () =>
         {
             if (TaskbarGuard.RecoverIfNeeded())
-                AppHost.Toasts?.Show(L("La barre des tâches, restée masquée après une session d'accès guidé interrompue, a été réaffichée."), ToastKind.Info);
+                AppHost.Toasts?.Show(L("The taskbar, which stayed hidden after an interrupted guided access session, has been shown again."), ToastKind.Info);
         });
 
         // Lecture seule (préférences).
-        r.AddHealthCheck(HealthCheck.Sync("guided.state", L("Accès guidé"), Glyph, PageId, () =>
+        r.AddHealthCheck(HealthCheck.Sync("guided.state", L("Guided access"), Glyph, PageId, () =>
         {
             return GuidedPin.IsSet
-                ? new HealthResult(HealthStatus.Good, L("Code de sortie défini"), L("L'accès guidé est prêt à l'emploi."))
-                : new HealthResult(HealthStatus.Info, L("Aucun code de sortie"), L("Définissez un code pour pouvoir démarrer l'accès guidé."));
+                ? new HealthResult(HealthStatus.Good, L("Exit code set"), L("Guided access is ready to use."))
+                : new HealthResult(HealthStatus.Info, L("No exit code"), L("Set a code to be able to start guided access."));
         }));
 
         r.AddSearchEntry(new SearchEntry
         {
-            Id = "guided.search.main", Title = L("Accès guidé"), Subtitle = L("Verrouiller le PC sur une seule application avec un code"),
-            Glyph = Glyph, PageId = PageId, Keywords = [L("accès guidé, guided access, kiosque simple, une seule app")], Boost = 0.1,
+            Id = "guided.search.main", Title = L("Guided access"), Subtitle = L("Lock the PC to a single app with a code"),
+            Glyph = Glyph, PageId = PageId, Keywords = [L("guided access, simple kiosk, single app, one app, lock app")], Boost = 0.1,
         });
         r.AddSearchEntry(new SearchEntry
         {
-            Id = "guided.search.lockapp", Title = L("Verrouiller une application"), Subtitle = L("Accès guidé · empêcher de quitter l'application"),
-            Glyph = "", PageId = PageId, Keywords = [L("verrouiller une application, bloquer sur une application, empêcher alt tab, bloquer touche windows")],
+            Id = "guided.search.lockapp", Title = L("Lock an app"), Subtitle = L("Guided access · prevent leaving the app"),
+            Glyph = "", PageId = PageId, Keywords = [L("lock an app, lock to one app, block alt tab, prevent alt tab, block windows key")],
         });
         r.AddSearchEntry(new SearchEntry
         {
-            Id = "guided.search.child", Title = L("Mode enfant"),Subtitle = L("Accès guidé · prêter le PC à un enfant sur une seule application"),
-            Glyph = "", PageId = PageId, Keywords = [L("mode enfant, enfant, prêter le pc, contrôle parental, limite de temps")],
+            Id = "guided.search.child", Title = L("Kids mode"),Subtitle = L("Guided access · lend the PC to a child on a single app"),
+            Glyph = "", PageId = PageId, Keywords = [L("kids mode, child, kids, lend the pc, parental controls, time limit")],
         });
         r.AddSearchEntry(new SearchEntry
         {
-            Id = "guided.search.pin", Title = L("Code de l'accès guidé"), Subtitle = L("Accès guidé · définir ou modifier le code de sortie"),
-            Glyph = "", PageId = PageId, PageParameter = "section:pin", Keywords = [L("code accès guidé, pin, code de sortie")],
+            Id = "guided.search.pin", Title = L("Guided access code"), Subtitle = L("Guided access · set or change the exit code"),
+            Glyph = "", PageId = PageId, PageParameter = "section:pin", Keywords = [L("guided access code, pin, exit code, unlock code")],
         });
 
         Synonyms.AddGroup("acces guide", "guided access", "mode enfant", "verrouiller une application", "app unique");

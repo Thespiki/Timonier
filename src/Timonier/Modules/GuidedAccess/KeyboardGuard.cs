@@ -71,7 +71,7 @@ internal static unsafe class KeyboardGuard
         if (failure is not null || _hook == 0)
         {
             Uninstall();
-            throw new InvalidOperationException(L("Impossible d'installer le filtre clavier."), failure);
+            throw new InvalidOperationException(L("Couldn't install the keyboard filter."), failure);
         }
     }
 

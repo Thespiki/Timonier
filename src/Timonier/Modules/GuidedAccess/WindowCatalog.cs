@@ -14,7 +14,7 @@ internal sealed record AppWindow(nint Handle, uint ProcessId, string Title, stri
 
     public bool IsStoreHost => ProcessName.Equals("ApplicationFrameHost", StringComparison.OrdinalIgnoreCase);
 
-    public string Subtitle => IsStoreHost ? L("Application du Microsoft Store") : ProcessName + ".exe";
+    public string Subtitle => IsStoreHost ? L("Microsoft Store app") : ProcessName + ".exe";
 }
 
 /// <summary>Énumération (lecture seule) des fenêtres d'application ouvertes, hors Timonier et hors fenêtres système.</summary>

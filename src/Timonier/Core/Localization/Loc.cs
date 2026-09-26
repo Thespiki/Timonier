@@ -22,7 +22,7 @@ namespace Timonier.Core.Localization;
 public static class Loc
 {
     /// <summary>Langue dans laquelle les textes sont écrits dans le code (clés des fichiers de traduction).</summary>
-    public const string SourceLanguage = "fr";
+    public const string SourceLanguage = "en";
 
     private const char ContextSeparator = '\u0004';
 
@@ -35,7 +35,7 @@ public static class Loc
     public static string Language { get; private set; } = SourceLanguage;
 
     /// <summary>Culture de l'interface : dates, nombres et tri dans la langue active (variante régionale de Windows si elle correspond).</summary>
-    public static CultureInfo Culture { get; private set; } = CultureInfo.GetCultureInfo("fr-FR");
+    public static CultureInfo Culture { get; private set; } = CultureInfo.GetCultureInfo("en-US");
 
     public static bool IsRightToLeft { get; private set; }
 
@@ -49,7 +49,7 @@ public static class Loc
     public static void Initialize(string? preference)
     {
         var windows = CultureInfo.CurrentUICulture;
-        var info = Languages.Find(preference) ?? Languages.Match(windows) ?? Languages.Find("en")!;
+        var info = Languages.Find(preference) is { } chosen && IsAvailable(chosen.Code) ? chosen : AutomaticLanguage;
         Language = info.Code;
         IsRightToLeft = info.RightToLeft;
         Culture = Languages.Match(windows)?.Code == info.Code && !windows.IsNeutralCulture
@@ -91,6 +91,16 @@ public static class Loc
         args.CopyTo(all, 1);
         return SafeFormat(format, count == 1 ? one : other, all);
     }
+
+    /// <summary>La langue peut-elle être choisie : langue source, ou traduction incorporée à l'exécutable ?</summary>
+    public static bool IsAvailable(string code) =>
+        string.Equals(code, SourceLanguage, StringComparison.OrdinalIgnoreCase)
+        || Array.Exists(Assembly.GetExecutingAssembly().GetManifestResourceNames(),
+            n => n.Equals($"Localization/{code}.json", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Langue qu'« auto » choisirait sur ce PC (langue d'affichage de Windows, sinon anglais).</summary>
+    public static LanguageInfo AutomaticLanguage =>
+        Languages.Match(CultureInfo.CurrentUICulture) is { } m && IsAvailable(m.Code) ? m : Languages.Find("en")!;
 
     /// <summary>Textes demandés sans traduction dans la langue active depuis le démarrage (contrôle qualité).</summary>
     public static IReadOnlyCollection<string> MissingTexts { get { lock (_missing) return [.. _missing]; } }

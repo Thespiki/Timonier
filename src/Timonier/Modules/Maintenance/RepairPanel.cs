@@ -31,29 +31,29 @@ internal sealed partial class RepairPanel
     {
         var tools = new List<Tool>
         {
-            new("sfc", "", L("Vérifier les fichiers système (SFC)"),
-                L("Recherche les fichiers de Windows endommagés ou modifiés et les remplace par des copies saines (sfc /scannow). À lancer en premier en cas de comportement anormal."),
-                L("10 à 30 min"), true, () => StartSfcAsync()),
-            new("dism", "", L("Réparer l'image de Windows (DISM)"),
-                L("Répare la réserve de composants dont SFC se sert, en téléchargeant les éléments sains depuis Windows Update (connexion Internet requise). À lancer si SFC n'a pas pu tout réparer."),
-                L("10 à 40 min"), true, () => RunActionJobAsync(RepairDismAction.RestoreHealthId, L("Réparation de l'image de Windows"),
-                    L("DISM va vérifier et réparer l'image de Windows en téléchargeant les composants nécessaires depuis Windows Update. Cela peut durer jusqu'à 40 minutes."))),
-            new("chkdsk", "", L("Analyser le disque système"),
-                L("Contrôle le système de fichiers du lecteur système en ligne (chkdsk /scan), sans bloquer le PC ni redémarrer. Windows corrige à chaud ce qui peut l'être et signale le reste."),
-                L("2 à 20 min"), true, () => RunActionJobAsync(ChkdskScanAction.ActionId, L("Analyse du disque système"), null)),
-            new("componentcleanup", "", L("Nettoyer le magasin de composants"),
-                L("Supprime tout de suite les anciennes versions des composants remplacés par des mises à jour (dossier WinSxS) et libère souvent plusieurs centaines de Mo. Les mises à jour déjà installées ne pourront plus être désinstallées."),
-                L("5 à 30 min"), true, () => RunActionJobAsync(RepairDismAction.ComponentCleanupId, L("Nettoyage du magasin de composants"),
-                    L("Les anciennes versions des composants seront supprimées immédiatement : vous ne pourrez plus désinstaller les mises à jour déjà installées. Continuer ?"))),
-            new("iconcache", "", L("Réinitialiser le cache des icônes et des miniatures"),
-                L("Corrige les icônes vides, incorrectes ou les aperçus erronés. L'Explorateur est fermé quelques secondes (la barre des tâches et le bureau disparaissent), les caches sont supprimés, puis tout est reconstruit."),
-                L("quelques secondes"), false, ResetIconCacheAsync),
-            new("wsreset", "", L("Réinitialiser le cache du Microsoft Store"),
-                L("Vide le cache du Microsoft Store (WSReset) quand il ne s'ouvre plus ou ne télécharge plus. Le Store s'ouvre à la fin ; vos applications et leurs données ne sont pas touchées."),
-                L("moins d'une minute"), false, ResetStoreAsync),
-            new("time", "", L("Resynchroniser l'heure"),
-                L("Force la synchronisation immédiate de l'horloge avec le serveur de temps de Windows (connexion Internet requise). Utile si l'heure dérive ou après un changement de pile."),
-                L("quelques secondes"), true, () => RunActionJobAsync(TimeResyncAction.ActionId, L("Synchronisation de l'heure"), null)),
+            new("sfc", "", L("Check system files (SFC)"),
+                L("Looks for damaged or modified Windows files and replaces them with healthy copies (sfc /scannow). Run this first if something behaves abnormally."),
+                L("10 to 30 min"), true, () => StartSfcAsync()),
+            new("dism", "", L("Repair Windows image (DISM)"),
+                L("Repairs the component store that SFC relies on, by downloading healthy items from Windows Update (internet connection required). Run it if SFC couldn't repair everything."),
+                L("10 to 40 min"), true, () => RunActionJobAsync(RepairDismAction.RestoreHealthId, L("Windows image repair"),
+                    L("DISM will check and repair the Windows image by downloading the necessary components from Windows Update. This can take up to 40 minutes."))),
+            new("chkdsk", "", L("Scan system disk"),
+                L("Checks the system drive's file system online (chkdsk /scan), without locking up the PC or restarting. Windows fixes what it can on the fly and reports the rest."),
+                L("2 to 20 min"), true, () => RunActionJobAsync(ChkdskScanAction.ActionId, L("System disk scan"), null)),
+            new("componentcleanup", "", L("Clean up the component store"),
+                L("Immediately deletes old versions of components replaced by updates (WinSxS folder) and often frees up several hundred MB. Updates already installed can no longer be uninstalled."),
+                L("5 to 30 min"), true, () => RunActionJobAsync(RepairDismAction.ComponentCleanupId, L("Component store cleanup"),
+                    L("Old versions of components will be deleted immediately: you won't be able to uninstall updates that are already installed. Continue?"))),
+            new("iconcache", "", L("Reset the icon and thumbnail cache"),
+                L("Fixes blank or wrong icons and incorrect previews. Windows Explorer is closed for a few seconds (the taskbar and desktop disappear), the caches are deleted, then everything is rebuilt."),
+                L("a few seconds"), false, ResetIconCacheAsync),
+            new("wsreset", "", L("Reset Microsoft Store cache"),
+                L("Clears the Microsoft Store cache (WSReset) when the Store won't open or no longer downloads. The Store opens when it's done; your apps and their data aren't touched."),
+                L("less than a minute"), false, ResetStoreAsync),
+            new("time", "", L("Resync time"),
+                L("Forces the clock to sync immediately with the Windows time server (internet connection required). Useful if the time drifts or after a battery replacement."),
+                L("a few seconds"), true, () => RunActionJobAsync(TimeResyncAction.ActionId, L("Time sync"), null)),
         };
 
         var root = new StackPanel();
@@ -68,7 +68,7 @@ internal sealed partial class RepairPanel
         jobBody.Children.Add(jobHead);
         jobBody.Children.Add(_jobProgress);
         jobBody.Children.Add(_jobStatus);
-        var hint = MaintUi.Text(L("Vous pouvez continuer à utiliser le PC et changer de page ; gardez Timonier ouvert jusqu'à la fin."), "Pp.Caption");
+        var hint = MaintUi.Text(L("You can keep using the PC and switch pages; keep Timonier open until it's done."), "Pp.Caption");
         hint.Margin = new Thickness(0, 4, 0, 0);
         jobBody.Children.Add(hint);
         _jobBar = new Border { Child = jobBody, Visibility = Visibility.Collapsed, Margin = new Thickness(0, 0, 0, 10) }.Styled("Pp.InfoBar");
@@ -98,7 +98,7 @@ internal sealed partial class RepairPanel
         titleRow.Children.Add(MaintUi.Badge(tool.Duration, "Pp.TextSecondary", "Pp.CardSecondary", ""));
         if (tool.Admin)
         {
-            var b = MaintUi.Badge(L("Administrateur"), "Pp.TextSecondary", "Pp.CardSecondary", "");
+            var b = MaintUi.Badge(L("Administrator"), "Pp.TextSecondary", "Pp.CardSecondary", "");
             b.Margin = new Thickness(6, 0, 0, 0);
             titleRow.Children.Add(b);
         }
@@ -107,10 +107,10 @@ internal sealed partial class RepairPanel
         desc.Margin = new Thickness(0, 4, 0, 0);
         texts.Children.Add(desc);
 
-        var button = MaintUi.Button(L("Lancer"), "", "Pp.Button", async (_, _) => await tool.Run());
+        var button = MaintUi.Button(LC("repair tool", "Run"), "", "Pp.Button", async (_, _) => await tool.Run());
         button.VerticalAlignment = VerticalAlignment.Center;
         button.MinWidth = 96;
-        System.Windows.Automation.AutomationProperties.SetName(button, L("Lancer : {0}", tool.Title));
+        System.Windows.Automation.AutomationProperties.SetName(button, L("Run: {0}", tool.Title));
         _runButtons.Add(button);
 
         var dock = new DockPanel();
@@ -128,7 +128,7 @@ internal sealed partial class RepairPanel
         _busy = busy;
         foreach (var b in _runButtons) b.IsEnabled = !busy;
         _jobTitle.Text = title;
-        _jobStatus.Text = busy ? L("Préparation…") : "";
+        _jobStatus.Text = busy ? L("Preparing…") : "";
         _jobProgress.IsIndeterminate = true;
         _jobProgress.Value = 0;
         _jobBar.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
@@ -150,24 +150,24 @@ internal sealed partial class RepairPanel
     {
         if (outcome.Cancelled)
         {
-            MaintUi.SetInfo(_resultBar, _resultText, _resultIcon, L("Opération annulée : {0}", outcome.Message), "Pp.InfoBar", "");
+            MaintUi.SetInfo(_resultBar, _resultText, _resultIcon, L("Operation canceled: {0}", outcome.Message), "Pp.InfoBar", "");
             return;
         }
         MaintUi.SetInfo(_resultBar, _resultText, _resultIcon, outcome.Message,
             outcome.Success ? "Pp.InfoBar.Success" : "Pp.InfoBar.Danger", outcome.Success ? "" : "");
     }
 
-    public Task StartSfcAsync() => RunActionJobAsync(RepairSfcAction.ActionId, L("Vérification des fichiers système"),
-        L("SFC va analyser tous les fichiers protégés de Windows et remplacer ceux qui sont endommagés. Cela prend 10 à 30 minutes ; une autorisation administrateur sera demandée."));
+    public Task StartSfcAsync() => RunActionJobAsync(RepairSfcAction.ActionId, L("System file check"),
+        L("SFC will scan all protected Windows files and replace the damaged ones. It takes 10 to 30 minutes; administrator permission will be requested."));
 
     private async Task RunActionJobAsync(string actionId, string title, string? confirm)
     {
         if (_busy)
         {
-            AppHost.Toasts.Show(L("Une opération de réparation est déjà en cours."), ToastKind.Info);
+            AppHost.Toasts.Show(L("A repair operation is already in progress."), ToastKind.Info);
             return;
         }
-        if (confirm is not null && !await AppHost.Dialogs.ConfirmAsync(title, confirm, L("Lancer"), L("Annuler"))) return;
+        if (confirm is not null && !await AppHost.Dialogs.ConfirmAsync(title, confirm, LC("repair tool", "Run"), L("Undo"))) return;
 
         SetBusy(true, title);
         using var keepAlive = AppHost.Background.Acquire(title);
@@ -186,10 +186,10 @@ internal sealed partial class RepairPanel
     private async Task ResetIconCacheAsync()
     {
         if (_busy) return;
-        if (!await AppHost.Dialogs.ConfirmAsync(L("Réinitialiser le cache des icônes"),
-                L("L'Explorateur Windows va être fermé quelques secondes : la barre des tâches, le bureau et les fenêtres de dossiers disparaîtront puis reviendront. Les fenêtres de l'Explorateur ouvertes seront fermées."), L("Réinitialiser"), L("Annuler"))) return;
+        if (!await AppHost.Dialogs.ConfirmAsync(L("Reset icon cache"),
+                L("Windows Explorer will be closed for a few seconds: the taskbar, desktop and folder windows will disappear and then come back. Open File Explorer windows will be closed."), L("Reset"), L("Undo"))) return;
 
-        SetBusy(true, L("Réinitialisation du cache des icônes"));
+        SetBusy(true, L("Resetting the icon cache"));
         try
         {
             var (deleted, locked) = await Task.Run(async () =>
@@ -207,17 +207,17 @@ internal sealed partial class RepairPanel
                 }
             });
             var outcome = new ApplyOutcome(true, locked == 0
-                ? LP(deleted, "Cache des icônes réinitialisé ({0} fichier supprimé). Les icônes se reconstruisent au fil de l'affichage.",
-                    "Cache des icônes réinitialisé ({0} fichiers supprimés). Les icônes se reconstruisent au fil de l'affichage.")
-                : L("Cache des icônes réinitialisé ({0}, {1}). Si des icônes restent incorrectes, redémarrez le PC.",
-                    LP(deleted, "{0} fichier supprimé", "{0} fichiers supprimés"), LP(locked, "{0} encore utilisé", "{0} encore utilisés")));
+                ? LP(deleted, "Icon cache reset ({0} file deleted). Icons are rebuilt as they're displayed.",
+                    "Icon cache reset ({0} files deleted). Icons are rebuilt as they're displayed.")
+                : L("Icon cache reset ({0}, {1}). If some icons are still wrong, restart the PC.",
+                    LP(deleted, "{0} file deleted", "{0} files deleted"), LP(locked, "{0} still in use", "{0} still in use")));
             ShowResult(outcome);
             AppHost.Toasts.ShowOutcome(outcome);
         }
         catch (Exception ex)
         {
             Log.Error("Maintenance", "cache des icônes", ex);
-            ShowResult(new ApplyOutcome(false, L("La réinitialisation a échoué : {0}", ex.Message)));
+            ShowResult(new ApplyOutcome(false, L("The reset failed: {0}", ex.Message)));
         }
         finally
         {
@@ -262,21 +262,21 @@ internal sealed partial class RepairPanel
     private async Task ResetStoreAsync()
     {
         if (_busy) return;
-        SetBusy(true, L("Réinitialisation du cache du Microsoft Store"));
+        SetBusy(true, L("Resetting the Microsoft Store cache"));
         try
         {
-            _jobStatus.Text = L("WSReset vide le cache ; le Microsoft Store s'ouvrira à la fin.");
+            _jobStatus.Text = L("WSReset clears the cache; the Microsoft Store will open when it's done.");
             var r = await ProcessRunner.RunAsync(SystemTool.WsReset, [], new RunOptions { Timeout = TimeSpan.FromMinutes(3) });
             var outcome = r.TimedOut
-                ? new ApplyOutcome(false, L("WSReset n'a pas répondu dans les 3 minutes."))
-                : new ApplyOutcome(true, L("Cache du Microsoft Store réinitialisé : le Store devrait s'ouvrir."));
+                ? new ApplyOutcome(false, L("WSReset didn't respond within 3 minutes."))
+                : new ApplyOutcome(true, L("Microsoft Store cache reset: the Store should open."));
             ShowResult(outcome);
             AppHost.Toasts.ShowOutcome(outcome);
         }
         catch (Exception ex)
         {
             Log.Error("Maintenance", "wsreset", ex);
-            ShowResult(new ApplyOutcome(false, L("Impossible de lancer WSReset : {0}", ex.Message)));
+            ShowResult(new ApplyOutcome(false, L("Couldn't start WSReset: {0}", ex.Message)));
         }
         finally
         {

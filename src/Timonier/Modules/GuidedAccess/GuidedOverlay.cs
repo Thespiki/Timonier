@@ -45,7 +45,7 @@ internal sealed class GuidedOverlay : Window
         ResizeMode = ResizeMode.NoResize;
         ShowInTaskbar = false;
         Topmost = true;
-        Title = L("Accès guidé — Timonier");
+        Title = L("Guided access — Timonier");
         WindowStartupLocation = WindowStartupLocation.Manual;
         Left = SystemParameters.VirtualScreenLeft;
         Top = SystemParameters.VirtualScreenTop;
@@ -57,16 +57,16 @@ internal sealed class GuidedOverlay : Window
 
         var (glyph, title, message) = mode switch
         {
-            OverlayMode.TimeUp => ("", L("Temps écoulé"),
+            OverlayMode.TimeUp => ("", L("Time's up"),
                 LP(ExtendMinutes,
-                    "Le temps prévu pour « {1} » est terminé. Saisissez le code pour quitter l'accès guidé ou prolonger de {0} minute.",
-                    "Le temps prévu pour « {1} » est terminé. Saisissez le code pour quitter l'accès guidé ou prolonger de {0} minutes.", appTitle)),
-            OverlayMode.TargetClosed => ("", L("L'application s'est fermée"),
+                    "The time set for “{1}” is up. Enter the code to exit guided access or extend by {0} minute.",
+                    "The time set for “{1}” is up. Enter the code to exit guided access or extend by {0} minutes.", appTitle)),
+            OverlayMode.TargetClosed => ("", L("The app closed"),
                 canRelaunch
-                    ? L("« {0} » n'est plus ouverte. Vous pouvez la relancer, ou saisir le code pour quitter l'accès guidé.", appTitle)
-                    : L("« {0} » n'est plus ouverte. Saisissez le code pour quitter l'accès guidé.", appTitle)),
-            _ => ("", L("Quitter l'accès guidé ?"),
-                L("Saisissez le code pour déverrouiller le PC. Choisissez « Reprendre » pour revenir à « {0} ».", appTitle)),
+                    ? L("“{0}” is no longer open. You can relaunch it, or enter the code to exit guided access.", appTitle)
+                    : L("“{0}” is no longer open. Enter the code to exit guided access.", appTitle)),
+            _ => ("", L("Exit guided access?"),
+                L("Enter the code to unlock the PC. Choose “Resume” to go back to “{0}”.", appTitle)),
         };
 
         var stack = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, MaxWidth = 440 };
@@ -86,11 +86,11 @@ internal sealed class GuidedOverlay : Window
         body.TextWrapping = TextWrapping.Wrap;
         stack.Children.Add(body);
 
-        var label = new TextBlock { Text = L("Code de sortie"), HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 6) };
+        var label = new TextBlock { Text = L("Exit code"), HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 6) };
         label.SetResourceReference(StyleProperty, "Pp.Caption");
         stack.Children.Add(label);
         _pin.HorizontalAlignment = HorizontalAlignment.Center;
-        System.Windows.Automation.AutomationProperties.SetName(_pin, L("Code de sortie"));
+        System.Windows.Automation.AutomationProperties.SetName(_pin, L("Exit code"));
         _pin.KeyDown += (_, e) =>
         {
             if (e.Key == Key.Enter) { e.Handled = true; _ = SubmitAsync(OverlayChoice.End); }
@@ -102,23 +102,23 @@ internal sealed class GuidedOverlay : Window
         stack.Children.Add(_error);
 
         var buttons = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 14, 0, 0) };
-        _end = MakeButton(L("Terminer l'accès guidé"), "Pp.AccentButton", (_, _) => _ = SubmitAsync(OverlayChoice.End));
+        _end = MakeButton(L("End guided access"), "Pp.AccentButton", (_, _) => _ = SubmitAsync(OverlayChoice.End));
         _end.IsDefault = false;
         buttons.Children.Add(_end);
         if (mode == OverlayMode.TimeUp)
         {
-            _extend = MakeButton(L("Prolonger de {0} min", ExtendMinutes), "Pp.Button", (_, _) => _ = SubmitAsync(OverlayChoice.Extend));
+            _extend = MakeButton(L("Extend by {0} min", ExtendMinutes), "Pp.Button", (_, _) => _ = SubmitAsync(OverlayChoice.Extend));
             buttons.Children.Add(_extend);
         }
         if (mode == OverlayMode.TargetClosed && canRelaunch)
-            buttons.Children.Add(MakeButton(L("Relancer l'application"),"Pp.Button", (_, _) => Finish(OverlayChoice.Relaunch)));
+            buttons.Children.Add(MakeButton(L("Relaunch the app"),"Pp.Button", (_, _) => Finish(OverlayChoice.Relaunch)));
         if (mode == OverlayMode.Exit)
-            buttons.Children.Add(MakeButton(L("Reprendre"), "Pp.Button", (_, _) => Finish(OverlayChoice.Resume)));
+            buttons.Children.Add(MakeButton(L("Resume"), "Pp.Button", (_, _) => Finish(OverlayChoice.Resume)));
         stack.Children.Add(buttons);
 
         var hint = new TextBlock
         {
-            Text = L("Accès guidé · Timonier"),
+            Text = L("Guided access · Timonier"),
             HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, 28),
         };
         hint.SetResourceReference(StyleProperty, "Pp.Caption");
@@ -178,7 +178,7 @@ internal sealed class GuidedOverlay : Window
         var pin = _pin.Password;
         if (pin.Length == 0)
         {
-            _error.Text = L("Saisissez le code de sortie.");
+            _error.Text = L("Enter the exit code.");
             _pin.Focus();
             return;
         }
@@ -192,7 +192,7 @@ internal sealed class GuidedOverlay : Window
             Chosen?.Invoke(this, choice);
             return;
         }
-        _error.Text = GuidedPin.Failures >= 3 ? "" : L("Code incorrect.");
+        _error.Text = GuidedPin.Failures >= 3 ? "" : L("Incorrect code.");
         UpdateLockState();
         _pin.Focus();
     }
@@ -211,7 +211,7 @@ internal sealed class GuidedOverlay : Window
         var left = GuidedPin.LockRemaining;
         if (left > TimeSpan.Zero)
         {
-            _error.Text = L("Trop d'essais incorrects. Réessayez dans {0} s.", (int)Math.Ceiling(left.TotalSeconds));
+            _error.Text = L("Too many incorrect attempts. Try again in {0} s.", (int)Math.Ceiling(left.TotalSeconds));
             if (!_lockTimer.IsEnabled) _lockTimer.Start();
         }
         else

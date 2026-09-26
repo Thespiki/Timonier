@@ -40,83 +40,83 @@ public static partial class HardwareAdvice
     {
         var facts = new List<HardwareFact>();
 
-        var cpu = string.IsNullOrWhiteSpace(p.CpuName) ? L("Processeur inconnu") : Regex.Replace(p.CpuName, @"\s+", " ").Replace("(R)", "").Replace("(TM)", "").Trim();
+        var cpu = string.IsNullOrWhiteSpace(p.CpuName) ? L("Unknown processor") : Regex.Replace(p.CpuName, @"\s+", " ").Replace("(R)", "").Replace("(TM)", "").Trim();
         var logical = Threads(p);
         var cpuText = Cores(p) is { } cores
-            ? LP(cores, "{1} · {0} cœur, {2} threads", "{1} · {0} cœurs, {2} threads", cpu, logical)
-            : LP(logical, "{1} · {0} processeur logique", "{1} · {0} processeurs logiques", cpu);
+            ? LP(cores, "{1} · {0} core, {2} threads", "{1} · {0} cores, {2} threads", cpu, logical)
+            : LP(logical, "{1} · {0} logical processor", "{1} · {0} logical processors", cpu);
         facts.Add(IsLowEndCpu(p) || logical <= 2
-            ? new("", L("Processeur"), cpuText, L("Entrée de gamme"), AdviceTone.Limit)
+            ? new("", L("Processor"), cpuText, L("Entry-level"), AdviceTone.Limit)
             : logical >= 12
-                ? new("", L("Processeur"), cpuText, L("Puissant"), AdviceTone.Good)
-                : new("", L("Processeur"), cpuText, null, AdviceTone.Neutral));
+                ? new("", L("Processor"), cpuText, L("Powerful"), AdviceTone.Good)
+                : new("", L("Processor"), cpuText, null, AdviceTone.Neutral));
 
-        var ram = p.RamGb > 0 ? L("{0} Go", p.RamGb.ToString("0.#", Loc.Culture)) : L("Inconnue");
+        var ram = p.RamGb > 0 ? L("{0} GB", p.RamGb.ToString("0.#", Loc.Culture)) : LC("feminine", "Unknown");
         facts.Add(p.RamGb switch
         {
-            > 0 and < 6 => new("", L("Mémoire vive"), ram, L("Juste pour Windows 11"), AdviceTone.Limit),
-            >= 16 => new("", L("Mémoire vive"), ram, L("Confortable"), AdviceTone.Good),
-            _ => new("", L("Mémoire vive"), ram, p.RamGb > 0 ? L("Suffisante pour un usage courant") : null, AdviceTone.Neutral),
+            > 0 and < 6 => new("", L("RAM"), ram, L("Barely enough for Windows 11"), AdviceTone.Limit),
+            >= 16 => new("", L("RAM"), ram, L("Comfortable"), AdviceTone.Good),
+            _ => new("", L("RAM"), ram, p.RamGb > 0 ? L("Enough for everyday use") : null, AdviceTone.Neutral),
         });
 
         var disk = p.SystemDisk;
         var emmc = IsEmmc(disk);
-        var diskText = disk is null ? L("Inconnu") : $"{(emmc ? L("Mémoire eMMC") : MediaLabel(disk.Media))}{(disk.SizeBytes > 0 ? " · " + Format.Bytes(disk.SizeBytes) : "")}{(disk.Model.Length > 0 ? " · " + disk.Model.Trim() : "")}";
-        facts.Add(emmc ? new("", L("Disque système"), diskText, L("Plus lent qu'un vrai SSD"), AdviceTone.Limit) : disk?.Media switch
+        var diskText = disk is null ? L("Unknown") : $"{(emmc ? L("eMMC storage") : MediaLabel(disk.Media))}{(disk.SizeBytes > 0 ? " · " + Format.Bytes(disk.SizeBytes) : "")}{(disk.Model.Length > 0 ? " · " + disk.Model.Trim() : "")}";
+        facts.Add(emmc ? new("", L("System disk"), diskText, L("Slower than a true SSD"), AdviceTone.Limit) : disk?.Media switch
         {
-            DiskMedia.Hdd => new("", L("Disque système"), diskText, L("Principal facteur de lenteur"), AdviceTone.Limit),
-            DiskMedia.Nvme => new("", L("Disque système"), diskText, L("Très rapide"), AdviceTone.Good),
-            DiskMedia.Ssd => new("", L("Disque système"), diskText, L("Rapide"), AdviceTone.Good),
-            _ => new("", L("Disque système"), diskText, null, AdviceTone.Neutral),
+            DiskMedia.Hdd => new("", L("System disk"), diskText, L("Main cause of slowness"), AdviceTone.Limit),
+            DiskMedia.Nvme => new("", L("System disk"), diskText, L("Very fast"), AdviceTone.Good),
+            DiskMedia.Ssd => new("", L("System disk"), diskText, L("Fast"), AdviceTone.Good),
+            _ => new("", L("System disk"), diskText, null, AdviceTone.Neutral),
         });
 
         if (p.Gpus.Count == 0)
         {
-            facts.Add(new("", L("Carte graphique"), L("Inconnue"), null, AdviceTone.Neutral));
+            facts.Add(new("", L("Graphics card"), LC("feminine", "Unknown"), null, AdviceTone.Neutral));
         }
         else
         {
             var names = string.Join(" + ", p.Gpus.Select(g => g.Name.Trim()).Distinct());
             var dedicated = p.Gpus.Any(g => !g.Integrated && g.Vendor is HardwareVendor.Nvidia or HardwareVendor.Amd);
             facts.Add(dedicated
-                ? new("", L("Carte graphique"), names, L("Dédiée : adaptée aux jeux"), AdviceTone.Good)
-                : new("", L("Carte graphique"), names, L("Intégrée : jeux légers uniquement"), AdviceTone.Neutral));
+                ? new("", L("Graphics card"), names, L("Dedicated: suited for gaming"), AdviceTone.Good)
+                : new("", L("Graphics card"), names, L("Integrated: light gaming only"), AdviceTone.Neutral));
         }
 
         if (p.HasBattery || source?.HasBattery == true)
         {
             var state = source switch
             {
-                null => L("Batterie présente"),
+                null => L("Battery present"),
                 { OnBattery: true } => source.BatterySaver
-                    ? (source.BatteryPercent is { } b ? L("Sur batterie ({0} %) · économiseur actif", b) : L("Sur batterie · économiseur actif"))
-                    : (source.BatteryPercent is { } b2 ? L("Sur batterie ({0} %)", b2) : L("Sur batterie")),
-                _ => source.BatteryPercent is { } c ? L("Sur secteur ({0} %)", c) : L("Sur secteur"),
+                    ? (source.BatteryPercent is { } b ? L("On battery ({0}%) · saver on", b) : L("On battery · saver on"))
+                    : (source.BatteryPercent is { } b2 ? L("On battery ({0}%)", b2) : L("On battery")),
+                _ => source.BatteryPercent is { } c ? L("Plugged in ({0}%)", c) : L("Plugged in"),
             };
-            facts.Add(new("", L("Alimentation"), state, L("Portable : l'autonomie compte"), AdviceTone.Neutral));
+            facts.Add(new("", L("Power"), state, L("Laptop: battery life matters"), AdviceTone.Neutral));
         }
         else
         {
-            facts.Add(new("", L("Alimentation"), L("Secteur uniquement (pas de batterie)"), null, AdviceTone.Neutral));
+            facts.Add(new("", L("Power"), L("AC power only (no battery)"), null, AdviceTone.Neutral));
         }
         return facts;
     }
 
     public static string MediaLabel(DiskMedia media) => media switch
     {
-        DiskMedia.Hdd => L("Disque dur (HDD)"),
+        DiskMedia.Hdd => L("Hard disk drive (HDD)"),
         DiskMedia.Ssd => "SSD",
         DiskMedia.Nvme => "SSD NVMe",
-        _ => L("Type inconnu"),
+        _ => L("Unknown type"),
     };
 
     /// <summary>Résumé en une phrase du niveau de performance.</summary>
     public static string TierSummary(SystemProfile p) => p.Tier switch
     {
-        PerformanceTier.Low => L("PC modeste : chaque ressource compte. Timonier privilégie la réactivité plutôt que les effets."),
-        PerformanceTier.Medium => L("PC polyvalent : les réglages d'origine conviennent ; quelques ajustements ciblés suffisent."),
-        PerformanceTier.High => L("PC performant : inutile de sacrifier le confort, concentrez-vous sur les jeux et l'alimentation."),
-        _ => L("Analyse du matériel en cours…"),
+        PerformanceTier.Low => L("Modest PC: every resource counts. Timonier favors responsiveness over effects."),
+        PerformanceTier.Medium => L("All-purpose PC: the original settings work well; a few targeted tweaks are enough."),
+        PerformanceTier.High => L("High-performance PC: no need to sacrifice comfort; focus on games and power."),
+        _ => LC("long form", "Scanning hardware…"),
     };
 
     /// <summary>Conseils concrets pour ce matériel (du plus utile au moins utile).</summary>
@@ -127,40 +127,40 @@ public static partial class HardwareAdvice
 
         if (p.SystemDiskIsHdd)
         {
-            tips.Add(new("", L("Le disque dur mécanique est le principal frein : remplacer le disque système par un SSD apporte bien plus que n'importe quel réglage logiciel.")));
-            tips.Add(new("", L("Gardez SysMain actif : il précharge les applications et compense en partie la lenteur du disque."), "perf.svc.sysmain"));
+            tips.Add(new("", L("The mechanical hard drive is the main bottleneck: replacing the system drive with an SSD does far more than any software setting.")));
+            tips.Add(new("", L("Keep SysMain running: it preloads apps and partly makes up for the slow drive."), "perf.svc.sysmain"));
         }
         if (p.Tier == PerformanceTier.Low)
         {
-            tips.Add(new("", L("Réduisez les effets visuels (préréglage « Meilleures performances ») pour une interface plus vive."), "perf.fx.preset"));
-            tips.Add(new("", L("Désactivez les captures de jeu de la Xbox Game Bar si vous ne vous en servez pas."), "perf.game.capture"));
+            tips.Add(new("", L("Reduce visual effects (“Best performance” preset) for a snappier interface."), "perf.fx.preset"));
+            tips.Add(new("", L("Turn off Xbox Game Bar game captures if you don't use them."), "perf.game.capture"));
         }
         if (p.RamGb is > 0 and <= 8)
         {
-            tips.Add(new("", L("Avec {0} Go de mémoire, limitez les programmes lancés au démarrage et les onglets ouverts : c'est le premier levier contre les ralentissements.", p.RamGb.ToString("0.#", Loc.Culture))));
+            tips.Add(new("", L("With {0} GB of memory, limit the programs launched at startup and the tabs you keep open: that's the first way to fight slowdowns.", p.RamGb.ToString("0.#", Loc.Culture))));
         }
         if (p.HasBattery)
         {
-            tips.Add(new("", L("Sur batterie, préférez le mode « Équilibré » ou « Meilleure efficacité énergétique » et laissez Windows limiter les tâches en arrière-plan."), "perf.power.throttling"));
+            tips.Add(new("", L("On battery, prefer the “Balanced” or “Best power efficiency” mode and let Windows limit background tasks."), "perf.power.throttling"));
         }
         if (p.Gpus.Any(g => !g.Integrated && g.Vendor is HardwareVendor.Nvidia or HardwareVendor.Amd))
         {
-            tips.Add(new("", L("Carte graphique dédiée : activez la planification GPU à accélération matérielle et le Mode Jeu."), "perf.game.hags"));
+            tips.Add(new("", L("Dedicated graphics card: turn on hardware-accelerated GPU scheduling and Game Mode."), "perf.game.hags"));
         }
         if (!p.HasBattery && p.Tier == PerformanceTier.High)
         {
-            tips.Add(new("", L("PC fixe performant : le plan « Performances optimales » est pertinent pour les charges lourdes (montage, calcul), au prix d'une consommation plus élevée.")));
+            tips.Add(new("", L("High-performance desktop PC: the “Ultimate Performance” plan makes sense for heavy workloads (video editing, computing), at the cost of higher power consumption.")));
         }
         if (IsEmmc(p.SystemDisk))
         {
-            tips.Add(new("", L("Stockage eMMC : lent et de petite capacité. Gardez au moins 15 % d'espace libre et évitez d'installer de gros logiciels ; les mises à jour de Windows en ont besoin.")));
+            tips.Add(new("", L("eMMC storage: slow and small. Keep at least 15% free space and avoid installing large software; Windows updates need that space.")));
         }
         else if (p.SystemDisk?.Media is DiskMedia.Ssd or DiskMedia.Nvme)
         {
-            tips.Add(new("", L("Disque SSD : vérifiez que TRIM reste actif ; la défragmentation classique est inutile (Windows optimise le SSD)."), "perf.storage.trim"));
+            tips.Add(new("", L("SSD: make sure TRIM stays active; classic defragmentation is unnecessary (Windows optimizes the SSD)."), "perf.storage.trim"));
         }
         if (tips.Count == 0)
-            tips.Add(new("", L("Les réglages d'origine de Windows sont adaptés à ce PC. Ajustez selon vos usages ci-dessous.")));
+            tips.Add(new("", L("Windows' original settings suit this PC. Adjust them to your needs below.")));
         return tips;
     }
 }

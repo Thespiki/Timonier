@@ -22,37 +22,37 @@ internal static class VendorTools
             {
                 case "Lenovo":
                     list.Add(new VendorTool("Lenovo Vantage", "Lenovo",
-                        L("Pilotes et BIOS à jour, garantie, mode conservation de la batterie, réglages du clavier et de la caméra. Sur les ThinkPad gérés, Lenovo System Update fait le même travail pour les pilotes."),
+                        L("Up-to-date drivers and BIOS, warranty, battery conservation mode, keyboard and camera settings. On managed ThinkPads, Lenovo System Update does the same job for drivers."),
                         "Lenovo", PcGlyph, "9WZDNCRFJ4MV"));
                     break;
                 case "HP":
                     list.Add(new VendorTool("HP Support Assistant", "HP",
-                        L("Pilotes, BIOS, diagnostics matériels et garantie des PC HP grand public. Les modèles professionnels (EliteBook, ProBook, ZBook) utilisent plutôt HP Image Assistant."),
+                        L("Drivers, BIOS, hardware diagnostics and warranty for consumer HP PCs. Business models (EliteBook, ProBook, ZBook) use HP Image Assistant instead."),
                         "HP", PcGlyph));
                     break;
                 case "Dell":
-                    list.Add(new VendorTool(L("Dell SupportAssist et Command | Update"), "Dell",
-                        L("SupportAssist : diagnostics et garantie ; Command | Update : pilotes, BIOS et micrologiciels à jour."),
+                    list.Add(new VendorTool(L("Dell SupportAssist and Command | Update"), "Dell",
+                        L("SupportAssist: diagnostics and warranty; Command | Update: up-to-date drivers, BIOS and firmware."),
                         "Dell", PcGlyph));
                     break;
                 case "ASUS":
                     list.Add(new VendorTool("MyASUS", "ASUS",
-                        L("Pilotes, diagnostics, limitation de la charge de la batterie et assistance des PC ASUS."),
+                        L("Drivers, diagnostics, battery charge limit and support for ASUS PCs."),
                         "ASUS", PcGlyph, "9N7R5S6B0ZZH"));
                     break;
                 case "Acer":
                     list.Add(new VendorTool("Acer Care Center", "Acer",
-                        L("Mises à jour des pilotes, vérification de l'état du PC et informations de garantie des PC Acer."),
+                        L("Driver updates, PC health checks and warranty information for Acer PCs."),
                         "Acer", PcGlyph));
                     break;
                 case "MSI":
                     list.Add(new VendorTool("MSI Center", "MSI",
-                        L("Profils de performance et de ventilation, surveillance du matériel et mises à jour des PC MSI."),
+                        L("Performance and fan profiles, hardware monitoring and updates for MSI PCs."),
                         "MSI Center", PcGlyph));
                     break;
                 case "Microsoft" when p.Model.Contains("Surface", StringComparison.OrdinalIgnoreCase):
                     list.Add(new VendorTool("Surface", "Microsoft",
-                        L("État de la batterie, stylet et accessoires, garantie et réglages propres aux appareils Surface."),
+                        L("Battery status, pen and accessories, warranty and settings specific to Surface devices."),
                         "Surface", PcGlyph, "9WZDNCRFJB8P"));
                     break;
             }
@@ -61,15 +61,15 @@ internal static class VendorTools
         var vendors = p.Gpus.Select(g => g.Vendor).ToHashSet();
         if (vendors.Contains(HardwareVendor.Nvidia))
             list.Add(new VendorTool("NVIDIA App", "NVIDIA",
-                L("Pilotes Game Ready ou Studio, réglages 3D et optimisation des jeux pour les cartes GeForce."),
+                L("Game Ready or Studio drivers, 3D settings and game optimization for GeForce graphics cards."),
                 "NVIDIA", GpuGlyph));
         if (vendors.Contains(HardwareVendor.Amd))
             list.Add(new VendorTool("AMD Software: Adrenalin Edition", "AMD",
-                L("Pilotes et réglages des cartes et puces graphiques Radeon (performances, capture, affichage)."),
+                L("Drivers and settings for Radeon graphics cards and chips (performance, capture, display)."),
                 "AMD", GpuGlyph));
         if (vendors.Contains(HardwareVendor.Intel))
             list.Add(new VendorTool("Intel Driver & Support Assistant", "Intel",
-                L("Détecte les pilotes Intel plus récents (graphiques, Wi-Fi, Bluetooth). Sur un portable, les pilotes personnalisés par le fabricant du PC restent parfois préférables."),
+                L("Detects newer Intel drivers (graphics, Wi-Fi, Bluetooth). On a laptop, drivers customized by the PC manufacturer are sometimes still preferable."),
                 "Intel Driver", DriverGlyph));
         return list;
     }

@@ -74,7 +74,7 @@ public partial class App : Application
     public void OnMainWindowHidden()
     {
         _tray?.Show(AppHost.Background.Reasons);
-        _tray?.Notify(L("Timonier reste actif"), string.Join(", ", AppHost.Background.Reasons));
+        _tray?.Notify(L("Timonier is still running"), string.Join(", ", AppHost.Background.Reasons));
     }
 
     private void UpdateTray()
@@ -93,6 +93,25 @@ public partial class App : Application
         if (MainWindow.WindowState == WindowState.Minimized) MainWindow.WindowState = WindowState.Normal;
         MainWindow.Activate();
         _tray?.Hide();
+    }
+
+    /// <summary>Relance Timonier (ex. après un changement de langue) : la nouvelle instance attend la fin de celle-ci.</summary>
+    public async Task RestartAsync()
+    {
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo(AppPaths.ExecutablePath) { UseShellExecute = false };
+            psi.ArgumentList.Add("--restart");
+            psi.ArgumentList.Add(Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            System.Diagnostics.Process.Start(psi)?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Log.Error("App", "redémarrage", ex);
+            AppHost.Toasts?.Show(L("Couldn't restart Timonier: {0}", ex.Message), ToastKind.Error);
+            return;
+        }
+        await ExitAsync();
     }
 
     public async Task ExitAsync()
@@ -128,6 +147,6 @@ public partial class App : Application
     {
         Log.Error("App", "exception non gérée", e.Exception);
         e.Handled = true;
-        AppHost.Toasts?.Show(L("Erreur inattendue : {0}", e.Exception.Message), ToastKind.Error);
+        AppHost.Toasts?.Show(L("Unexpected error: {0}", e.Exception.Message), ToastKind.Error);
     }
 }

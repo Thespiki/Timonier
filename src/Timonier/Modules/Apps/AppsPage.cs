@@ -41,20 +41,20 @@ public sealed class AppsPage : UserControl, INavigationAware
 
         stack.Children.Add(new PageHeader
         {
-            Title = L("Applications"),
-            Subtitle = L("Installez des logiciels vérifiés en un clic, désinstallez des programmes, supprimez les applications préinstallées superflues et gardez tout à jour avec winget."),
+            Title = L("Apps"),
+            Subtitle = L("Install verified software in one click, uninstall programs, remove unnecessary preinstalled apps and keep everything up to date with winget."),
             Glyph = AppsModule.Glyph,
         });
 
         if (!_ctx.WingetAvailable)
         {
-            var store = AppsUi.Button(L("Installer depuis le Microsoft Store"), "", "Pp.Button", (_, _) =>
+            var store = AppsUi.Button(L("Install from the Microsoft Store"), "", "Pp.Button", (_, _) =>
             {
                 try { ProcessRunner.OpenSettingsUri(Winget.StoreProductUri); }
-                catch (Exception ex) { AppHost.Toasts.Show(L("Impossible d'ouvrir le Microsoft Store : {0}", ex.Message), ToastKind.Error); }
+                catch (Exception ex) { AppHost.Toasts.Show(L("Couldn't open the Microsoft Store: {0}", ex.Message), ToastKind.Error); }
             });
             stack.Children.Add(AppsUi.InfoBar(
-                L("winget (« Programme d'installation d'application ») est introuvable : l'installation, la désinstallation et les mises à jour sont indisponibles. Installez-le gratuitement depuis le Microsoft Store, puis rouvrez Timonier."), "", "Pp.InfoBar.Warning", store));
+                L("winget (“App Installer”) wasn't found: installing, uninstalling and updating are unavailable. Install it for free from the Microsoft Store, then reopen Timonier."), "", "Pp.InfoBar.Warning", store));
         }
 
         stack.Children.Add(BuildSelector());
@@ -80,10 +80,10 @@ public sealed class AppsPage : UserControl, INavigationAware
     private Border BuildSelector()
     {
         var grid = new UniformGrid { Columns = 4, Rows = 1 };
-        AddSegment(grid, View.Install, "", L("Installer"));
-        AddSegment(grid, View.Installed, "", L("Installées"));
-        AddSegment(grid, View.Bloat, "", L("Préinstallées"));
-        AddSegment(grid, View.Updates, "", L("Mises à jour"));
+        AddSegment(grid, View.Install, "", L("Install"));
+        AddSegment(grid, View.Installed, "", LC("feminine plural (apps)", "Installed"));
+        AddSegment(grid, View.Bloat, "", L("Preinstalled"));
+        AddSegment(grid, View.Updates, "", L("Updates"));
         _segments[View.Install].IsChecked = true;
         return new Border { Child = grid, CornerRadius = new CornerRadius(8), Padding = new Thickness(2), BorderThickness = new Thickness(1) }
             .Themed(Border.BackgroundProperty, "Pp.CardSecondary")
@@ -203,7 +203,7 @@ public sealed class AppsPage : UserControl, INavigationAware
         catch (Exception ex)
         {
             Log.Error("Apps", "affichage de la vue " + view, ex);
-            _viewHost.Content = AppsUi.EmptyState("", L("Cette vue n'a pas pu s'afficher"), ex.Message, "Pp.Warning");
+            _viewHost.Content = AppsUi.EmptyState("", L("This view couldn't be displayed"), ex.Message, "Pp.Warning");
         }
     }
 

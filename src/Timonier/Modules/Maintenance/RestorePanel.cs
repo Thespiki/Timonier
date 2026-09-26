@@ -35,9 +35,9 @@ internal sealed class RestorePanel
         status.Children.Add(_statusTile);
         status.Children.Add(statusTexts);
 
-        _create = MaintUi.Button(L("Créer un point de restauration"), "", "Pp.AccentButton", async (_, _) => await CreateAsync());
-        _list = MaintUi.Button(L("Afficher les points existants"), "", "Pp.Button", async (_, _) => await LoadListAsync());
-        _enable = MaintUi.Button(L("Activer la protection"), "", "Pp.Button", async (_, _) => await EnableAsync());
+        _create = MaintUi.Button(L("Create a restore point"), "", "Pp.AccentButton", async (_, _) => await CreateAsync());
+        _list = MaintUi.Button(L("Show existing restore points"), "", "Pp.Button", async (_, _) => await LoadListAsync());
+        _enable = MaintUi.Button(L("Turn on protection"), "", "Pp.Button", async (_, _) => await EnableAsync());
         var buttons = new WrapPanel { Margin = new Thickness(0, 14, 0, 0) };
         foreach (var b in new[] { _create, _list, _enable })
         {
@@ -52,8 +52,8 @@ internal sealed class RestorePanel
         busyRow.Children.Add(_busyText);
 
         var tools = new WrapPanel();
-        tools.Children.Add(MaintUi.Button(L("Ouvrir la restauration du système"), "", "Pp.LinkButton", (_, _) => MaintUi.OpenTool(SystemTool.Rstrui)));
-        tools.Children.Add(MaintUi.Button(L("Paramètres de protection du système"), "", "Pp.LinkButton", (_, _) => MaintUi.OpenTool(SystemTool.SystemPropertiesProtection)));
+        tools.Children.Add(MaintUi.Button(L("Open System Restore"), "", "Pp.LinkButton", (_, _) => MaintUi.OpenTool(SystemTool.Rstrui)));
+        tools.Children.Add(MaintUi.Button(L("System protection settings"), "", "Pp.LinkButton", (_, _) => MaintUi.OpenTool(SystemTool.SystemPropertiesProtection)));
         foreach (FrameworkElement link in tools.Children) link.Margin = new Thickness(0, 0, 20, 0);
 
         var body = new StackPanel();
@@ -62,7 +62,7 @@ internal sealed class RestorePanel
         body.Children.Add(busyRow);
         body.Children.Add(_listHost);
         body.Children.Add(MaintUi.Divider(new Thickness(0, 8, 0, 8)));
-        var limit = MaintUi.Text(L("Windows crée au plus un point de restauration par tranche de 24 heures : si un point récent existe déjà, la demande est ignorée (le point existant reste utilisable). La liste des points et la création demandent une autorisation administrateur."), "Pp.Caption");
+        var limit = MaintUi.Text(L("Windows creates at most one restore point every 24 hours: if a recent one already exists, the request is ignored (the existing restore point remains usable). Listing and creating restore points require administrator permission."), "Pp.Caption");
         body.Children.Add(limit);
         body.Children.Add(tools);
 
@@ -76,14 +76,14 @@ internal sealed class RestorePanel
         var enabled = RestoreStatus.ProtectionEnabled;
         (string glyph, string fg, string bg, string title, string detail) = (policy, enabled) switch
         {
-            (true, _) => ("", "Pp.Danger", "Pp.DangerBackground", L("Restauration du système désactivée par l'organisation"),
-                L("Une stratégie empêche la création de points de restauration sur ce PC.")),
-            (_, true) => ("", "Pp.Success", "Pp.SuccessBackground", L("Protection du système activée"),
-                L("Windows crée aussi des points automatiquement avant l'installation de mises à jour ou de pilotes.")),
-            (_, false) => ("", "Pp.Warning", "Pp.WarningBackground", L("Protection du système désactivée"),
-                L("Aucun point de restauration ne peut être créé : activez la protection du lecteur système.")),
-            _ => ("", "Pp.Info", "Pp.InfoBackground", L("État de la protection du système inconnu"),
-                L("Affichez les points existants ou ouvrez les paramètres de protection pour vérifier.")),
+            (true, _) => ("", "Pp.Danger", "Pp.DangerBackground", L("System Restore turned off by your organization"),
+                L("A policy prevents restore points from being created on this PC.")),
+            (_, true) => ("", "Pp.Success", "Pp.SuccessBackground", L("System protection on"),
+                L("Windows also creates restore points automatically before installing updates or drivers.")),
+            (_, false) => ("", "Pp.Warning", "Pp.WarningBackground", L("System protection off"),
+                L("No restore points can be created: turn on protection for the system drive.")),
+            _ => ("", "Pp.Info", "Pp.InfoBackground", L("System protection status unknown"),
+                L("Show existing restore points or open the protection settings to check.")),
         };
         _statusIcon.Text = glyph;
         _statusIcon.SetResourceReference(TextBlock.ForegroundProperty, fg);
@@ -106,11 +106,11 @@ internal sealed class RestorePanel
     private async Task CreateAsync()
     {
         if (_busy) return;
-        var description = await AppHost.Dialogs.PromptAsync(L("Créer un point de restauration"),
-            L("Donnez un nom à ce point pour le reconnaître plus tard (64 caractères au plus)."), "Timonier",
+        var description = await AppHost.Dialogs.PromptAsync(L("Create a restore point"),
+            L("Give this restore point a name so you can recognize it later (64 characters max.)."), "Timonier",
             validate: RestorePointCreateAction.CheckDescription);
         if (description is null) return;
-        SetBusy(true, L("Création du point de restauration…"));
+        SetBusy(true, L("Creating the restore point…"));
         try
         {
             var outcome = await AppHost.Engine.RunActionAsync(RestorePointCreateAction.ActionId,
@@ -131,7 +131,7 @@ internal sealed class RestorePanel
     private async Task EnableAsync()
     {
         if (_busy) return;
-        SetBusy(true, L("Activation de la protection du système…"));
+        SetBusy(true, L("Turning on system protection…"));
         try
         {
             var outcome = await AppHost.Engine.RunActionAsync(RestoreEnableAction.ActionId, null, new Progress<string>(s => _busyText.Text = s));
@@ -146,7 +146,7 @@ internal sealed class RestorePanel
     private async Task LoadListAsync()
     {
         if (_busy) return;
-        SetBusy(true, L("Lecture des points de restauration…"));
+        SetBusy(true, L("Reading restore points…"));
         try
         {
             var outcome = await AppHost.Engine.RunActionAsync(RestorePointListAction.ActionId);
@@ -154,16 +154,16 @@ internal sealed class RestorePanel
             _listHost.Visibility = Visibility.Visible;
             if (!outcome.Success || outcome.Data is not { } d)
             {
-                _listHost.Children.Add(MaintUi.Text(outcome.Cancelled ? L("Liste non affichée : autorisation administrateur refusée.") : L("Impossible de lire les points : {0}", outcome.Message), "Pp.Caption"));
+                _listHost.Children.Add(MaintUi.Text(outcome.Cancelled ? L("List not shown: administrator permission denied.") : L("Couldn't read the restore points: {0}", outcome.Message), "Pp.Caption"));
                 return;
             }
             var count = int.TryParse(d.GetValueOrDefault("count"), NumberStyles.Integer, CultureInfo.InvariantCulture, out var c) ? c : 0;
-            var title = MaintUi.Text(count == 0 ? L("Aucun point de restauration") : LP(count, "{0} point de restauration", "{0} points de restauration"), "Pp.CardTitle");
+            var title = MaintUi.Text(count == 0 ? L("No restore points") : LP(count, "{0} restore point", "{0} restore points"), "Pp.CardTitle");
             title.Margin = new Thickness(0, 6, 0, 6);
             _listHost.Children.Add(title);
             if (count == 0)
             {
-                _listHost.Children.Add(MaintUi.Text(L("Créez-en un maintenant pour pouvoir revenir en arrière en cas de problème."), "Pp.Caption"));
+                _listHost.Children.Add(MaintUi.Text(L("Create one now so you can go back if there's a problem."), "Pp.Caption"));
                 return;
             }
             for (var i = 0; i < count; i++)
@@ -185,14 +185,14 @@ internal sealed class RestorePanel
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(210) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        var when = MaintUi.Text(date is { } d ? Format.Date(d.ToLocalTime()) : L("Date inconnue"), "Pp.Body", wrap: false);
-        var desc = MaintUi.Text(description.Length == 0 ? L("(sans description)") : description, "Pp.Body");
+        var when = MaintUi.Text(date is { } d ? Format.Date(d.ToLocalTime()) : L("Unknown date"), "Pp.Body", wrap: false);
+        var desc = MaintUi.Text(description.Length == 0 ? L("(no description)") : description, "Pp.Body");
         desc.TextTrimming = TextTrimming.CharacterEllipsis;
         desc.TextWrapping = TextWrapping.NoWrap;
         desc.ToolTip = description;
         Grid.SetColumn(desc, 1);
         var badge = newest
-            ? MaintUi.Badge(L("Le plus récent"), "Pp.AccentText", "Pp.AccentSubtle")
+            ? MaintUi.Badge(L("Most recent"), "Pp.AccentText", "Pp.AccentSubtle")
             : MaintUi.Badge(RestorePoints.TypeLabel(type));
         badge.Margin = new Thickness(10, 0, 0, 0);
         Grid.SetColumn(badge, 2);

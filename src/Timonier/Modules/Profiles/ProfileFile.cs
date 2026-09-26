@@ -61,8 +61,8 @@ internal static partial class ProfileFile
     public static ImportedPlan Read(string path, ModuleRegistry registry)
     {
         var info = new FileInfo(path);
-        if (!info.Exists) throw new ValidationException(L("Fichier introuvable."));
-        if (info.Length > MaxBytes) throw new ValidationException(L("Fichier trop volumineux (256 Ko au maximum) : ce n'est pas une configuration Timonier."));
+        if (!info.Exists) throw new ValidationException(L("File not found."));
+        if (info.Length > MaxBytes) throw new ValidationException(L("File too large (256 KB maximum): this isn't a Timonier configuration."));
 
         ProfileFileModel? model;
         try
@@ -71,14 +71,14 @@ internal static partial class ProfileFile
             var text = new UTF8Encoding(false, true).GetString(bytes).TrimStart('﻿');
             model = JsonSerializer.Deserialize(text, ProfilesJson.Default.ProfileFileModel);
         }
-        catch (DecoderFallbackException) { throw new ValidationException(L("Le fichier n'est pas un texte UTF-8 valide.")); }
-        catch (JsonException ex) { throw new ValidationException(L("Fichier illisible ou au format inattendu : {0}", ex.Message)); }
+        catch (DecoderFallbackException) { throw new ValidationException(L("The file isn't valid UTF-8 text.")); }
+        catch (JsonException ex) { throw new ValidationException(L("Unreadable file or unexpected format: {0}", ex.Message)); }
 
-        if (model is null || model.Format != FormatId) throw new ValidationException(L("Ce fichier n'est pas une configuration exportée par Timonier."));
+        if (model is null || model.Format != FormatId) throw new ValidationException(L("This file isn't a configuration exported by Timonier."));
         if (model.Version != CurrentVersion)
-            throw new ValidationException(L("Version de fichier non prise en charge ({0}). Cette version de Timonier lit la version {1}.", model.Version, CurrentVersion));
+            throw new ValidationException(L("Unsupported file version ({0}). This version of Timonier reads version {1}.", model.Version, CurrentVersion));
         if (model.Profiles?.Count > MaxProfiles || model.Tweaks?.Count > MaxTweaks || model.Apps?.Count > MaxApps)
-            throw new ValidationException(L("Le fichier contient trop d'éléments pour être une configuration valide."));
+            throw new ValidationException(L("The file contains too many items to be a valid configuration."));
 
         var plan = new ImportedPlan { FileName = Path.GetFileName(path) };
 
@@ -98,12 +98,12 @@ internal static partial class ProfileFile
             plan.Tweaks[id] = option;
         }
         if (unknown.Count > 0)
-            plan.Notices.Add(LP(unknown.Count, "{0} réglage inconnu de cette version de Timonier ou avec une option invalide a été ignoré : {1}{2}.",
-                "{0} réglages inconnus de cette version de Timonier ou avec une option invalide ont été ignorés : {1}{2}.",
+            plan.Notices.Add(LP(unknown.Count, "{0} setting unknown to this version of Timonier or with an invalid option was ignored: {1}{2}.",
+                "{0} settings unknown to this version of Timonier or with an invalid option were ignored: {1}{2}.",
                 string.Join(", ", unknown.Take(6)), unknown.Count > 6 ? "…" : ""));
         if (skippedActions > 0)
-            plan.Notices.Add(LP(skippedActions, "{0} action ponctuelle ignorée : un profil n'exécute que des réglages vérifiables.",
-                "{0} actions ponctuelles ignorées : un profil n'exécute que des réglages vérifiables."));
+            plan.Notices.Add(LP(skippedActions, "{0} one-time action ignored: a profile only runs verifiable settings.",
+                "{0} one-time actions ignored: a profile only runs verifiable settings."));
 
         var invalidApps = new List<string>();
         var outside = new List<string>();
@@ -118,11 +118,11 @@ internal static partial class ProfileFile
             catch (ValidationException) { invalidApps.Add(Short(raw)); }
         }
         if (invalidApps.Count > 0)
-            plan.Notices.Add(LP(invalidApps.Count, "{0} identifiant d'application invalide ignoré : {1}.",
-                "{0} identifiants d'application invalides ignorés : {1}.", string.Join(", ", invalidApps.Take(4))));
+            plan.Notices.Add(LP(invalidApps.Count, "{0} invalid app ID ignored: {1}.",
+                "{0} invalid app IDs ignored: {1}.", string.Join(", ", invalidApps.Take(4))));
         if (outside.Count > 0)
-            plan.Notices.Add(LP(outside.Count, "{0} application hors du catalogue vérifié de Timonier ({1}{2}) : elle reste décochée et, si vous la cochez, Windows vous demandera une confirmation administrateur supplémentaire.",
-                "{0} applications hors du catalogue vérifié de Timonier ({1}{2}) : elles restent décochées et, si vous les cochez, Windows vous demandera une confirmation administrateur supplémentaire.",
+            plan.Notices.Add(LP(outside.Count, "{0} app outside Timonier's verified catalog ({1}{2}): it stays unchecked and, if you check it, Windows will ask you for an additional administrator confirmation.",
+                "{0} apps outside Timonier's verified catalog ({1}{2}): they stay unchecked and, if you check them, Windows will ask you for an additional administrator confirmation.",
                 string.Join(", ", outside.Take(4)), outside.Count > 4 ? "…" : ""));
         return plan;
     }
@@ -132,6 +132,6 @@ internal static partial class ProfileFile
         // Ni caractères de contrôle ni caractères de mise en forme invisibles (inversion bidirectionnelle, etc.) dans les avis affichés.
         var v = new string((value ?? "").Where(c => !char.IsControl(c) &&
             char.GetUnicodeCategory(c) is not (System.Globalization.UnicodeCategory.Format or System.Globalization.UnicodeCategory.Surrogate)).ToArray());
-        return v.Length > 40 ? v[..40] + "…" : v.Length == 0 ? L("(vide)") : v;
+        return v.Length > 40 ? v[..40] + "…" : v.Length == 0 ? L("(empty)") : v;
     }
 }

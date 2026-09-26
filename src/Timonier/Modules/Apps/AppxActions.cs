@@ -58,19 +58,19 @@ public sealed class AppxRemoveAction : IActionHandler
     public const string ActionId = "apps.appx.remove";
     public const int Max = 60;
     public string Id => ActionId;
-    public string Title => L("Supprimer des applications préinstallées (utilisateur courant)");
+    public string Title => L("Remove preinstalled apps (current user)");
     public bool RequiresAdmin => false;
 
     private static List<string> Parse(IReadOnlyDictionary<string, string> p)
     {
         var raw = Validate.Required(p, "fullName", Max * 200);
         var list = raw.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Distinct(StringComparer.Ordinal).ToList();
-        if (list.Count is < 1 or > Max) throw new ValidationException(L("Indiquez entre 1 et {0} paquets.", Max));
+        if (list.Count is < 1 or > Max) throw new ValidationException(L("Specify between 1 and {0} packages.", Max));
         foreach (var full in list)
         {
-            if (!BloatCatalog.IsValidFullName(full)) throw new ValidationException(L("Nom de paquet invalide : {0}", full));
+            if (!BloatCatalog.IsValidFullName(full)) throw new ValidationException(L("Invalid package name: {0}", full));
             if (BloatCatalog.IsProtected(BloatCatalog.NameOf(full)))
-                throw new ValidationException(L("{0} est un composant protégé de Windows : Timonier ne le supprime pas.", BloatCatalog.NameOf(full)));
+                throw new ValidationException(L("{0} is a protected Windows component: Timonier doesn't remove it.", BloatCatalog.NameOf(full)));
         }
         return list;
     }
@@ -93,18 +93,18 @@ public sealed class AppxRemoveAction : IActionHandler
                 ctx.Cancellation.ThrowIfCancellationRequested();
                 if (!installed.TryGetValue(wanted[i], out var app))
                 {
-                    data[BloatCatalog.NameOf(wanted[i])] = "erreur : " + L("n'est plus installée pour votre compte");
+                    data[BloatCatalog.NameOf(wanted[i])] = "erreur : " + L("is no longer installed for your account");
                     failures.Add(BloatCatalog.NameOf(wanted[i]));
                     continue;
                 }
                 var title = app.Title;
                 if (app.IsProtected || app.IsSystemSigned)
                 {
-                    data[title] = "erreur : " + L("composant protégé");
+                    data[title] = "erreur : " + L("protected component");
                     failures.Add(title);
                     continue;
                 }
-                ctx.Progress?.Report(L("[{0}/{1}] Suppression de {2}…", i + 1, wanted.Count, title));
+                ctx.Progress?.Report(L("[{0}/{1}] Removing {2}…", i + 1, wanted.Count, title));
                 var result = await pm.RemovePackageAsync(app.FullName).AsTask(ctx.Cancellation).ConfigureAwait(false);
                 if (result.ExtendedErrorCode is { } err && err.HResult != 0)
                 {
@@ -115,7 +115,7 @@ public sealed class AppxRemoveAction : IActionHandler
                 else
                 {
                     Log.Info("Apps", "application supprimée pour l'utilisateur : " + app.Name);
-                    data[title] = "ok : " + L("supprimée");
+                    data[title] = "ok : " + L("removed");
                     removed.Add(app.FamilyName + "|" + title.Replace(';', ',').Replace('|', '/'));
                 }
             }
@@ -123,22 +123,22 @@ public sealed class AppxRemoveAction : IActionHandler
         catch (OperationCanceledException)
         {
             data["removed"] = string.Join(";", removed);
-            return new ActionResult(false, LP(removed.Count, "Suppression interrompue : {0} application supprimée.", "Suppression interrompue : {0} applications supprimées.")) { Data = data };
+            return new ActionResult(false, LP(removed.Count, "Removal stopped: {0} app removed.", "Removal stopped: {0} apps removed.")) { Data = data };
         }
 
         data["removed"] = string.Join(";", removed);
         if (failures.Count == 0)
-            return ActionResult.Ok(removed.Count == 1 ? L("« {0} » a été supprimée pour votre compte.", data.Keys.First())
-                : LP(removed.Count, "{0} application supprimée pour votre compte.", "{0} applications supprimées pour votre compte."), data);
+            return ActionResult.Ok(removed.Count == 1 ? L("“{0}” was removed for your account.", data.Keys.First())
+                : LP(removed.Count, "{0} app removed for your account.", "{0} apps removed for your account."), data);
         return new ActionResult(false, removed.Count == 0
-            ? L("Aucune application supprimée ({0}).", string.Join(", ", failures))
-            : L("{0}, {1} : {2}.", LP(removed.Count, "{0} supprimée", "{0} supprimées"), LP(failures.Count, "{0} échec", "{0} échecs"), string.Join(", ", failures))) { Data = data };
+            ? L("No apps removed ({0}).", string.Join(", ", failures))
+            : L("{0}, {1}: {2}.", LP(removed.Count, "{0} removed", "{0} removed"), LP(failures.Count, "{0} failed", "{0} failed"), string.Join(", ", failures))) { Data = data };
     }
 
     private static string Clean(string? text, int hr)
     {
         var t = (text ?? "").Trim();
-        return t.Length is > 0 and < 300 ? t : L("erreur 0x{0:X8}", hr);
+        return t.Length is > 0 and < 300 ? t : L("error 0x{0:X8}", hr);
     }
 }
 
@@ -151,7 +151,7 @@ public sealed class AppxDeprovisionAction : IActionHandler
 {
     public const string ActionId = "apps.appx.deprovision";
     public string Id => ActionId;
-    public string Title => L("Supprimer des applications préinstallées pour tous les comptes");
+    public string Title => L("Remove preinstalled apps for all accounts");
     public bool RequiresAdmin => true;
     public bool RequiresElevatedConfirmation => true;
 
@@ -159,13 +159,13 @@ public sealed class AppxDeprovisionAction : IActionHandler
     {
         var raw = Validate.Required(p, "family", AppxRemoveAction.Max * 120);
         var list = raw.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Distinct(StringComparer.Ordinal).ToList();
-        if (list.Count is < 1 or > AppxRemoveAction.Max) throw new ValidationException(L("Indiquez entre 1 et {0} applications.", AppxRemoveAction.Max));
+        if (list.Count is < 1 or > AppxRemoveAction.Max) throw new ValidationException(L("Specify between 1 and {0} apps.", AppxRemoveAction.Max));
         foreach (var family in list)
         {
-            if (!BloatCatalog.IsValidFamilyName(family)) throw new ValidationException(L("Nom de famille de paquet invalide : {0}", family));
+            if (!BloatCatalog.IsValidFamilyName(family)) throw new ValidationException(L("Invalid package family name: {0}", family));
             var name = BloatCatalog.NameOf(family);
             if (BloatCatalog.Find(name) is null || BloatCatalog.IsProtected(name))
-                throw new ValidationException(L("{0} ne fait pas partie des applications préinstallées supprimables.", name));
+                throw new ValidationException(L("{0} isn't one of the removable preinstalled apps.", name));
         }
         return list;
     }
@@ -175,7 +175,7 @@ public sealed class AppxDeprovisionAction : IActionHandler
     public string DescribeForConfirmation(IReadOnlyDictionary<string, string> p)
     {
         var list = Parse(p);
-        return L("Supprimer ces applications pour TOUS les comptes de ce PC et les retirer de l'image de Windows ?\n\n{0}\n\nElles ne seront plus installées pour les nouveaux comptes. Chacun pourra les réinstaller depuis le Microsoft Store.", string.Join("\n", list.Select(f => $"• {TitleOf(f)} ({BloatCatalog.NameOf(f)})")));
+        return L("Remove these apps for ALL accounts on this PC and remove them from the Windows image?\n\n{0}\n\nThey will no longer be installed for new accounts. Anyone can reinstall them from the Microsoft Store.", string.Join("\n", list.Select(f => $"• {TitleOf(f)} ({BloatCatalog.NameOf(f)})")));
     }
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) => Parse(p);
@@ -201,8 +201,8 @@ public sealed class AppxDeprovisionAction : IActionHandler
     {
         ValidateParameters(p);
         var families = Parse(p);
-        ctx.Progress?.Report(families.Count == 1 ? L("Suppression de {0} pour tous les comptes…", TitleOf(families[0]))
-            : L("Suppression de {0} applications pour tous les comptes…", families.Count));
+        ctx.Progress?.Report(families.Count == 1 ? L("Removing {0} for all accounts…", TitleOf(families[0]))
+            : L("Removing {0} apps for all accounts…", families.Count));
         var r = await PowerShellRunner.RunAsync(Script, new Dictionary<string, string> { ["FAMILIES"] = string.Join(",", families) },
             TimeSpan.FromMinutes(20), ctx.Progress, ctx.Cancellation).ConfigureAwait(false);
 
@@ -216,10 +216,10 @@ public sealed class AppxDeprovisionAction : IActionHandler
             var title = TitleOf(parts[1]);
             _ = int.TryParse(parts[2], out var count);
             _ = int.TryParse(parts[3], out var failed);
-            if (failed > 0) { data[title] = "erreur : " + L("suppression partielle"); failures++; }
+            if (failed > 0) { data[title] = "erreur : " + L("partially removed"); failures++; }
             else
             {
-                data[title] = "ok : " + (count == 0 ? L("absente de ce PC") : L("supprimée pour tous les comptes"));
+                data[title] = "ok : " + (count == 0 ? L("not on this PC") : L("removed for all accounts"));
                 if (count > 0) removed.Add(parts[1] + "|" + title);
             }
         }
@@ -227,11 +227,11 @@ public sealed class AppxDeprovisionAction : IActionHandler
         if (!r.Success)
         {
             Log.Warn("Apps", "déprovisionnement : " + r.CombinedOutput);
-            return new ActionResult(false, r.TimedOut ? L("La suppression pour tous les comptes a échoué : délai dépassé.") : L("La suppression pour tous les comptes a échoué : voir le journal.")) { Data = data };
+            return new ActionResult(false, r.TimedOut ? L("Removal for all accounts failed: timed out.") : L("Removal for all accounts failed: see History.")) { Data = data };
         }
         return failures == 0
-            ? ActionResult.Ok(removed.Count == 0 ? L("Ces applications n'étaient installées pour aucun compte.")
-                : LP(removed.Count, "{0} application supprimée pour tous les comptes et retirée de l'image.", "{0} applications supprimées pour tous les comptes et retirées de l'image."), data)
-            : new ActionResult(false, LP(failures, "Suppression partielle : {0} application n'a pas pu être entièrement supprimée.", "Suppression partielle : {0} applications n'ont pas pu être entièrement supprimées.")) { Data = data };
+            ? ActionResult.Ok(removed.Count == 0 ? L("These apps weren't installed for any account.")
+                : LP(removed.Count, "{0} app removed for all accounts and removed from the image.", "{0} apps removed for all accounts and removed from the image."), data)
+            : new ActionResult(false, LP(failures, "Partial removal: {0} app couldn't be fully removed.", "Partial removal: {0} apps couldn't be fully removed.")) { Data = data };
     }
 }

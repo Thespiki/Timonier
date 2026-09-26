@@ -32,20 +32,20 @@ public sealed class ServiceItem
 
     public string StatusLabel => Status switch
     {
-        ServiceControllerStatus.Running => L("En cours"),
-        ServiceControllerStatus.Stopped => L("Arrêté"),
-        ServiceControllerStatus.Paused => L("Suspendu"),
-        ServiceControllerStatus.StartPending => L("Démarrage…"),
-        ServiceControllerStatus.StopPending => L("Arrêt…"),
-        _ => L("En transition"),
+        ServiceControllerStatus.Running => L("Running"),
+        ServiceControllerStatus.Stopped => L("Stopped"),
+        ServiceControllerStatus.Paused => LC("state (service)", "Paused"),
+        ServiceControllerStatus.StartPending => L("Starting…"),
+        ServiceControllerStatus.StopPending => L("Stopping…"),
+        _ => L("In transition"),
     };
 
     public string AccountLabel => Account?.ToLowerInvariant() switch
     {
         null or "" => "",
-        "localsystem" => L("Système local"),
-        @"nt authority\localservice" => L("Service local"),
-        @"nt authority\networkservice" => L("Service réseau"),
+        "localsystem" => L("Local System"),
+        @"nt authority\localservice" => L("Local Service"),
+        @"nt authority\networkservice" => L("Network Service"),
         _ => Account!,
     };
 }
@@ -95,22 +95,22 @@ public static partial class ServiceInventory
     /// </summary>
     public static string EnsureManageable(string name, bool forStartType)
     {
-        if (!ServiceConfig.IsValidName(name)) throw new Core.Security.ValidationException(L("Nom de service invalide."));
+        if (!ServiceConfig.IsValidName(name)) throw new Core.Security.ValidationException(L("Invalid service name."));
         int type;
         using (var k = Registry.LocalMachine.OpenSubKey(ServicesKey + name, false))
         {
-            if (k is null) throw new Core.Security.ValidationException(L("Le service « {0} » n'existe pas sur ce PC.", name));
+            if (k is null) throw new Core.Security.ValidationException(L("The service “{0}” doesn't exist on this PC.", name));
             type = k.GetValue("Type") is int t ? t : 0;
         }
-        if ((type & 0x30) == 0) throw new Core.Security.ValidationException(L("Les pilotes ne sont pas gérés ici."));
+        if ((type & 0x30) == 0) throw new Core.Security.ValidationException(L("Drivers aren't managed here."));
         if (IsProtected(name))
-            throw new Core.Security.ValidationException(L("Ce service est protégé : il est indispensable au démarrage, au réseau, aux mises à jour ou à la sécurité de Windows."));
+            throw new Core.Security.ValidationException(L("This service is protected: it's essential for Windows startup, networking, updates or security."));
         if (!forStartType || (type & 0x80) == 0) return name;
 
         // Instance par utilisateur : le type de démarrage se règle sur le service modèle.
         var template = TemplateName(name);
         if (!ServiceConfig.IsValidName(template) || !ServiceConfig.Exists(template))
-            throw new Core.Security.ValidationException(L("Service modèle introuvable pour cette instance par utilisateur."));
+            throw new Core.Security.ValidationException(L("Template service not found for this per-user instance."));
         return template;
     }
 
@@ -120,7 +120,7 @@ public static partial class ServiceInventory
         "delayed" => ServiceStartKind.AutomaticDelayed,
         "manual" => ServiceStartKind.Manual,
         "disabled" => ServiceStartKind.Disabled,
-        _ => throw new Core.Security.ValidationException(L("Type de démarrage non autorisé.")),
+        _ => throw new Core.Security.ValidationException(L("Startup type not allowed.")),
     };
 
     public static string StartParam(ServiceStartKind kind) => kind switch
@@ -133,12 +133,12 @@ public static partial class ServiceInventory
 
     public static string StartLabel(ServiceStartKind? kind) => kind switch
     {
-        ServiceStartKind.Automatic => L("Automatique"),
-        ServiceStartKind.AutomaticDelayed => L("Automatique (différé)"),
-        ServiceStartKind.Manual => L("Manuel"),
-        ServiceStartKind.Disabled => L("Désactivé"),
-        ServiceStartKind.Boot or ServiceStartKind.System => L("Démarrage du noyau"),
-        _ => L("Inconnu"),
+        ServiceStartKind.Automatic => L("Automatic"),
+        ServiceStartKind.AutomaticDelayed => L("Automatic (delayed start)"),
+        ServiceStartKind.Manual => L("Manual"),
+        ServiceStartKind.Disabled => L("Off"),
+        ServiceStartKind.Boot or ServiceStartKind.System => L("Boot (kernel)"),
+        _ => L("Unknown"),
     };
 
     /// <summary>Énumère les services Win32 (lent : à appeler hors du thread UI).</summary>

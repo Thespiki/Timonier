@@ -17,7 +17,7 @@ internal sealed class CleanupRunAction : IActionHandler
 {
     public const string ActionId = "maintenance.cleanup.run";
     public string Id => ActionId;
-    public string Title => L("Nettoyer les fichiers système");
+    public string Title => L("Clean up system files");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
@@ -33,10 +33,10 @@ internal sealed class CleanupRunAction : IActionHandler
         foreach (var part in raw.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
         {
             var key = CleanupCatalog.AdminKeys.FirstOrDefault(k => k == part)
-                      ?? throw new ValidationException(L("Catégorie de nettoyage non autorisée : {0}", part));
+                      ?? throw new ValidationException(L("Cleanup category not allowed: {0}", part));
             if (!keys.Contains(key)) keys.Add(key);
         }
-        if (keys.Count == 0) throw new ValidationException(L("Aucune catégorie de nettoyage choisie."));
+        if (keys.Count == 0) throw new ValidationException(L("No cleanup category selected."));
         return keys;
     }
 
@@ -52,7 +52,7 @@ internal sealed class CleanupRunAction : IActionHandler
         {
             ctx.Cancellation.ThrowIfCancellationRequested();
             var category = CleanupCatalog.Get(key)!;
-            ctx.Progress?.Report(analyze ? L("Analyse : {0}…", category.Title) : L("Nettoyage : {0}…", category.Title));
+            ctx.Progress?.Report(analyze ? L("Scanning: {0}…", category.Title) : L("Cleaning up: {0}…", category.Title));
             CleanupStats stats;
             try
             {
@@ -61,7 +61,7 @@ internal sealed class CleanupRunAction : IActionHandler
                 else if (category.Kind == CleanupKind.DeliveryOptimization)
                     stats = await CleanDeliveryOptimizationAsync(ctx.Cancellation).ConfigureAwait(false);
                 else if (key == "wucache" && CleanupCatalog.RebootPending())
-                    stats = new CleanupStats { Note = L("Ignoré : un redémarrage de Windows Update est en attente.") };
+                    stats = new CleanupStats { Note = L("Skipped: a Windows Update restart is pending.") };
                 else
                     stats = CleanupEngine.Clean(category, TimeSpan.FromMinutes(3), ctx.Cancellation);
             }
@@ -69,7 +69,7 @@ internal sealed class CleanupRunAction : IActionHandler
             catch (Exception ex)
             {
                 Log.Warn("Maintenance", $"nettoyage {key} : {ex.Message}");
-                stats = new CleanupStats { Note = L("Erreur : {0}", ex.Message) };
+                stats = new CleanupStats { Note = L("Error: {0}", ex.Message) };
             }
             data[key + ".bytes"] = stats.Bytes.ToString(CultureInfo.InvariantCulture);
             data[key + ".files"] = stats.Files.ToString(CultureInfo.InvariantCulture);
@@ -83,11 +83,11 @@ internal sealed class CleanupRunAction : IActionHandler
         data["total.skipped"] = skipped.ToString(CultureInfo.InvariantCulture);
 
         var message = analyze
-            ? L("Analyse terminée : {0} récupérables.", Format.Bytes(total))
+            ? L("Scan complete: {0} can be freed.", Format.Bytes(total))
             : skipped > 0
-                ? LP(skipped, "Nettoyage système terminé : {1} libérés. {0} fichier en cours d'utilisation ignoré.",
-                    "Nettoyage système terminé : {1} libérés. {0} fichiers en cours d'utilisation ignorés.", Format.Bytes(total))
-                : L("Nettoyage système terminé : {0} libérés.", Format.Bytes(total));
+                ? LP(skipped, "System cleanup complete: {1} freed. {0} file in use skipped.",
+                    "System cleanup complete: {1} freed. {0} files in use skipped.", Format.Bytes(total))
+                : L("System cleanup complete: {0} freed.", Format.Bytes(total));
         return ActionResult.Ok(message, data);
     }
 
@@ -100,7 +100,7 @@ internal sealed class CleanupRunAction : IActionHandler
         if (!r.Success)
         {
             Log.Warn("Maintenance", "Delete-DeliveryOptimizationCache : " + r.Error.Trim());
-            return new CleanupStats { Note = L("Le cache n'a pas pu être vidé (service d'optimisation de la distribution indisponible ?).") };
+            return new CleanupStats { Note = L("The cache couldn't be cleared (Delivery Optimization service unavailable?).") };
         }
         var after = CleanupEngine.MeasureFolder(CleanupCatalog.DeliveryOptimizationCacheDir, TimeSpan.FromSeconds(15), ct);
         return new CleanupStats { Bytes = Math.Max(0, before.Bytes - after.Bytes), Files = Math.Max(0, before.Files - after.Files) };
@@ -164,16 +164,16 @@ internal sealed class RepairSfcAction : IActionHandler
 {
     public const string ActionId = "maintenance.repair.sfc";
     public string Id => ActionId;
-    public string Title => L("Vérifier les fichiers système (SFC)");
+    public string Title => L("Check system files (SFC)");
     public bool RequiresAdmin => true;
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) { }
 
     public async Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
     {
         ValidateParameters(p);
-        ctx.Progress?.Report(L("Démarrage de la vérification des fichiers système…"));
-        var r = await RepairRunner.RunAsync(SystemTool.Sfc, ["/scannow"], TimeSpan.FromMinutes(90), Encoding.Unicode, L("Vérification des fichiers système :"), ctx).ConfigureAwait(false);
-        if (r.TimedOut) return ActionResult.Fail(L("La vérification a dépassé 90 minutes et a été interrompue."));
+        ctx.Progress?.Report(L("Starting the system file check…"));
+        var r = await RepairRunner.RunAsync(SystemTool.Sfc, ["/scannow"], TimeSpan.FromMinutes(90), Encoding.Unicode, L("System file check:"), ctx).ConfigureAwait(false);
+        if (r.TimedOut) return ActionResult.Fail(L("The check took more than 90 minutes and was stopped."));
         return Interpret(RepairRunner.Normalize(r.CombinedOutput), r.ExitCode);
     }
 
@@ -181,18 +181,18 @@ internal sealed class RepairSfcAction : IActionHandler
     {
         // Textes comparés à la sortie de sfc (français ou anglais selon Windows) : jamais traduits.
         if (RepairRunner.Has(o, "pas pu en réparer", "n'ont pas pu être réparés", "unable to fix"))
-            return ActionResult.Fail(L("SFC a trouvé des fichiers système endommagés mais n'a pas pu tous les réparer. Lancez « Réparer l'image de Windows (DISM) », redémarrez, puis relancez SFC."));
+            return ActionResult.Fail(L("SFC found corrupted system files but couldn't repair all of them. Run “Repair Windows image (DISM)”, restart, then run SFC again."));
         if (RepairRunner.Has(o, "réparation du système est en attente", "system repair pending"))
-            return ActionResult.Fail(L("Une réparation du système est déjà en attente : redémarrez le PC, puis relancez la vérification."));
+            return ActionResult.Fail(L("A system repair is already pending: restart the PC, then run the check again."));
         if (RepairRunner.Has(o, "pas pu effectuer l'opération", "could not perform the requested operation"))
-            return ActionResult.Fail(L("SFC n'a pas pu effectuer l'analyse. Redémarrez puis réessayez ; si le problème persiste, lancez d'abord DISM."));
+            return ActionResult.Fail(L("SFC couldn't perform the scan. Restart and try again; if the problem persists, run DISM first."));
         if (RepairRunner.Has(o, "aucune violation", "did not find any integrity violations"))
-            return ActionResult.Ok(L("Aucune violation d'intégrité : les fichiers système de Windows sont intacts."));
+            return ActionResult.Ok(L("No integrity violations: Windows system files are intact."));
         if (RepairRunner.Has(o, "réparés", "successfully repaired"))
-            return ActionResult.Ok(L("Des fichiers système endommagés ont été trouvés et réparés. Redémarrez le PC pour terminer la réparation.")) with { Effect = ApplyEffect.Reboot };
+            return ActionResult.Ok(L("Corrupted system files were found and repaired. Restart the PC to finish the repair.")) with { Effect = ApplyEffect.Reboot };
         return exitCode == 0
-            ? ActionResult.Ok(L("Vérification des fichiers système terminée."))
-            : ActionResult.Fail(L("La vérification s'est terminée avec une erreur (code {0}). {1}", exitCode, RepairRunner.LastLine(o)));
+            ? ActionResult.Ok(L("System file check complete."))
+            : ActionResult.Fail(L("The check ended with an error (code {0}). {1}", exitCode, RepairRunner.LastLine(o)));
     }
 }
 
@@ -210,42 +210,42 @@ internal sealed class RepairDismAction(string id, string title, string[] args, s
     public async Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
     {
         ValidateParameters(p);
-        ctx.Progress?.Report(L("Démarrage de DISM…"));
+        ctx.Progress?.Report(L("Starting DISM…"));
         var r = await RepairRunner.RunAsync(SystemTool.Dism, args, TimeSpan.FromMinutes(120), null, label, ctx).ConfigureAwait(false);
-        if (r.TimedOut) return ActionResult.Fail(L("DISM a dépassé 2 heures et a été interrompu."));
+        if (r.TimedOut) return ActionResult.Fail(L("DISM took more than 2 hours and was stopped."));
         return interpret(RepairRunner.Normalize(r.CombinedOutput), r.ExitCode);
     }
 
-    public static RepairDismAction RestoreHealth() => new(RestoreHealthId, L("Réparer l'image de Windows (DISM)"),
-        ["/Online", "/Cleanup-Image", "/RestoreHealth", "/English"], L("Réparation de l'image :"), (o, code) =>
+    public static RepairDismAction RestoreHealth() => new(RestoreHealthId, L("Repair Windows image (DISM)"),
+        ["/Online", "/Cleanup-Image", "/RestoreHealth", "/English"], L("Image repair:"), (o, code) =>
         {
             if (code == 0 || code == 3010)
             {
                 var msg = RepairRunner.Has(o, "No component store corruption detected")
-                    ? L("Aucune corruption détectée : l'image de Windows est saine.")
+                    ? L("No corruption detected: the Windows image is healthy.")
                     : RepairRunner.Has(o, "corruption was repaired")
-                        ? L("Des corruptions ont été détectées et réparées. Relancez maintenant la vérification des fichiers système (SFC).")
-                        : L("Réparation de l'image de Windows terminée avec succès.");
-                return code == 3010 ? ActionResult.Ok(L("{0} Un redémarrage est nécessaire.", msg)) with { Effect = ApplyEffect.Reboot } : ActionResult.Ok(msg);
+                        ? L("Corruption was detected and repaired. Now run the system file check (SFC) again.")
+                        : L("Windows image repair completed successfully.");
+                return code == 3010 ? ActionResult.Ok(L("{0} A restart is required.", msg)) with { Effect = ApplyEffect.Reboot } : ActionResult.Ok(msg);
             }
             return ActionResult.Fail(DismError(code, o));
         });
 
-    public static RepairDismAction ComponentCleanup() => new(ComponentCleanupId, L("Nettoyer le magasin de composants (DISM)"),
-        ["/Online", "/Cleanup-Image", "/StartComponentCleanup", "/English"], L("Nettoyage des composants :"), (o, code) =>
+    public static RepairDismAction ComponentCleanup() => new(ComponentCleanupId, L("Clean up the component store (DISM)"),
+        ["/Online", "/Cleanup-Image", "/StartComponentCleanup", "/English"], L("Component cleanup:"), (o, code) =>
             code is 0 or 3010
-                ? ActionResult.Ok(L("Magasin de composants nettoyé : les anciennes versions des composants mis à jour ont été supprimées."))
+                ? ActionResult.Ok(L("Component store cleaned up: old versions of updated components were removed."))
                 : ActionResult.Fail(DismError(code, o)));
 
     private static string DismError(int code, string output) => unchecked((uint)code) switch
     {
-        0x800F081F => L("DISM n'a pas trouvé les fichiers nécessaires à la réparation (0x800F081F). Vérifiez la connexion Internet et que Windows Update fonctionne, puis réessayez."),
-        0x800F0906 or 0x800F0907 => L("DISM n'a pas pu télécharger les fichiers de réparation (connexion Internet ou stratégie de l'organisation)."),
-        0x800F0954 => L("DISM n'a pas pu joindre Windows Update (serveur de mises à jour de l'organisation ?)."),
-        740 => L("DISM doit être exécuté en administrateur."),
-        87 => L("Commande DISM non reconnue par cette version de Windows."),
-        1726 or 1734 => L("Le service de maintenance de Windows ne répond pas. Redémarrez le PC puis réessayez."),
-        _ => L("DISM a échoué (code 0x{0:X8}). {1}", unchecked((uint)code), RepairRunner.LastLine(output)),
+        0x800F081F => L("DISM couldn't find the files needed for the repair (0x800F081F). Check your internet connection and that Windows Update is working, then try again."),
+        0x800F0906 or 0x800F0907 => L("DISM couldn't download the repair files (internet connection or organization policy)."),
+        0x800F0954 => L("DISM couldn't reach Windows Update (organization's update server?)."),
+        740 => L("DISM must be run as administrator."),
+        87 => L("DISM command not recognized by this version of Windows."),
+        1726 or 1734 => L("The Windows servicing service isn't responding. Restart the PC, then try again."),
+        _ => L("DISM failed (code 0x{0:X8}). {1}", unchecked((uint)code), RepairRunner.LastLine(output)),
     };
 }
 
@@ -254,7 +254,7 @@ internal sealed class ChkdskScanAction : IActionHandler
 {
     public const string ActionId = "maintenance.repair.chkdsk";
     public string Id => ActionId;
-    public string Title => L("Analyser le disque système (chkdsk /scan)");
+    public string Title => L("Scan system disk (chkdsk /scan)");
     public bool RequiresAdmin => true;
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) { }
 
@@ -262,16 +262,16 @@ internal sealed class ChkdskScanAction : IActionHandler
     {
         ValidateParameters(p);
         var drive = (Path.GetPathRoot(Environment.SystemDirectory) ?? @"C:\").TrimEnd('\\'); // ex. « C: » (valeur système, jamais un paramètre)
-        ctx.Progress?.Report(L("Analyse du volume {0}…", drive));
-        var r = await RepairRunner.RunAsync(SystemTool.Chkdsk, [drive, "/scan"], TimeSpan.FromMinutes(90), null, L("Analyse du disque :"), ctx).ConfigureAwait(false);
-        if (r.TimedOut) return ActionResult.Fail(L("L'analyse du disque a dépassé 90 minutes et a été interrompue."));
+        ctx.Progress?.Report(L("Scanning volume {0}…", drive));
+        var r = await RepairRunner.RunAsync(SystemTool.Chkdsk, [drive, "/scan"], TimeSpan.FromMinutes(90), null, L("Disk scan:"), ctx).ConfigureAwait(false);
+        if (r.TimedOut) return ActionResult.Fail(L("The disk scan took more than 90 minutes and was stopped."));
         return r.ExitCode switch
         {
-            0 => ActionResult.Ok(L("Aucun problème détecté sur le système de fichiers du volume {0}.", drive)),
-            1 => ActionResult.Ok(L("Des erreurs ont été trouvées sur {0} et corrigées en ligne.", drive)),
-            2 => ActionResult.Ok(L("Analyse de {0} terminée (maintenance mineure effectuée, aucune erreur bloquante).", drive)),
-            3 => ActionResult.Fail(L("Des problèmes n'ont pas pu être corrigés en ligne sur {0}. Une réparation au redémarrage est nécessaire : dans un terminal administrateur, lancez « chkdsk {1} /spotfix » puis redémarrez.", drive, drive)),
-            _ => ActionResult.Fail(L("L'analyse du disque a échoué (code {0}). {1}", r.ExitCode, RepairRunner.LastLine(r.CombinedOutput))),
+            0 => ActionResult.Ok(L("No problems detected on the file system of volume {0}.", drive)),
+            1 => ActionResult.Ok(L("Errors were found on {0} and fixed online.", drive)),
+            2 => ActionResult.Ok(L("Scan of {0} complete (minor maintenance done, no blocking errors).", drive)),
+            3 => ActionResult.Fail(L("Some problems couldn't be fixed online on {0}. A repair at restart is required: in an administrator terminal, run “chkdsk {1} /spotfix”, then restart.", drive, drive)),
+            _ => ActionResult.Fail(L("The disk scan failed (code {0}). {1}", r.ExitCode, RepairRunner.LastLine(r.CombinedOutput))),
         };
     }
 }
@@ -281,24 +281,24 @@ internal sealed class TimeResyncAction : IActionHandler
 {
     public const string ActionId = "maintenance.time.resync";
     public string Id => ActionId;
-    public string Title => L("Resynchroniser l'heure");
+    public string Title => L("Resync time");
     public bool RequiresAdmin => true;
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) { }
 
     public async Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
     {
         ValidateParameters(p);
-        ctx.Progress?.Report(L("Démarrage du service de temps Windows…"));
+        ctx.Progress?.Report(L("Starting the Windows Time service…"));
         // Démarrage ponctuel (le type de démarrage du service n'est pas modifié).
         ServiceConfig.TryStart("W32Time", TimeSpan.FromSeconds(15));
-        ctx.Progress?.Report(L("Synchronisation avec le serveur de temps…"));
+        ctx.Progress?.Report(L("Syncing with the time server…"));
         var r = await ProcessRunner.RunAsync(SystemTool.W32tm, ["/resync"], new RunOptions { Timeout = TimeSpan.FromSeconds(60) }, ctx.Cancellation).ConfigureAwait(false);
         if (r.Success)
-            return ActionResult.Ok(L("Heure resynchronisée : il est {0}.", DateTime.Now.ToString("T", Loc.Culture)));
+            return ActionResult.Ok(L("Time resynced: it's {0}.", DateTime.Now.ToString("T", Loc.Culture)));
         return ActionResult.Fail(unchecked((uint)r.ExitCode) switch
         {
-            0x80070426 or 1058 => L("Le service de temps Windows est désactivé : la synchronisation est impossible."),
-            _ => L("Échec de la synchronisation : vérifiez la connexion Internet (le service de temps doit joindre son serveur). {0}", RepairRunner.LastLine(r.CombinedOutput)),
+            0x80070426 or 1058 => L("The Windows Time service is disabled: syncing isn't possible."),
+            _ => L("Sync failed: check your internet connection (the time service must reach its server). {0}", RepairRunner.LastLine(r.CombinedOutput)),
         });
     }
 }
@@ -343,13 +343,13 @@ internal static class RestorePoints
 
     public static string TypeLabel(int type) => type switch
     {
-        0 => L("Installation d'application"),
-        1 => L("Désinstallation d'application"),
-        7 => L("Point de contrôle système"),
-        10 => L("Installation de pilote"),
-        12 => L("Modification de paramètres"),
-        13 => LC("restore", "Annulation"),
-        _ => L("Point de restauration"),
+        0 => L("App installation"),
+        1 => L("App uninstallation"),
+        7 => L("System checkpoint"),
+        10 => L("Driver installation"),
+        12 => L("Settings change"),
+        13 => LC("restore", "Canceled operation"),
+        _ => L("Restore point"),
     };
 }
 
@@ -362,7 +362,7 @@ internal sealed partial class RestorePointCreateAction : IActionHandler
 {
     public const string ActionId = "maintenance.restorepoint.create";
     public string Id => ActionId;
-    public string Title => L("Créer un point de restauration");
+    public string Title => L("Create a restore point");
     public bool RequiresAdmin => true;
 
     [GeneratedRegex(@"^[\p{L}\p{N} .,;:!?'()_\-]{1,64}$")]
@@ -371,8 +371,8 @@ internal sealed partial class RestorePointCreateAction : IActionHandler
     public static string? CheckDescription(string value)
     {
         var v = value.Trim();
-        if (v.Length is 0 or > 64) return L("La description doit contenir de 1 à 64 caractères.");
-        return DescriptionRx().IsMatch(v) ? null : L("Utilisez uniquement des lettres, des chiffres, des espaces et la ponctuation simple (. , ; : ! ? ' ( ) - _).");
+        if (v.Length is 0 or > 64) return L("The description must be 1 to 64 characters long.");
+        return DescriptionRx().IsMatch(v) ? null : L("Use only letters, digits, spaces and simple punctuation (. , ; : ! ? ' ( ) - _).");
     }
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
@@ -386,9 +386,9 @@ internal sealed partial class RestorePointCreateAction : IActionHandler
         ValidateParameters(p);
         var description = Validate.Required(p, "description", 64);
         if (RestoreStatus.DisabledByPolicy)
-            return ActionResult.Fail(L("La restauration du système est désactivée par une stratégie de l'organisation sur ce PC."));
+            return ActionResult.Fail(L("System Restore is turned off by an organization policy on this PC."));
 
-        ctx.Progress?.Report(L("Création du point de restauration (cela peut prendre une minute)…"));
+        ctx.Progress?.Report(L("Creating the restore point (this may take a minute)…"));
         return await Task.Run(() =>
         {
             var before = SafeList();
@@ -406,8 +406,8 @@ internal sealed partial class RestorePointCreateAction : IActionHandler
             {
                 return ActionResult.Fail(rv switch
                 {
-                    1058 or 0x80070422 => L("La protection du système est désactivée (ou son service est arrêté) : activez-la sur le lecteur système puis réessayez."),
-                    _ => L("Windows n'a pas pu créer le point de restauration (code 0x{0:X8}). Vérifiez que la protection du système est activée sur le lecteur système.", rv),
+                    1058 or 0x80070422 => L("System protection is turned off (or its service is stopped): turn it on for the system drive, then try again."),
+                    _ => L("Windows couldn't create the restore point (code 0x{0:X8}). Make sure system protection is turned on for the system drive.", rv),
                 });
             }
             var after = SafeList();
@@ -415,12 +415,12 @@ internal sealed partial class RestorePointCreateAction : IActionHandler
             var created = newest is not null && (before.Count == 0 || newest.Sequence > before[0].Sequence);
             if (created)
             {
-                return ActionResult.Ok(L("Point de restauration « {0} » créé.", description), new() { ["created"] = "true", ["skipped"] = "false" });
+                return ActionResult.Ok(L("Restore point “{0}” created.", description), new() { ["created"] = "true", ["skipped"] = "false" });
             }
             var last = before.FirstOrDefault();
             var message = last is null
-                ? L("Aucun nouveau point créé : Windows n'en crée qu'un toutes les 24 heures au maximum, et un point récent existe déjà.")
-                : L("Aucun nouveau point créé : Windows n'en crée qu'un toutes les 24 heures au maximum, et un point récent existe déjà. Le dernier point ({0}) reste disponible.", Format.Date(last.Created));
+                ? L("No new restore point created: Windows creates at most one every 24 hours, and a recent one already exists.")
+                : L("No new restore point created: Windows creates at most one every 24 hours, and a recent one already exists. The latest restore point ({0}) is still available.", Format.Date(last.Created));
             return ActionResult.Ok(message,
                 new() { ["created"] = "false", ["skipped"] = "true" });
         }, ctx.Cancellation).ConfigureAwait(false);
@@ -438,7 +438,7 @@ internal sealed class RestorePointListAction : IActionHandler
 {
     public const string ActionId = "maintenance.restorepoint.list";
     public string Id => ActionId;
-    public string Title => L("Lister les points de restauration");
+    public string Title => L("List restore points");
     public bool RequiresAdmin => true;
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) { }
 
@@ -457,7 +457,7 @@ internal sealed class RestorePointListAction : IActionHandler
                 data[$"{i}.date"] = rp.Created.ToString("o", CultureInfo.InvariantCulture);
                 data[$"{i}.type"] = rp.Type.ToString(CultureInfo.InvariantCulture);
             }
-            return ActionResult.Ok(points.Count == 0 ? L("Aucun point de restauration sur ce PC.") : LP(points.Count, "{0} point de restauration.", "{0} points de restauration."), data);
+            return ActionResult.Ok(points.Count == 0 ? L("No restore points on this PC.") : LP(points.Count, "{0} restore point.", "{0} restore points."), data);
         }, ctx.Cancellation);
     }
 }
@@ -467,7 +467,7 @@ internal sealed class RestoreEnableAction : IActionHandler
 {
     public const string ActionId = "maintenance.restorepoint.enable";
     public string Id => ActionId;
-    public string Title => L("Activer la protection du système");
+    public string Title => L("Turn on system protection");
     public bool RequiresAdmin => true;
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) { }
 
@@ -477,12 +477,12 @@ internal sealed class RestoreEnableAction : IActionHandler
     {
         ValidateParameters(p);
         if (RestoreStatus.DisabledByPolicy)
-            return ActionResult.Fail(L("La restauration du système est désactivée par une stratégie de l'organisation : impossible de l'activer ici."));
-        ctx.Progress?.Report(L("Activation de la protection du système…"));
+            return ActionResult.Fail(L("System Restore is turned off by an organization policy: it can't be turned on here."));
+        ctx.Progress?.Report(L("Turning on system protection…"));
         var r = await PowerShellRunner.RunAsync(Script, null, TimeSpan.FromMinutes(2), null, ctx.Cancellation).ConfigureAwait(false);
         return r.Success
-            ? ActionResult.Ok(L("Protection du système activée sur le lecteur système. Windows y réserve un peu d'espace pour les points de restauration."))
-            : ActionResult.Fail(L("L'activation a échoué : {0}", RepairRunner.LastLine(r.Error.Length > 0 ? r.Error : r.Output)));
+            ? ActionResult.Ok(L("System protection turned on for the system drive. Windows reserves a little space on it for restore points."))
+            : ActionResult.Fail(L("Couldn't turn it on: {0}", RepairRunner.LastLine(r.Error.Length > 0 ? r.Error : r.Output)));
     }
 }
 
@@ -510,7 +510,7 @@ internal sealed class UpdatesPauseAction : IActionHandler
 {
     public const string ActionId = "maintenance.updates.pause";
     public string Id => ActionId;
-    public string Title => L("Suspendre les mises à jour");
+    public string Title => L("Pause updates");
     public bool RequiresAdmin => true;
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) => Validate.Int(p, "weeks", 1, 5);
 
@@ -519,7 +519,7 @@ internal sealed class UpdatesPauseAction : IActionHandler
         ValidateParameters(p);
         var weeks = Validate.Int(p, "weeks", 1, 5);
         if (WuKeys.PauseBlockedByPolicy)
-            return Task.FromResult(ActionResult.Fail(L("La mise en pause des mises à jour est interdite par une stratégie de l'organisation.")));
+            return Task.FromResult(ActionResult.Fail(L("Pausing updates is prohibited by an organization policy.")));
         var now = DateTime.UtcNow;
         var start = WuKeys.Iso(now);
         var end = WuKeys.Iso(now.AddDays(7 * weeks));
@@ -532,10 +532,10 @@ internal sealed class UpdatesPauseAction : IActionHandler
             Reg.LmString(WuKeys.UxSettings, "PauseQualityUpdatesStartTime", start),
             Reg.LmString(WuKeys.UxSettings, "PauseQualityUpdatesEndTime", end),
         ];
-        var label = LP(weeks, "{0} semaine", "{0} semaines");
-        var entry = ctx.ApplyJournaled(ActionId, L("Mises à jour suspendues"), label, ops);
+        var label = LP(weeks, "{0} week", "{0} weeks");
+        var entry = ctx.ApplyJournaled(ActionId, L("Updates paused"), label, ops);
         var until = Format.Day(now.AddDays(7 * weeks).ToLocalTime());
-        return Task.FromResult(ActionResult.Ok(L("Mises à jour suspendues jusqu'au {0}. Windows les reprendra automatiquement ensuite.", until)) with { JournalId = entry.Id });
+        return Task.FromResult(ActionResult.Ok(L("Updates paused until {0}. Windows will resume them automatically afterward.", until)) with { JournalId = entry.Id });
     }
 }
 
@@ -543,16 +543,16 @@ internal sealed class UpdatesResumeAction : IActionHandler
 {
     public const string ActionId = "maintenance.updates.resume";
     public string Id => ActionId;
-    public string Title => L("Reprendre les mises à jour");
+    public string Title => L("Resume updates");
     public bool RequiresAdmin => true;
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) { }
 
     public Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
     {
         ValidateParameters(p);
-        var entry = ctx.ApplyJournaled(ActionId, L("Mises à jour reprises"), L("Reprise"),
+        var entry = ctx.ApplyJournaled(ActionId, L("Updates resumed"), L("Resumed"),
             WuKeys.PauseValues.Select(v => (Operation)Reg.LmDel(WuKeys.UxSettings, v)));
-        return Task.FromResult(ActionResult.Ok(L("Mises à jour reprises : Windows les recherchera lors de sa prochaine vérification.")) with { JournalId = entry.Id });
+        return Task.FromResult(ActionResult.Ok(L("Updates resumed: Windows will look for them at its next check.")) with { JournalId = entry.Id });
     }
 }
 
@@ -561,7 +561,7 @@ internal sealed class ActiveHoursAction : IActionHandler
 {
     public const string ActionId = "maintenance.updates.activehours";
     public string Id => ActionId;
-    public string Title => L("Définir les heures d'activité");
+    public string Title => L("Set active hours");
     public bool RequiresAdmin => true;
 
     public static int Span(int start, int end) => ((end - start) % 24 + 24) % 24;
@@ -571,8 +571,8 @@ internal sealed class ActiveHoursAction : IActionHandler
         var start = Validate.Int(p, "start", 0, 23);
         var end = Validate.Int(p, "end", 0, 23);
         var span = Span(start, end);
-        if (span == 0) throw new ValidationException(L("Le début et la fin des heures d'activité doivent être différents."));
-        if (span > 18) throw new ValidationException(L("Les heures d'activité ne peuvent pas dépasser 18 heures."));
+        if (span == 0) throw new ValidationException(L("The start and end of active hours must be different."));
+        if (span > 18) throw new ValidationException(L("Active hours can't exceed 18 hours."));
     }
 
     public Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
@@ -580,12 +580,12 @@ internal sealed class ActiveHoursAction : IActionHandler
         ValidateParameters(p);
         var start = Validate.Int(p, "start", 0, 23);
         var end = Validate.Int(p, "end", 0, 23);
-        var entry = ctx.ApplyJournaled(ActionId, L("Heures d'activité"), L("{0} h – {1} h", start, end),
+        var entry = ctx.ApplyJournaled(ActionId, L("Active hours"), L("{0}:00 – {1}:00", start, end),
         [
             Reg.LmDword(WuKeys.UxSettings, "SmartActiveHoursState", 0),
             Reg.LmDword(WuKeys.UxSettings, "ActiveHoursStart", start),
             Reg.LmDword(WuKeys.UxSettings, "ActiveHoursEnd", end),
         ]);
-        return Task.FromResult(ActionResult.Ok(L("Heures d'activité : de {0} h à {1} h. Windows ne redémarrera pas automatiquement pendant cette plage.", start, end)) with { JournalId = entry.Id });
+        return Task.FromResult(ActionResult.Ok(L("Active hours: from {0}:00 to {1}:00. Windows won't restart automatically during this period.", start, end)) with { JournalId = entry.Id });
     }
 }

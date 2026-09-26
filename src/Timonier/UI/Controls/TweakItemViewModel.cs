@@ -22,7 +22,7 @@ public sealed partial class TweakItemViewModel : ObservableObject
         foreach (var o in definition.Options)
         {
             var ops = o.Operations.Select(op => "• " + op.Describe()).ToList();
-            if (ops.Count > 0) DetailsLines.Add(L("{0} :\n{1}", o.Label, string.Join("\n", ops)));
+            if (ops.Count > 0) DetailsLines.Add(L("{0}:\n{1}", o.Label, string.Join("\n", ops)));
         }
         BuildBadges();
     }
@@ -56,13 +56,13 @@ public sealed partial class TweakItemViewModel : ObservableObject
 
     private void BuildBadges()
     {
-        if (Definition.RequiresAdmin) Badges.Add(new BadgeInfo(LC("badge", "Admin"), "", ToastKind.Info, L("Nécessite une autorisation administrateur (UAC).")));
-        if (Definition.Effect.HasFlag(ApplyEffect.Reboot)) Badges.Add(new BadgeInfo(LC("badge", "Redémarrage"), "", ToastKind.Warning, L("Pris en compte après redémarrage du PC.")));
-        else if (Definition.Effect.HasFlag(ApplyEffect.SignOut)) Badges.Add(new BadgeInfo(LC("badge", "Déconnexion"), "", ToastKind.Warning, L("Pris en compte après fermeture de session.")));
-        else if (Definition.Effect.HasFlag(ApplyEffect.RestartExplorer)) Badges.Add(new BadgeInfo(LC("badge", "Explorateur"), "", ToastKind.Info, L("L'Explorateur Windows doit être relancé (proposé automatiquement).")));
-        if (Definition.Risk == RiskLevel.Moderate) Badges.Add(new BadgeInfo(LC("badge", "Modéré"), "", ToastKind.Warning, L("Peut désactiver une fonctionnalité : lisez la description.")));
-        if (Definition.Risk == RiskLevel.Advanced) Badges.Add(new BadgeInfo(LC("badge", "Avancé"), "", ToastKind.Error, L("Réservé aux utilisateurs avertis.")));
-        if (!Definition.IsReversible) Badges.Add(new BadgeInfo(LC("badge", "Non annulable"), "", ToastKind.Warning, L("Cette action ne peut pas être annulée automatiquement.")));
+        if (Definition.RequiresAdmin) Badges.Add(new BadgeInfo(LC("badge", "Admin"), "", ToastKind.Info, L("Requires administrator permission (UAC).")));
+        if (Definition.Effect.HasFlag(ApplyEffect.Reboot)) Badges.Add(new BadgeInfo(LC("badge", "Restart"), "", ToastKind.Warning, L("Takes effect after restarting the PC.")));
+        else if (Definition.Effect.HasFlag(ApplyEffect.SignOut)) Badges.Add(new BadgeInfo(LC("badge", "Sign out"), "", ToastKind.Warning, L("Takes effect after signing out.")));
+        else if (Definition.Effect.HasFlag(ApplyEffect.RestartExplorer)) Badges.Add(new BadgeInfo(LC("badge", "Explorer"), "", ToastKind.Info, L("File Explorer must be restarted (offered automatically).")));
+        if (Definition.Risk == RiskLevel.Moderate) Badges.Add(new BadgeInfo(LC("badge", "Moderate"), "", ToastKind.Warning, L("May turn off a feature: read the description.")));
+        if (Definition.Risk == RiskLevel.Advanced) Badges.Add(new BadgeInfo(LC("badge", "Advanced"), "", ToastKind.Error, L("For experienced users only.")));
+        if (!Definition.IsReversible) Badges.Add(new BadgeInfo(LC("badge", "Can't be undone"), "", ToastKind.Warning, L("This action can't be undone automatically.")));
     }
 
     /// <summary>Relit l'état réel du système (thread de fond) et met à jour la carte sans rien appliquer.</summary>
@@ -80,16 +80,16 @@ public sealed partial class TweakItemViewModel : ObservableObject
             if (IsToggle)
             {
                 IsOn = state.OptionKey switch { TweakDefinition.On => true, TweakDefinition.Off => false, _ => null };
-                StateText = state.Partial ? L("Partiellement appliqué") : state.Unknown ? L("État inconnu") : null;
+                StateText = state.Partial ? L("Partially applied") : state.Unknown ? L("Unknown state") : null;
             }
             else if (IsChoice)
             {
                 SelectedOption = state.OptionKey is null ? null : Definition.GetOption(state.OptionKey);
-                StateText = state.Partial ? L("Partiellement appliqué") : state.OptionKey is null ? L("Configuration personnalisée") : null;
+                StateText = state.Partial ? L("Partially applied") : state.OptionKey is null ? L("Custom configuration") : null;
             }
             var recommended = Definition.RecommendationFor(AppHost.Profile);
             RecommendationText = recommended is not null && recommended != state.OptionKey && !IsAction && Definition.GetOption(recommended) is { } ro
-                ? L("Recommandé pour ce PC : {0}", ro.Label)
+                ? L("Recommended for this PC: {0}", ro.Label)
                 : null;
         }
         finally { _suppress = false; }
@@ -98,12 +98,12 @@ public sealed partial class TweakItemViewModel : ObservableObject
     /// <summary>Libellé affiché à gauche de l'interrupteur (« Activé » / « Désactivé »…).</summary>
     public string ToggleLabel => IsOn switch
     {
-        true => Definition.GetOption(TweakDefinition.On)?.Label ?? L("Activé"),
-        false => Definition.GetOption(TweakDefinition.Off)?.Label ?? L("Désactivé"),
+        true => Definition.GetOption(TweakDefinition.On)?.Label ?? L("On"),
+        false => Definition.GetOption(TweakDefinition.Off)?.Label ?? L("Off"),
         _ => "—",
     };
 
-    public string ActionLabel => Definition.Options.FirstOrDefault()?.Label ?? L("Exécuter");
+    public string ActionLabel => Definition.Options.FirstOrDefault()?.Label ?? L("Run");
 
     partial void OnIsOnChanged(bool? oldValue, bool? newValue)
     {
@@ -138,9 +138,9 @@ public sealed partial class TweakItemViewModel : ObservableObject
     {
         if (definition.Risk == RiskLevel.Safe && definition.Warning is null && definition.IsReversible) return Task.FromResult(true);
         var text = definition.Warning is null
-            ? L("{0}\n\nChoix : {1}", definition.Description, option.Label)
-            : L("{0}\n\n⚠ {1}\n\nChoix : {2}", definition.Description, definition.Warning, option.Label);
-        return AppHost.Dialogs.ConfirmAsync(definition.Title, text, L("Appliquer"), L("Annuler"), definition.Risk == RiskLevel.Advanced);
+            ? L("{0}\n\nYour choice: {1}", definition.Description, option.Label)
+            : L("{0}\n\n⚠ {1}\n\nYour choice: {2}", definition.Description, definition.Warning, option.Label);
+        return AppHost.Dialogs.ConfirmAsync(definition.Title, text, L("Apply"), L("Undo"), definition.Risk == RiskLevel.Advanced);
     }
 
     public async Task ApplyAsync(string optionKey)

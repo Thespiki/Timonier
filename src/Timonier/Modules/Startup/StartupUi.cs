@@ -199,7 +199,7 @@ internal static class StartupUi
         catch (Exception ex)
         {
             Log.Warn("Startup", $"ouverture de {msc} : {ex.Message}");
-            AppHost.Toasts.Show(L("Impossible d'ouvrir la console : {0}", ex.Message), UI.Services.ToastKind.Error);
+            AppHost.Toasts.Show(L("Couldn't open the console: {0}", ex.Message), UI.Services.ToastKind.Error);
         }
     }
 
@@ -217,11 +217,11 @@ internal static class StartupUi
                 if (full.Contains(',') && Path.GetDirectoryName(full) is { } parent) ProcessRunner.OpenFolder(parent);
                 else ProcessRunner.Launch(SystemTool.Explorer, "/select,", full);
             }
-            else AppHost.Toasts.Show(L("Emplacement introuvable : {0}", path), UI.Services.ToastKind.Warning);
+            else AppHost.Toasts.Show(L("Location not found: {0}", path), UI.Services.ToastKind.Warning);
         }
         catch (Exception ex)
         {
-            AppHost.Toasts.Show(L("Impossible d'ouvrir l'emplacement : {0}", ex.Message), UI.Services.ToastKind.Error);
+            AppHost.Toasts.Show(L("Couldn't open the location: {0}", ex.Message), UI.Services.ToastKind.Error);
         }
     }
 }
@@ -320,7 +320,7 @@ internal sealed class PagedList<T> : StackPanel
     {
         _factory = factory;
         _pageSize = pageSize;
-        _more = StartupUi.Button(L("Afficher plus"), "", "Pp.Button", (_, _) => ShowMore());
+        _more = StartupUi.Button(L("Show more"), "", "Pp.Button", (_, _) => ShowMore());
         _more.HorizontalAlignment = HorizontalAlignment.Center;
         _more.Margin = new Thickness(0, 8, 0, 0);
         Children.Add(_items);
@@ -342,8 +342,8 @@ internal sealed class PagedList<T> : StackPanel
         _shown = end;
         var remaining = _source.Count - _shown;
         _more.Visibility = remaining > 0 ? Visibility.Visible : Visibility.Collapsed;
-        System.Windows.Automation.AutomationProperties.SetName(_more, LP(remaining, "Afficher plus ({0} restant)", "Afficher plus ({0} restants)"));
+        System.Windows.Automation.AutomationProperties.SetName(_more, LP(remaining, "Show more ({0} left)", "Show more ({0} left)"));
         if (_more.Content is StackPanel p && p.Children.Count > 1 && p.Children[1] is TextBlock t)
-            t.Text = LP(remaining, "Afficher plus ({0} restant)", "Afficher plus ({0} restants)");
+            t.Text = LP(remaining, "Show more ({0} left)", "Show more ({0} left)");
     }
 }

@@ -9,10 +9,10 @@ namespace Timonier.Modules.Network;
 /// </summary>
 internal static class NetworkTweaks
 {
-    public static readonly string GroupConnections = L("Connexions");
+    public static readonly string GroupConnections = L("Connections");
     public static readonly string GroupDns = L("DNS");
-    public static readonly string GroupUpdates = L("Mises à jour et bande passante");
-    public static readonly string GroupAdvanced = L("Protocoles (avancé)");
+    public static readonly string GroupUpdates = L("Updates and bandwidth");
+    public static readonly string GroupAdvanced = L("Protocols (advanced)");
 
     // wcm.admx — « Réduire le nombre de connexions simultanées à Internet ou à un domaine Windows ».
     private const string Wcm = @"SOFTWARE\Policies\Microsoft\Windows\WcmSvc\GroupPolicy";
@@ -31,45 +31,45 @@ internal static class NetworkTweaks
     public static IEnumerable<TweakDefinition> All()
     {
         // ------------------------------------------------------------------ Connexions
-        yield return Tweak.Choice("network.wifi.minimize-connections", L("Wi-Fi quand un câble Ethernet est branché"),
-                L("Indique à Windows ce qu'il doit faire du Wi-Fi lorsqu'une connexion filaire est disponible. « Couper le Wi-Fi » déconnecte automatiquement le Wi-Fi dès que l'Ethernet est actif (moins d'interférences, batterie économisée), puis le réactive quand vous débranchez le câble."))
+        yield return Tweak.Choice("network.wifi.minimize-connections", L("Wi-Fi when an Ethernet cable is plugged in"),
+                L("Tells Windows what to do with Wi-Fi when a wired connection is available. “Turn off Wi-Fi” automatically disconnects Wi-Fi as soon as Ethernet is active (less interference, battery saved), then turns it back on when you unplug the cable."))
             .In(NetworkModule.Category, GroupConnections)
-            .Keywords(L("ethernet, câble, wifi, double connexion, simultané, minimize connections, fMinimizeConnections"))
-            .OptionWithHelp("default", L("Par défaut de Windows"),
-                L("Windows limite les connexions simultanées mais peut garder le Wi-Fi associé."),
+            .Keywords(L("ethernet, cable, wifi, dual connection, simultaneous, minimize connections, fMinimizeConnections"))
+            .OptionWithHelp("default", L("Windows default"),
+                L("Windows limits simultaneous connections but may keep Wi-Fi associated."),
                 Reg.LmDel(Wcm, "fMinimizeConnections"))
-            .OptionWithHelp("prevent-wifi", L("Couper le Wi-Fi sur Ethernet"),
-                L("Le Wi-Fi se déconnecte tant qu'un câble Ethernet est connecté (Windows 10 1703 et plus récent)."),
+            .OptionWithHelp("prevent-wifi", L("Turn off Wi-Fi on Ethernet"),
+                L("Wi-Fi disconnects while an Ethernet cable is connected (Windows 10 1703 and later)."),
                 Reg.LmDword(Wcm, "fMinimizeConnections", 3))
-            .OptionWithHelp("simultaneous", L("Autoriser les connexions simultanées"),
-                L("Wi-Fi et Ethernet restent connectés en même temps (utile pour accéder à deux réseaux distincts)."),
+            .OptionWithHelp("simultaneous", L("Allow simultaneous connections"),
+                L("Wi-Fi and Ethernet stay connected at the same time (useful for reaching two separate networks)."),
                 Reg.LmDword(Wcm, "fMinimizeConnections", 0))
             .Requires(Requires.Wifi)
             .WindowsDefault("default")
             .Tags("office")
             .Build();
 
-        yield return Tweak.Toggle("network.wifi.hotspot-autoconnect", L("Connexion automatique aux points d'accès suggérés"),
-                L("Fonction héritée de « Wi-Fi Sense » : permet à Windows de se connecter seul à des points d'accès ouverts suggérés et à des hotspots payants partenaires. Le partage des réseaux avec vos contacts a été retiré en 2016, mais la stratégie reste documentée : la désactiver garantit que Windows ne rejoint jamais un réseau ouvert sans votre accord."))
+        yield return Tweak.Toggle("network.wifi.hotspot-autoconnect", L("Automatic connection to suggested hotspots"),
+                L("Legacy feature from “Wi-Fi Sense”: lets Windows connect on its own to suggested open hotspots and partner paid hotspots. Sharing networks with your contacts was removed in 2016, but the policy is still documented: turning it off ensures Windows never joins an open network without your consent."))
             .In(NetworkModule.Category, GroupConnections)
-            .Keywords(L("wifi sense, hotspot, point d'accès, réseau ouvert, wifi public, auto connect, partage wifi"))
+            .Keywords(L("wifi sense, hotspot, access point, open network, public wifi, auto connect, wifi sharing"))
             .WhenOn(Reg.LmDel(WifiSense, "AutoConnectAllowedOEM"))
             .WhenOff(Reg.LmDword(WifiSense, "AutoConnectAllowedOEM", 0))
-            .Labels(L("Autorisée"), L("Bloquée"))
+            .Labels(LC("feminine", "Allowed"), LC("feminine", "Blocked"))
             .Requires(Requires.Wifi)
             .WindowsDefault(TweakDefinition.On)
             .Recommend(TweakDefinition.Off)
             .Tags("privacy-max", "security", "family")
             .Build();
 
-        yield return Tweak.Toggle("network.ncsi.active-probe", L("Test de connectivité Internet de Windows"),
-                L("Pour afficher « Internet » ou « Pas d'accès Internet », Windows contacte régulièrement un serveur de Microsoft (www.msftconnecttest.com). Le désactiver supprime ces requêtes, mais Windows se fie alors à des indices passifs."))
+        yield return Tweak.Toggle("network.ncsi.active-probe", L("Windows internet connectivity test"),
+                L("To show “Internet” or “No internet access”, Windows regularly contacts a Microsoft server (www.msftconnecttest.com). Turning it off stops these requests, but Windows then relies on passive clues."))
             .In(NetworkModule.Category, GroupConnections)
-            .Keywords(L("ncsi, msftconnecttest, connectivité, pas d'accès internet, portail captif, active probe, icône réseau"))
+            .Keywords(L("ncsi, msftconnecttest, connectivity, no internet access, captive portal, active probe, network icon"))
             .WhenOn(Reg.LmDel(Ncsi, "NoActiveProbe"))
             .WhenOff(Reg.LmDword(Ncsi, "NoActiveProbe", 1))
             .Risk(RiskLevel.Moderate)
-            .Warning(L("Sans ce test, l'icône réseau peut afficher « Pas d'accès Internet » alors que tout fonctionne, la page de connexion des Wi-Fi d'hôtel, de gare ou d'entreprise (portail captif) ne s'ouvre plus d'elle-même, et certaines applications (Store, Office, Outlook) peuvent se croire hors ligne."))
+            .Warning(L("Without this test, the network icon may show “No internet access” even though everything works, the sign-in page of hotel, station or company Wi-Fi (captive portal) no longer opens by itself, and some apps (Store, Office, Outlook) may think they're offline."))
             .WindowsDefault(TweakDefinition.On)
             .Tags("privacy-max")
             .Build();
@@ -79,20 +79,20 @@ internal static class NetworkTweaks
         // La page Proxy des Paramètres reste accessible (entrée de recherche et page Réseau › Outils).
 
         // ------------------------------------------------------------------ DNS
-        yield return Tweak.Choice("network.dns.doh-policy", L("DNS chiffré (DNS over HTTPS)"),
-                L("Stratégie de Windows 11 pour le chiffrement des requêtes DNS : empêche votre fournisseur d'accès ou un réseau Wi-Fi public de voir (et de modifier) les noms des sites consultés. Le chiffrement n'est possible qu'avec des serveurs compatibles (Cloudflare, Google, Quad9… : choisissez-les dans l'onglet DNS)."))
+        yield return Tweak.Choice("network.dns.doh-policy", L("Encrypted DNS (DNS over HTTPS)"),
+                L("Windows 11 policy for encrypting DNS queries: prevents your internet provider or a public Wi-Fi network from seeing (and changing) the names of the sites you visit. Encryption only works with compatible servers (Cloudflare, Google, Quad9…: choose them in the DNS tab)."))
             .In(NetworkModule.Category, GroupDns)
-            .Keywords(L("doh, dns over https, dns chiffré, dns sécurisé, encrypted dns, DoHPolicy"))
-            .OptionWithHelp("default", L("Par défaut de Windows"), L("Chiffrement selon le réglage de chaque carte dans les Paramètres."),
+            .Keywords(L("doh, dns over https, encrypted dns, secure dns, DoHPolicy"))
+            .OptionWithHelp("default", L("Windows default"), L("Encryption follows each adapter's setting in Settings."),
                 Reg.LmDel(DnsClient, "DoHPolicy"))
-            .OptionWithHelp("allow", L("Autoriser"), L("Chiffre les requêtes quand le serveur DNS le permet, sinon résolution classique."),
+            .OptionWithHelp("allow", L("Allow"), L("Encrypts queries when the DNS server supports it, otherwise uses regular resolution."),
                 Reg.LmDword(DnsClient, "DoHPolicy", 2))
-            .OptionWithHelp("require", L("Exiger"), L("Uniquement des requêtes chiffrées : sans serveur compatible, plus aucun site ne s'ouvre."),
+            .OptionWithHelp("require", L("Require"), L("Encrypted queries only: without a compatible server, no site will open at all."),
                 Reg.LmDword(DnsClient, "DoHPolicy", 3))
-            .OptionWithHelp("prohibit", L("Interdire"), L("Jamais de DNS chiffré (utile seulement pour un filtrage DNS d'entreprise)."),
+            .OptionWithHelp("prohibit", L("Prohibit"), L("Never use encrypted DNS (only useful for corporate DNS filtering)."),
                 Reg.LmDword(DnsClient, "DoHPolicy", 1))
             .Risk(RiskLevel.Moderate)
-            .Warning(L("« Exiger » coupe l'accès à Internet si vos serveurs DNS ne sont pas compatibles DoH (cas des DNS fournis par une box). Une stratégie imposée grise l'option correspondante dans les Paramètres de Windows."))
+            .Warning(L("“Require” cuts off internet access if your DNS servers aren't DoH-compatible (as with DNS provided by a router). An enforced policy grays out the matching option in Windows Settings."))
             .Requires(Requires.Windows11)
             .WindowsDefault("default")
             .Recommend("allow")
@@ -100,47 +100,47 @@ internal static class NetworkTweaks
             .Build();
 
         // ------------------------------------------------------------------ Mises à jour et bande passante
-        yield return Tweak.Choice("network.do.mode", L("Partage des mises à jour entre PC"),
-                L("L'Optimisation de la distribution permet de télécharger les mises à jour Windows et du Store depuis d'autres PC plutôt que depuis Microsoft, et d'en envoyer. « Réseau local » économise la bande passante à la maison ou au bureau sans rien envoyer à des inconnus sur Internet."))
+        yield return Tweak.Choice("network.do.mode", L("Update sharing between PCs"),
+                L("Delivery Optimization lets you download Windows and Microsoft Store updates from other PCs instead of from Microsoft, and send updates to them. “Local network” saves bandwidth at home or at the office without sending anything to strangers on the internet."))
             .In(NetworkModule.Category, GroupUpdates)
-            .Keywords(L("optimisation de la distribution, delivery optimization, p2p, pair à pair, peer, DODownloadMode, bande passante, upload"))
-            .OptionWithHelp("default", L("Par défaut de Windows"), L("Selon la page Optimisation de la distribution des Paramètres (réseau local par défaut)."),
+            .Keywords(L("delivery optimization, p2p, peer to peer, peer, DODownloadMode, bandwidth, upload, update sharing"))
+            .OptionWithHelp("default", L("Windows default"), L("Follows the Delivery Optimization page in Settings (local network by default)."),
                 Reg.LmDel(DeliveryOpt, "DODownloadMode"))
-            .OptionWithHelp("http", L("Serveurs Microsoft uniquement"), L("Aucun échange avec d'autres PC (mode HTTP seul)."),
+            .OptionWithHelp("http", L("Microsoft servers only"), L("No exchanges with other PCs (HTTP only mode)."),
                 Reg.LmDword(DeliveryOpt, "DODownloadMode", 0))
-            .OptionWithHelp("lan", L("PC de mon réseau local"), L("Échanges limités aux PC du même réseau (derrière la même box)."),
+            .OptionWithHelp("lan", L("PCs on my local network"), L("Exchanges limited to PCs on the same network (behind the same router)."),
                 Reg.LmDword(DeliveryOpt, "DODownloadMode", 1))
-            .OptionWithHelp("internet", L("Réseau local et Internet"), L("Échanges aussi avec des PC inconnus sur Internet (envoi de données en arrière-plan)."),
+            .OptionWithHelp("internet", L("Local network and internet"), L("Also exchanges with unknown PCs on the internet (sends data in the background)."),
                 Reg.LmDword(DeliveryOpt, "DODownloadMode", 3))
             .WindowsDefault("default")
             .RecommendWhen(p => p.IsManaged ? null : "lan")
             .Tags("privacy-max", "office")
             .Build();
 
-        yield return Tweak.Choice("network.do.background-bandwidth", L("Bande passante des mises à jour en arrière-plan"),
-                L("Plafonne la part de votre connexion utilisée par les téléchargements de mises à jour en arrière-plan. Par défaut, Windows ajuste dynamiquement ; un plafond aide sur une connexion lente (ADSL, 4G partagée) au prix de mises à jour plus longues."))
+        yield return Tweak.Choice("network.do.background-bandwidth", L("Background update bandwidth"),
+                L("Caps the share of your connection used by background update downloads. By default, Windows adjusts dynamically; a cap helps on a slow connection (DSL, shared 4G) at the cost of longer updates."))
             .In(NetworkModule.Category, GroupUpdates)
-            .Keywords(L("bande passante, limiter, mises à jour, windows update, débit, DOPercentageMaxBackgroundBandwidth, connexion lente"))
-            .Option("default", L("Automatique (Windows)"), Reg.LmDel(DeliveryOpt, "DOPercentageMaxBackgroundBandwidth"))
-            .Option("50", L("50 % au maximum"), Reg.LmDword(DeliveryOpt, "DOPercentageMaxBackgroundBandwidth", 50))
-            .Option("20", L("20 % au maximum"), Reg.LmDword(DeliveryOpt, "DOPercentageMaxBackgroundBandwidth", 20))
+            .Keywords(L("bandwidth, limit, updates, windows update, speed, throughput, DOPercentageMaxBackgroundBandwidth, slow connection"))
+            .Option("default", L("Automatic (Windows)"), Reg.LmDel(DeliveryOpt, "DOPercentageMaxBackgroundBandwidth"))
+            .Option("50", L("50% maximum"), Reg.LmDword(DeliveryOpt, "DOPercentageMaxBackgroundBandwidth", 50))
+            .Option("20", L("20% maximum"), Reg.LmDword(DeliveryOpt, "DOPercentageMaxBackgroundBandwidth", 20))
             .WindowsDefault("default")
             .Build();
 
         // ------------------------------------------------------------------ Protocoles (avancé)
-        yield return Tweak.Choice("network.ipv6.components", L("Protocole IPv6"),
-                L("Règle la priorité d'IPv6 via la valeur DisabledComponents documentée par Microsoft. « Préférer IPv4 » est la seule option recommandée par Microsoft pour contourner un problème de réseau : IPv6 reste disponible. Désactiver IPv6 n'accélère pas Internet."))
+        yield return Tweak.Choice("network.ipv6.components", L("IPv6 protocol"),
+                L("Sets IPv6 priority through the DisabledComponents value documented by Microsoft. “Prefer IPv4” is the only option Microsoft recommends to work around a network issue: IPv6 remains available. Disabling IPv6 doesn't speed up the internet."))
             .In(NetworkModule.Category, GroupAdvanced)
-            .Keywords(L("ipv6, ipv4, DisabledComponents, préférer ipv4, désactiver ipv6, tcpip6"))
-            .OptionWithHelp("default", L("Par défaut (IPv6 prioritaire)"), L("Configuration d'origine de Windows."),
+            .Keywords(L("ipv6, ipv4, DisabledComponents, prefer ipv4, disable ipv6, tcpip6"))
+            .OptionWithHelp("default", L("Default (IPv6 preferred)"), L("Windows' original configuration."),
                 Reg.LmDel(Tcpip6, "DisabledComponents"))
-            .OptionWithHelp("prefer-ipv4", L("Préférer IPv4"), L("IPv4 est utilisé en priorité quand un site est joignable des deux façons (valeur 0x20)."),
+            .OptionWithHelp("prefer-ipv4", L("Prefer IPv4"), L("IPv4 is used first when a site is reachable both ways (value 0x20)."),
                 Reg.LmDword(Tcpip6, "DisabledComponents", 0x20))
-            .OptionWithHelp("disabled", L("Désactiver IPv6"), L("Désactive tous les composants IPv6 sauf la boucle locale (valeur 0xFF)."),
+            .OptionWithHelp("disabled", L("Disable IPv6"), L("Disables all IPv6 components except loopback (value 0xFF)."),
                 Reg.LmDword(Tcpip6, "DisabledComponents", 0xFF))
             .Risk(RiskLevel.Advanced)
             .Effect(ApplyEffect.Reboot)
-            .Warning(L("Microsoft déconseille de désactiver IPv6 : Windows est testé avec IPv6 actif et certaines fonctions (Assistance à distance, DirectAccess, certains VPN et jeux en ligne, réseaux 100 % IPv6 de certains opérateurs mobiles) peuvent cesser de fonctionner. À réserver au diagnostic ; redémarrage nécessaire."))
+            .Warning(L("Microsoft advises against disabling IPv6: Windows is tested with IPv6 enabled, and some features (Remote Assistance, DirectAccess, some VPNs and online games, IPv6-only networks of some mobile carriers) may stop working. Use for troubleshooting only; restart required."))
             .WindowsDefault("default")
             .Build();
     }

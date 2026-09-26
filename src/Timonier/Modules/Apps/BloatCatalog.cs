@@ -30,108 +30,108 @@ public sealed record BloatEntry(string Pattern, string Title, string Description
 /// </summary>
 public static partial class BloatCatalog
 {
-    private static readonly string Xbox = L("Les jeux Xbox et Game Pass s'en servent (connexion, invitations, captures) : à garder si vous jouez sur ce PC.");
+    private static readonly string Xbox = L("Xbox and Game Pass games use it (sign-in, invites, captures): keep it if you play games on this PC.");
 
     public static IReadOnlyList<BloatEntry> Entries { get; } =
     [
-        new("king.com.", L("Jeux King (Candy Crush…)"), L("Jeux gratuits avec achats intégrés, installés automatiquement par Windows."), BloatRisk.Safe, true),
-        new("Microsoft.BingNews", L("Actualités"), L("Fil d'actualités Microsoft Start."), BloatRisk.Safe, true),
-        new("Microsoft.BingWeather", L("Météo"), L("Prévisions météo de Microsoft (MSN)."), BloatRisk.Safe, false),
-        new("Microsoft.BingSearch", L("Recherche Bing"), L("Application de recherche web Bing."), BloatRisk.Safe, true),
-        new("Microsoft.Getstarted", L("Astuces"), L("Conseils de prise en main de Windows."), BloatRisk.Safe, true),
-        new("Microsoft.GetHelp", L("Obtenir de l'aide"), L("Assistance en ligne de Microsoft."), BloatRisk.Moderate, false)
+        new("king.com.", L("King games (Candy Crush…)"), L("Free games with in-app purchases, installed automatically by Windows."), BloatRisk.Safe, true),
+        new("Microsoft.BingNews", L("News"), L("Microsoft Start news feed."), BloatRisk.Safe, true),
+        new("Microsoft.BingWeather", L("Weather"), L("Weather forecasts from Microsoft (MSN)."), BloatRisk.Safe, false),
+        new("Microsoft.BingSearch", L("Bing Search"), L("Bing web search app."), BloatRisk.Safe, true),
+        new("Microsoft.Getstarted", L("Tips"), L("Tips for getting started with Windows."), BloatRisk.Safe, true),
+        new("Microsoft.GetHelp", L("Get Help"), L("Microsoft online support."), BloatRisk.Moderate, false)
         {
-            Warning = L("Sous Windows 11, les utilitaires de résolution des problèmes passent par cette application."),
+            Warning = L("On Windows 11, troubleshooters run through this app."),
         },
-        new("Microsoft.MicrosoftSolitaireCollection", "Microsoft Solitaire Collection", L("Jeux de cartes avec publicités (abonnement pour les retirer)."), BloatRisk.Safe, true),
-        new("Microsoft.People", L("Contacts"), L("Ancienne application Contacts de Windows 10."), BloatRisk.Safe, true),
-        new("Microsoft.WindowsFeedbackHub", L("Hub de commentaires"), L("Envoyer des avis et signaler des bogues à Microsoft."), BloatRisk.Safe, true),
-        new("Microsoft.WindowsMaps", L("Cartes"), L("Cartes et itinéraires Bing (abandonnée par Microsoft)."), BloatRisk.Safe, true),
-        new("Microsoft.ZuneVideo", L("Films et TV"), L("Ancien lecteur vidéo et boutique de films."), BloatRisk.Safe, true),
-        new("Microsoft.MicrosoftOfficeHub", "Microsoft 365 (Office)", L("Portail promotionnel vers Office en ligne et l'abonnement Microsoft 365."), BloatRisk.Safe, true),
-        new("Microsoft.SkypeApp", "Skype", L("Service arrêté par Microsoft en mai 2025."), BloatRisk.Safe, true),
-        new("Clipchamp.Clipchamp", "Clipchamp", L("Éditeur vidéo en ligne de Microsoft (compte requis)."), BloatRisk.Safe, true),
-        new("Microsoft.Todos", "Microsoft To Do", L("Listes de tâches synchronisées avec un compte Microsoft."), BloatRisk.Safe, false),
-        new("Microsoft.PowerAutomateDesktop", "Power Automate", L("Automatisation de tâches pour utilisateurs avancés."), BloatRisk.Safe, true),
-        new("MicrosoftTeams", L("Teams (Conversation)"), L("Ancienne messagerie Teams personnelle de Windows 11 (version 21H2/22H2)."), BloatRisk.Safe, true),
-        new("MSTeams", "Microsoft Teams", L("Nouvelle application Teams. À garder si vous l'utilisez pour le travail ou l'école."), BloatRisk.Safe, false),
-        new("Microsoft.Copilot", "Copilot", L("Assistant d'IA de Microsoft (application)."), BloatRisk.Safe, false),
-        new("Microsoft.OutlookForWindows", L("Outlook (nouveau)"), L("Nouvelle messagerie Outlook, qui remplace Courrier et Calendrier."), BloatRisk.Safe, false),
-        new("microsoft.windowscommunicationsapps", L("Courrier et Calendrier"), L("Anciennes applications retirées par Microsoft fin 2024."), BloatRisk.Safe, true),
-        new("Microsoft.549981C3F5F10", "Cortana", L("Assistant vocal abandonné par Microsoft."), BloatRisk.Safe, true),
-        new("Disney.", "Disney+", L("Raccourci promotionnel vers le service de streaming."), BloatRisk.Safe, true),
-        new("SpotifyAB.SpotifyMusic", "Spotify", L("Musique en streaming. À garder si vous l'utilisez."), BloatRisk.Safe, false),
-        new("BytedancePte.Ltd.TikTok", "TikTok", L("Application promotionnelle préinstallée."), BloatRisk.Safe, true),
-        new("Facebook.", "Facebook, Instagram, Messenger", L("Applications promotionnelles préinstallées."), BloatRisk.Safe, true),
-        new("7EE7776C.LinkedInforWindows", "LinkedIn", L("Application promotionnelle préinstallée."), BloatRisk.Safe, true),
-        new("AmazonVideo.PrimeVideo", "Prime Video", L("Raccourci promotionnel vers le service de streaming."), BloatRisk.Safe, true),
-        new("Microsoft.MixedReality.Portal", L("Portail de réalité mixte"), L("Casques Windows Mixed Reality (plateforme abandonnée)."), BloatRisk.Safe, true),
-        new("Microsoft.Microsoft3DViewer", L("Visionneuse 3D"), L("Afficher des modèles 3D (retirée des nouvelles versions)."), BloatRisk.Safe, true),
-        new("Microsoft.MSPaint", "Paint 3D", L("Éditeur 3D abandonné (Paint classique n'est pas concerné)."), BloatRisk.Safe, true),
-        new("Microsoft.Print3D", "Print 3D", L("Préparation d'impressions 3D (abandonnée)."), BloatRisk.Safe, true),
-        new("Microsoft.Wallet", L("Portefeuille"), L("Ancien portefeuille Microsoft, inutilisé."), BloatRisk.Safe, true),
-        new("Microsoft.Messaging", L("Messages"), L("Ancienne application SMS de Windows 10."), BloatRisk.Safe, true),
-        new("Microsoft.OneConnect", L("Forfaits mobiles"), L("Achat de forfaits de données cellulaires (abandonné)."), BloatRisk.Safe, true),
-        new("Microsoft.Office.OneNote", L("OneNote pour Windows 10"), L("Ancienne version de OneNote, remplacée par OneNote de Microsoft 365."), BloatRisk.Safe, false),
-        new("Microsoft.Windows.DevHome", "Dev Home", L("Tableau de bord pour développeurs, abandonné par Microsoft."), BloatRisk.Safe, true),
-        new("Microsoft.MicrosoftJournal", "Journal", L("Prise de notes manuscrites au stylet."), BloatRisk.Safe, false),
-        new("MicrosoftCorporationII.MicrosoftFamily", "Microsoft Family Safety", L("Contrôle parental en ligne. À garder si vous l'utilisez."), BloatRisk.Safe, false),
-        new("Microsoft.MicrosoftStickyNotes", L("Pense-bêtes"), L("Notes adhésives synchronisées avec un compte Microsoft."), BloatRisk.Safe, false),
-        new("Microsoft.WindowsAlarms", L("Horloge"), L("Alarmes, minuteur, chronomètre et sessions de concentration."), BloatRisk.Safe, false),
-        new("Microsoft.WindowsSoundRecorder", L("Enregistreur audio"), L("Enregistrement rapide au micro."), BloatRisk.Safe, false),
-        new("Microsoft.ZuneMusic", L("Lecteur multimédia"), L("Lecteur audio et vidéo par défaut de Windows 11."), BloatRisk.Moderate, false)
+        new("Microsoft.MicrosoftSolitaireCollection", "Microsoft Solitaire Collection", L("Card games with ads (subscription to remove them)."), BloatRisk.Safe, true),
+        new("Microsoft.People", L("Contacts"), L("Legacy People (Contacts) app from Windows 10."), BloatRisk.Safe, true),
+        new("Microsoft.WindowsFeedbackHub", L("Feedback Hub"), L("Send feedback and report bugs to Microsoft."), BloatRisk.Safe, true),
+        new("Microsoft.WindowsMaps", L("Maps"), L("Bing maps and directions (discontinued by Microsoft)."), BloatRisk.Safe, true),
+        new("Microsoft.ZuneVideo", L("Movies & TV"), L("Legacy video player and movie store."), BloatRisk.Safe, true),
+        new("Microsoft.MicrosoftOfficeHub", "Microsoft 365 (Office)", L("Promotional portal to Office online and the Microsoft 365 subscription."), BloatRisk.Safe, true),
+        new("Microsoft.SkypeApp", "Skype", L("Service discontinued by Microsoft in May 2025."), BloatRisk.Safe, true),
+        new("Clipchamp.Clipchamp", "Clipchamp", L("Microsoft online video editor (account required)."), BloatRisk.Safe, true),
+        new("Microsoft.Todos", "Microsoft To Do", L("To-do lists synced with a Microsoft account."), BloatRisk.Safe, false),
+        new("Microsoft.PowerAutomateDesktop", "Power Automate", L("Task automation for advanced users."), BloatRisk.Safe, true),
+        new("MicrosoftTeams", L("Teams (Chat)"), L("Legacy personal Teams chat app from Windows 11 (version 21H2/22H2)."), BloatRisk.Safe, true),
+        new("MSTeams", "Microsoft Teams", L("New Teams app. Keep it if you use it for work or school."), BloatRisk.Safe, false),
+        new("Microsoft.Copilot", "Copilot", L("Microsoft AI assistant (app)."), BloatRisk.Safe, false),
+        new("Microsoft.OutlookForWindows", L("Outlook (new)"), L("New Outlook email app, which replaces Mail and Calendar."), BloatRisk.Safe, false),
+        new("microsoft.windowscommunicationsapps", L("Mail and Calendar"), L("Legacy apps retired by Microsoft at the end of 2024."), BloatRisk.Safe, true),
+        new("Microsoft.549981C3F5F10", "Cortana", L("Voice assistant discontinued by Microsoft."), BloatRisk.Safe, true),
+        new("Disney.", "Disney+", L("Promotional shortcut to the streaming service."), BloatRisk.Safe, true),
+        new("SpotifyAB.SpotifyMusic", "Spotify", L("Music streaming. Keep it if you use it."), BloatRisk.Safe, false),
+        new("BytedancePte.Ltd.TikTok", "TikTok", L("Preinstalled promotional app."), BloatRisk.Safe, true),
+        new("Facebook.", "Facebook, Instagram, Messenger", L("Preinstalled promotional apps."), BloatRisk.Safe, true),
+        new("7EE7776C.LinkedInforWindows", "LinkedIn", L("Preinstalled promotional app."), BloatRisk.Safe, true),
+        new("AmazonVideo.PrimeVideo", "Prime Video", L("Promotional shortcut to the streaming service."), BloatRisk.Safe, true),
+        new("Microsoft.MixedReality.Portal", L("Mixed Reality Portal"), L("Windows Mixed Reality headsets (discontinued platform)."), BloatRisk.Safe, true),
+        new("Microsoft.Microsoft3DViewer", L("3D Viewer"), L("View 3D models (removed from newer versions)."), BloatRisk.Safe, true),
+        new("Microsoft.MSPaint", "Paint 3D", L("Discontinued 3D editor (classic Paint isn't affected)."), BloatRisk.Safe, true),
+        new("Microsoft.Print3D", "Print 3D", L("3D print preparation (discontinued)."), BloatRisk.Safe, true),
+        new("Microsoft.Wallet", L("Wallet"), L("Legacy Microsoft wallet, unused."), BloatRisk.Safe, true),
+        new("Microsoft.Messaging", LC("app name", "Messaging"), L("Legacy SMS app from Windows 10."), BloatRisk.Safe, true),
+        new("Microsoft.OneConnect", L("Mobile Plans"), L("Buy cellular data plans (discontinued)."), BloatRisk.Safe, true),
+        new("Microsoft.Office.OneNote", L("OneNote for Windows 10"), L("Legacy version of OneNote, replaced by OneNote from Microsoft 365."), BloatRisk.Safe, false),
+        new("Microsoft.Windows.DevHome", "Dev Home", L("Developer dashboard, discontinued by Microsoft."), BloatRisk.Safe, true),
+        new("Microsoft.MicrosoftJournal", "Journal", L("Handwritten note-taking with a pen."), BloatRisk.Safe, false),
+        new("MicrosoftCorporationII.MicrosoftFamily", "Microsoft Family Safety", L("Online parental controls. Keep it if you use it."), BloatRisk.Safe, false),
+        new("Microsoft.MicrosoftStickyNotes", L("Sticky Notes"), L("Sticky notes synced with a Microsoft account."), BloatRisk.Safe, false),
+        new("Microsoft.WindowsAlarms", L("Clock"), L("Alarms, timer, stopwatch and focus sessions."), BloatRisk.Safe, false),
+        new("Microsoft.WindowsSoundRecorder", L("Sound Recorder"), L("Quick microphone recording."), BloatRisk.Safe, false),
+        new("Microsoft.ZuneMusic", L("Media Player"), L("Default audio and video player in Windows 11."), BloatRisk.Moderate, false)
         {
-            Warning = L("C'est le lecteur par défaut : installez-en un autre (VLC…) avant de le supprimer."),
+            Warning = L("It's the default player: install another one (VLC…) before removing it."),
         },
-        new("Microsoft.XboxApp", L("Compagnon de la console Xbox"), L("Ancienne application Xbox de Windows 10."), BloatRisk.Moderate, false) { Warning = Xbox },
-        new("Microsoft.GamingApp", "Xbox", L("Boutique Game Pass et bibliothèque de jeux Xbox."), BloatRisk.Moderate, false) { Warning = Xbox },
-        new("Microsoft.XboxGamingOverlay", "Xbox Game Bar", L("Barre de jeu (Win+G) : captures, performances, discussion."), BloatRisk.Moderate, false) { Warning = Xbox },
-        new("Microsoft.XboxIdentityProvider", L("Connexion Xbox"), L("Connexion au compte Xbox dans les jeux (Minecraft, Game Pass…)."), BloatRisk.Moderate, false) { Warning = Xbox },
-        new("Microsoft.XboxSpeechToTextOverlay", L("Transcription vocale Xbox"), L("Sous-titres des discussions vocales dans les jeux."), BloatRisk.Moderate, false) { Warning = Xbox },
-        new("Microsoft.Xbox.TCUI", L("Interface Xbox des jeux"), L("Profils, amis et invitations Xbox dans les jeux."), BloatRisk.Moderate, false) { Warning = Xbox },
-        new("Microsoft.YourPhone", L("Lien avec Windows (Phone Link)"), L("Relie votre téléphone Android ou iPhone au PC (SMS, appels, photos)."), BloatRisk.Moderate, false)
+        new("Microsoft.XboxApp", L("Xbox Console Companion"), L("Legacy Xbox app from Windows 10."), BloatRisk.Moderate, false) { Warning = Xbox },
+        new("Microsoft.GamingApp", "Xbox", L("Game Pass store and Xbox game library."), BloatRisk.Moderate, false) { Warning = Xbox },
+        new("Microsoft.XboxGamingOverlay", "Xbox Game Bar", L("Game Bar (Win+G): captures, performance, chat."), BloatRisk.Moderate, false) { Warning = Xbox },
+        new("Microsoft.XboxIdentityProvider", L("Xbox Identity Provider"), L("Sign-in to your Xbox account in games (Minecraft, Game Pass…)."), BloatRisk.Moderate, false) { Warning = Xbox },
+        new("Microsoft.XboxSpeechToTextOverlay", L("Xbox speech-to-text"), L("Captions for voice chat in games."), BloatRisk.Moderate, false) { Warning = Xbox },
+        new("Microsoft.Xbox.TCUI", L("Xbox in-game UI"), L("Xbox profiles, friends and invites in games."), BloatRisk.Moderate, false) { Warning = Xbox },
+        new("Microsoft.YourPhone", L("Phone Link"), L("Connects your Android phone or iPhone to your PC (texts, calls, photos)."), BloatRisk.Moderate, false)
         {
-            Warning = L("Vous ne pourrez plus recevoir SMS, appels et notifications du téléphone sur ce PC."),
+            Warning = L("You'll no longer be able to get texts, calls and phone notifications on this PC."),
         },
-        new("MicrosoftWindows.CrossDevice", L("Expérience multi-appareils"), L("Composant de Lien avec Windows (téléphone dans le menu Démarrer)."), BloatRisk.Moderate, false)
+        new("MicrosoftWindows.CrossDevice", L("Cross-device experience"), L("Phone Link component (phone in the Start menu)."), BloatRisk.Moderate, false)
         {
-            Warning = L("Lien avec Windows et l'intégration du téléphone dans le menu Démarrer ne fonctionneront plus."),
+            Warning = L("Phone Link and phone integration in the Start menu will stop working."),
         },
-        new("MicrosoftWindows.Client.WebExperience", "Widgets", L("Panneau des widgets (actualités, météo) de la barre des tâches."), BloatRisk.Moderate, false)
+        new("MicrosoftWindows.Client.WebExperience", "Widgets", L("Widgets panel (news, weather) on the taskbar."), BloatRisk.Moderate, false)
         {
-            Warning = L("Le panneau des widgets disparaît ; la météo de la barre des tâches aussi."),
+            Warning = L("The widgets panel goes away, and so does the weather on the taskbar."),
         },
-        new("Microsoft.WindowsCamera", L("Caméra"), L("Application Caméra de Windows."), BloatRisk.Moderate, false)
+        new("Microsoft.WindowsCamera", L("Camera"), L("Windows Camera app."), BloatRisk.Moderate, false)
         {
-            Warning = L("Vous n'aurez plus d'application pour prendre des photos ou tester la webcam."),
+            Warning = L("You'll no longer have an app to take photos or test your webcam."),
         },
-        new("Microsoft.ScreenSketch", L("Outil Capture d'écran"), L("Captures avec Win+Maj+S et Impr. écran."), BloatRisk.Moderate, false)
+        new("Microsoft.ScreenSketch", L("Snipping Tool"), L("Screenshots with Win+Shift+S and Print Screen."), BloatRisk.Moderate, false)
         {
-            Warning = L("Les raccourcis de capture d'écran (Win+Maj+S) ne fonctionneront plus."),
+            Warning = L("Screenshot shortcuts (Win+Shift+S) will stop working."),
         },
-        new("MicrosoftCorporationII.QuickAssist", L("Assistance rapide"), L("Aide à distance entre deux PC Windows."), BloatRisk.Moderate, false)
+        new("MicrosoftCorporationII.QuickAssist", L("Quick Assist"), L("Remote help between two Windows PCs."), BloatRisk.Moderate, false)
         {
-            Warning = L("Vous ne pourrez plus recevoir d'aide à distance avec Assistance rapide."),
+            Warning = L("You'll no longer be able to get remote help with Quick Assist."),
         },
-        new("Microsoft.Windows.Photos", L("Photos"), L("Visionneuse d'images et de vidéos par défaut."), BloatRisk.Moderate, false)
+        new("Microsoft.Windows.Photos", L("Photos"), L("Default image and video viewer."), BloatRisk.Moderate, false)
         {
-            Warning = L("C'est la visionneuse par défaut : installez-en une autre (ImageGlass, IrfanView…) avant de la supprimer."),
+            Warning = L("It's the default viewer: install another one (ImageGlass, IrfanView…) before removing it."),
         },
-        new("Microsoft.WindowsCalculator", L("Calculatrice"), L("Calculatrice de Windows."), BloatRisk.Moderate, false)
+        new("Microsoft.WindowsCalculator", L("Calculator"), L("Windows Calculator."), BloatRisk.Moderate, false)
         {
-            Warning = L("Windows n'aura plus de calculatrice ; la touche Calculatrice du clavier ne fera plus rien."),
+            Warning = L("Windows will no longer have a calculator; the Calculator key on your keyboard will do nothing."),
         },
-        new("Microsoft.WindowsNotepad", L("Bloc-notes"), L("Éditeur de texte de Windows."), BloatRisk.Moderate, false)
+        new("Microsoft.WindowsNotepad", L("Notepad"), L("Windows text editor."), BloatRisk.Moderate, false)
         {
-            Warning = L("Les fichiers texte n'auront plus d'éditeur par défaut."),
+            Warning = L("Text files will no longer have a default editor."),
         },
-        new("Microsoft.Paint", "Paint", L("Dessin et retouche simples."), BloatRisk.Moderate, false)
+        new("Microsoft.Paint", "Paint", L("Simple drawing and editing."), BloatRisk.Moderate, false)
         {
-            Warning = L("Paint ne sera plus disponible pour les retouches rapides."),
+            Warning = L("Paint will no longer be available for quick edits."),
         },
-        new("Microsoft.WindowsTerminal", L("Terminal Windows"), L("Terminal par défaut de Windows 11."), BloatRisk.Moderate, false)
+        new("Microsoft.WindowsTerminal", L("Windows Terminal"), L("Default terminal in Windows 11."), BloatRisk.Moderate, false)
         {
-            Warning = L("Windows se rabattra sur l'ancienne console ; certains scripts et raccourcis s'ouvrent dans le Terminal."),
+            Warning = L("Windows will fall back to the old console; some scripts and shortcuts open in Terminal."),
         },
     ];
 

@@ -23,55 +23,55 @@ public sealed class KioskModule : IModule
         r.AddAction(new SetAutologonAction());
         r.AddAction(new ClearAutologonAction());
 
-        r.AddPage(new PageInfo(PageId, L("Mode kiosque"),Glyph, NavSection.Control, 40, () => new KioskPage())
+        r.AddPage(new PageInfo(PageId, L("Kiosk mode"),Glyph, NavSection.Control, 40, () => new KioskPage())
         {
-            Description = L("Transformer ce PC en borne dédiée à une seule application, puis revenir en arrière en un clic."),
-            Keywords = [L("kiosque, borne, kiosk, accès attribué, assigned access, application unique, affichage public, borne interactive, mode borne, shell, ouverture de session automatique")],
+            Description = L("Turn this PC into a kiosk dedicated to a single app, then undo it in one click."),
+            Keywords = [L("kiosk, kiosk mode, assigned access, single app, public display, interactive kiosk, shell, automatic sign-in, autologon")],
         });
 
-        r.AddQuickAction(new QuickAction("kiosk.open", L("Transformer ce PC en borne"), Glyph,
-            L("Assistant pas à pas : compte dédié, application unique, restrictions et ouverture automatique."),
+        r.AddQuickAction(new QuickAction("kiosk.open", L("Turn this PC into a kiosk"), Glyph,
+            L("Step-by-step wizard: dedicated account, single app, restrictions and automatic sign-in."),
             () => { AppHost.Navigator.Navigate(PageId); return Task.CompletedTask; })
         {
-            Keywords = [L("kiosque, borne, kiosk, mode kiosque, application unique, affichage public")],
+            Keywords = [L("kiosk, kiosk mode, single app, public display, kiosk terminal")],
             Order = 80,
         });
 
         r.AddSearchEntry(new SearchEntry
         {
-            Id = "kiosk.wizard", Title = L("Assistant mode kiosque"),Subtitle = L("Compte dédié, application unique, restrictions"),
+            Id = "kiosk.wizard", Title = L("Kiosk mode wizard"),Subtitle = L("Dedicated account, single app, restrictions"),
             Glyph = Glyph, PageId = PageId, PageParameter = "section:wizard", Boost = 0.1,
-            Keywords = [L("kiosque, borne, kiosk mode, assigned access, acces attribue, application plein ecran")],
+            Keywords = [L("kiosk, kiosk mode, assigned access, full-screen app, single app")],
         });
         r.AddSearchEntry(new SearchEntry
         {
-            Id = "kiosk.edge", Title = L("Microsoft Edge en mode kiosque"), Subtitle = L("Affichage public ou navigation publique sur une adresse web"),
+            Id = "kiosk.edge", Title = L("Microsoft Edge in kiosk mode"), Subtitle = L("Public display or public browsing on a web address"),
             Glyph = "", PageId = PageId, PageParameter = "mode:edge",
-            Keywords = [L("edge kiosque, navigateur kiosque, affichage dynamique, digital signage, navigation publique, site web plein ecran")],
+            Keywords = [L("edge kiosk, browser kiosk, digital signage, public browsing, full-screen website")],
         });
         r.AddSearchEntry(new SearchEntry
         {
-            Id = "kiosk.shell", Title = L("Remplacer le Bureau par une application"), Subtitle = L("Interface personnalisée pour un compte (alternative à Shell Launcher)"),
+            Id = "kiosk.shell", Title = L("Replace the desktop with an app"), Subtitle = L("Custom interface for an account (alternative to Shell Launcher)"),
             Glyph = "", PageId = PageId, PageParameter = "mode:win32",
-            Keywords = [L("shell personnalise, custom shell, shell launcher, remplacer explorer, interface utilisateur personnalisee")],
+            Keywords = [L("custom shell, shell launcher, replace explorer, custom user interface")],
         });
         r.AddSearchEntry(new SearchEntry
         {
-            Id = "kiosk.remove", Title = L("Désactiver le mode kiosque"), Subtitle = L("Rendre le Bureau au compte kiosque et retirer les restrictions"),
+            Id = "kiosk.remove", Title = L("Turn off kiosk mode"), Subtitle = L("Give the desktop back to the kiosk account and remove restrictions"),
             Glyph = "", PageId = PageId, PageParameter = "section:status",
-            Keywords = [L("quitter kiosque, desactiver borne, sortir du mode kiosque, clear assigned access, retirer kiosque")],
+            Keywords = [L("exit kiosk, disable kiosk, leave kiosk mode, clear assigned access, remove kiosk")],
         });
         r.AddSearchEntry(new SearchEntry
         {
-            Id = "kiosk.autologon", Title = L("Ouverture de session automatique"), Subtitle = L("Ouvrir la session du compte kiosque au démarrage (mot de passe protégé par LSA)"),
+            Id = "kiosk.autologon", Title = L("Automatic sign-in"), Subtitle = L("Sign in to the kiosk account at startup (password protected by LSA)"),
             Glyph = "", PageId = PageId, PageParameter = "section:status",
-            Keywords = [L("autologon, connexion automatique, ouverture automatique, auto login, session automatique, sans mot de passe au demarrage")],
+            Keywords = [L("autologon, automatic sign-in, auto login, automatic logon, auto sign in, no password at startup")],
         });
         r.AddSearchEntry(new SearchEntry
         {
-            Id = "kiosk.win.assignedaccess", Title = L("Kiosque (Paramètres Windows)"), Subtitle = L("Ouvre Paramètres › Comptes › Autres utilisateurs › Kiosque"),
+            Id = "kiosk.win.assignedaccess", Title = L("Kiosk (Windows Settings)"), Subtitle = L("Opens Settings › Accounts › Other users › Kiosk"),
             Glyph = Glyph, Kind = SearchEntryKind.WindowsSetting,
-            Keywords = [L("assigned access, acces attribue, configurer un kiosque, parametres kiosque")],
+            Keywords = [L("assigned access, set up a kiosk, kiosk settings")],
             Execute = () => ProcessRunner.OpenSettingsUri("ms-settings:assignedaccess"),
         });
 

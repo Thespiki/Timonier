@@ -82,22 +82,22 @@ internal static class DataInventory
     {
         var list = new List<Item>
         {
-            new(L("Préférences"), L("Thème, options, code PIN haché, préférences des modules."), SettingsFile, FileSize(SettingsFile)),
-            new(L("Journal utilisateur"), L("{0} — modifications faites sans droits d'administrateur (1 000 au maximum).", Count(JournalWriter.UserStore.All().Count)),
+            new(L("Preferences"), L("Theme, options, hashed PIN, module preferences."), SettingsFile, FileSize(SettingsFile)),
+            new(L("User history"), L("{0} — changes made without administrator rights (up to 1,000).", Count(JournalWriter.UserStore.All().Count)),
                 UserJournalFile, FileSize(UserJournalFile)),
-            new(L("Journal administrateur"), L("{0} — modifications faites par la session administrateur (500 au maximum). Lisible par tous, modifiable uniquement par les administrateurs.", Count(MachineJournalCount())), @"HKEY_LOCAL_MACHINE\SOFTWARE\Timonier\Journal", L("Registre")),
-            new(L("Cache"), L("Portrait matériel du PC (accélère le démarrage) et données temporaires des modules. Recréé automatiquement."),
+            new(L("Admin history"), L("{0} — changes made by the admin session (up to 500). Readable by everyone, can only be changed by administrators.", Count(MachineJournalCount())), @"HKEY_LOCAL_MACHINE\SOFTWARE\Timonier\Journal", L("Registry")),
+            new(L("Cache"), L("PC hardware profile (speeds up startup) and temporary module data. Re-created automatically."),
                 $"{ProfileCacheFile}\n{CacheDir}", Format.Bytes(Size(ProfileCacheFile) + DirSize(CacheDir))),
-            new(L("Journaux de diagnostic"), L("Messages techniques en cas d'erreur (1 Mo par fichier, 2 fichiers au maximum). Aucun secret, aucune donnée envoyée. Ceux de la session administrateur sont dans un dossier réservé aux administrateurs (lisible par tous)."),
+            new(L("Diagnostic logs"), L("Technical messages when errors occur (1 MB per file, up to 2 files). No secrets, no data sent. Those from the admin session are in a folder reserved for administrators (readable by everyone)."),
                 $"{AppPaths.Logs}\n{BrokerLogs}", Format.Bytes(DirSize(AppPaths.Logs) + DirSize(BrokerLogs))),
         };
         if (StartupRegistration.IsEnabled())
-            list.Add(new(L("Démarrage avec Windows"), L("Lance Timonier dans la zone de notification à l'ouverture de session."),
-                @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run → Timonier", L("Registre")));
+            list.Add(new(LC("feature name", "Start with Windows"), L("Starts Timonier in the notification area when you sign in."),
+                @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run → Timonier", L("Registry")));
         return list;
     }
 
-    private static string Count(int n) => LP(n, "{0:N0} entrée", "{0:N0} entrées");
+    private static string Count(int n) => LP(n, "{0:N0} entry", "{0:N0} entries");
 
     private static int MachineJournalCount()
     {
@@ -115,7 +115,7 @@ internal static class DataInventory
         catch { return 0; }
     }
 
-    private static string FileSize(string file) => File.Exists(file) ? Format.Bytes(Size(file)) : LC("file", "Absent");
+    private static string FileSize(string file) => File.Exists(file) ? Format.Bytes(Size(file)) : LC("file", "Missing");
 
     public static long DirSize(string dir)
     {

@@ -26,16 +26,16 @@ public sealed class TransparencyPage : UserControl, INavigationAware
 
     public TransparencyPage()
     {
-        var stack = PageScaffold.Create(this, L("Transparence"),
-            L("Tout ce que Timonier peut modifier, comment il le fait, ce qu'il refuse de faire et ce qu'il conserve sur ce PC."),
+        var stack = PageScaffold.Create(this, L("Transparency"),
+            L("Everything Timonier can change, how it does it, what it refuses to do, and what it keeps on this PC."),
             AppPagesModule.TransparencyGlyph);
 
-        _tabs.Add(L("Vue d'ensemble"), "");
-        _tabs.Add(L("Réglages"), "");
+        _tabs.Add(L("Overview"), "");
+        _tabs.Add(L("Settings"), "");
         _tabs.Add(L("Actions"), "");
-        _tabs.Add(L("Indisponible ici"), "");
-        _tabs.Add(L("Limites"), "");
-        _tabs.Add(L("Sécurité et données"), "");
+        _tabs.Add(L("Unavailable here"), "");
+        _tabs.Add(L("Limits"), "");
+        _tabs.Add(L("Security & data"), "");
         _tabs.SelectionChanged += (_, i) => ShowTab(i);
         _tabs.Margin = new Thickness(0, 0, 0, 16);
         stack.Children.Add(_tabs);
@@ -90,7 +90,7 @@ public sealed class TransparencyPage : UserControl, INavigationAware
             catch (Exception ex)
             {
                 Log.Error("AppPages", "transparence, onglet " + index, ex);
-                content = AppUi.StateCard("", L("Cette section n'a pas pu être affichée"), ex.Message);
+                content = AppUi.StateCard("", L("This section couldn't be displayed"), ex.Message);
             }
             if (index != 5) _built[index] = content; // « Sécurité et données » est recalculée à chaque visite (état en direct)
         }
@@ -110,8 +110,8 @@ public sealed class TransparencyPage : UserControl, INavigationAware
             .Select(t =>
             {
                 var reason = t.Requirement.Check(AppHost.Profile);
-                return new TweakRow(t, t.Title, CategoryTitle(t.Category), t.RequiresAdmin ? L("Oui") : L("Non"), RiskLabel(t.Risk),
-                    EffectLabel(t.Effect), reason ?? L("Disponible"), reason is null);
+                return new TweakRow(t, t.Title, CategoryTitle(t.Category), t.RequiresAdmin ? L("Yes") : L("No"), RiskLabel(t.Risk),
+                    EffectLabel(t.Effect), reason ?? L("Available"), reason is null);
             })
             .OrderBy(r => r.Category, StringComparer.Create(Culture, false))
             .ThenBy(r => r.Title, StringComparer.Create(Culture, false))];
@@ -122,26 +122,26 @@ public sealed class TransparencyPage : UserControl, INavigationAware
 
     internal static string RiskLabel(RiskLevel r) => r switch
     {
-        RiskLevel.Moderate => L("Modéré"),
-        RiskLevel.Advanced => L("Avancé"),
-        _ => L("Sans risque"),
+        RiskLevel.Moderate => L("Moderate"),
+        RiskLevel.Advanced => L("Advanced"),
+        _ => L("Safe"),
     };
 
     internal static string EffectLabel(ApplyEffect e)
     {
-        if (e == ApplyEffect.None) return L("Immédiat");
+        if (e == ApplyEffect.None) return L("Immediate");
         var parts = new List<string>();
-        if (e.HasFlag(ApplyEffect.RestartExplorer)) parts.Add(L("Redémarrage de l'Explorateur"));
-        if (e.HasFlag(ApplyEffect.SignOut)) parts.Add(L("Reconnexion"));
-        if (e.HasFlag(ApplyEffect.Reboot)) parts.Add(L("Redémarrage du PC"));
+        if (e.HasFlag(ApplyEffect.RestartExplorer)) parts.Add(L("File Explorer restart"));
+        if (e.HasFlag(ApplyEffect.SignOut)) parts.Add(L("Sign out and back in"));
+        if (e.HasFlag(ApplyEffect.Reboot)) parts.Add(L("PC restart"));
         return string.Join(", ", parts);
     }
 
     private static string KindLabel(TweakKind k) => k switch
     {
-        TweakKind.Toggle => LC("tweak kind", "Interrupteur"),
-        TweakKind.Choice => LC("tweak kind", "Choix"),
-        _ => LC("tweak kind", "Action ponctuelle"),
+        TweakKind.Toggle => LC("tweak kind", "Toggle"),
+        TweakKind.Choice => LC("tweak kind", "Choice"),
+        _ => LC("tweak kind", "One-time action"),
     };
 
     /// <summary>Module propriétaire d'une action (préfixe de l'identifiant), en clair.</summary>
@@ -161,24 +161,24 @@ public sealed class TransparencyPage : UserControl, INavigationAware
         var root = new StackPanel();
 
         root.Children.Add(AppUi.Tiles(
-            AppUi.MetricTile("", rows.Count.ToString(Culture), L("réglages au catalogue")),
-            AppUi.MetricTile("", reg.Actions.Count.ToString(Culture), L("actions paramétrées")),
-            AppUi.MetricTile("", rows.Count(r => r.Available).ToString(Culture), L("réglages disponibles sur ce PC"), "Success"),
-            AppUi.MetricTile("", rows.Count(r => !r.Tweak.RequiresAdmin).ToString(Culture), L("réglages sans droits administrateur"), "Success"),
-            AppUi.MetricTile("", rows.Count(r => r.Tweak.RequiresAdmin).ToString(Culture), L("réglages avec droits administrateur"), "Info"),
-            AppUi.MetricTile("", rows.Count(r => r.Tweak.IsReversible).ToString(Culture), L("réglages annulables depuis le journal"))));
+            AppUi.MetricTile("", rows.Count.ToString(Culture), L("settings in the catalog")),
+            AppUi.MetricTile("", reg.Actions.Count.ToString(Culture), L("parameterized actions")),
+            AppUi.MetricTile("", rows.Count(r => r.Available).ToString(Culture), L("settings available on this PC"), "Success"),
+            AppUi.MetricTile("", rows.Count(r => !r.Tweak.RequiresAdmin).ToString(Culture), L("settings without administrator rights"), "Success"),
+            AppUi.MetricTile("", rows.Count(r => r.Tweak.RequiresAdmin).ToString(Culture), L("settings with administrator rights"), "Info"),
+            AppUi.MetricTile("", rows.Count(r => r.Tweak.IsReversible).ToString(Culture), L("settings you can undo from History"))));
 
         if (!AppHost.Profile.HardwareLoaded)
         {
-            var info = PageScaffold.InfoBar(L("Détection du matériel en cours : les disponibilités liées au matériel (batterie, Wi-Fi, carte graphique…) seront précisées dans quelques secondes."), "");
+            var info = PageScaffold.InfoBar(L("Detecting hardware: hardware-related availability (battery, Wi-Fi, graphics card…) will be shown in a few seconds."), "");
             info.Margin = new Thickness(0, 0, 0, 12);
             root.Children.Add(info);
         }
 
         // Tableau par catégorie
-        root.Children.Add(AppUi.Section(L("Par catégorie")));
+        root.Children.Add(AppUi.Section(L("By category")));
         var table = new Grid();
-        string[] headers = [L("Catégorie"), L("Réglages"), L("Admin"), L("Modérés"), L("Avancés"), L("Non annulables"), L("Indisponibles")];
+        string[] headers = [L("Category"), L("Settings"), L("Admin"), LC("plural (settings)", "Moderate"), LC("plural (settings)", "Advanced"), LC("plural (settings)", "Can't be undone"), LC("plural (settings)", "Unavailable")];
         table.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star), MinWidth = 180 });
         for (var i = 1; i < headers.Length; i++) table.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(96) });
         var r0 = 0;
@@ -219,12 +219,12 @@ public sealed class TransparencyPage : UserControl, INavigationAware
         foreach (var t in table.Children.OfType<TextBlock>().Where(t => Grid.GetRow(t) == r0 - 1)) t.FontWeight = FontWeights.SemiBold;
         root.Children.Add(AppUi.Card(table));
 
-        var legend = AppUi.Caption(L("« Modérés » : peuvent dégrader une fonctionnalité, une confirmation est demandée. « Avancés » : masqués hors mode avancé. « Non annulables » : actions ponctuelles qui lancent un outil système (ex. nettoyage) ; tout le reste est enregistré dans le journal avec l'état précédent."));
+        var legend = AppUi.Caption(L("“Moderate”: may degrade a feature, so confirmation is required. “Advanced”: hidden unless advanced mode is on. “Can't be undone”: one-time actions that launch a system tool (e.g., cleanup); everything else is recorded in History with the previous state."));
         legend.Margin = new Thickness(2, 8, 0, 0);
         root.Children.Add(legend);
 
         // Actions par module
-        root.Children.Add(AppUi.Section(L("Actions par module")));
+        root.Children.Add(AppUi.Section(L("Actions by module")));
         var actionsWrap = new WrapPanel();
         foreach (var g in reg.Actions.GroupBy(a => ModuleOf(a.Id)).OrderByDescending(g => g.Count()))
         {
@@ -232,7 +232,7 @@ public sealed class TransparencyPage : UserControl, INavigationAware
             s.Children.Add(AppUi.Text(g.Key, "Pp.Body", wrap: false));
             var detail = new List<string> { LP(g.Count(), "{0} action", "{0} actions"), LP(g.Count(a => a.RequiresAdmin), "{0} admin", "{0} admin") };
             var confirm = g.Count(a => a.RequiresElevatedConfirmation);
-            if (confirm > 0) detail.Add(LP(confirm, "{0} avec confirmation élevée", "{0} avec confirmation élevée"));
+            if (confirm > 0) detail.Add(LP(confirm, "{0} with elevated confirmation", "{0} with elevated confirmation"));
             s.Children.Add(AppUi.Caption(string.Join(" · ", detail)));
             var card = AppUi.Card(s, new Thickness(0, 0, 10, 10));
             card.MinWidth = 210;
@@ -240,19 +240,19 @@ public sealed class TransparencyPage : UserControl, INavigationAware
         }
         root.Children.Add(actionsWrap);
 
-        var extra = AppUi.Caption(L("S'y ajoutent {0} contrôles de santé (lecture seule, sans droits d'administrateur), {1} actions rapides et {2} pages.", reg.HealthChecks.Count, reg.QuickActions.Count, reg.Pages.Count));
+        var extra = AppUi.Caption(L("Plus {0} health checks (read-only, no administrator rights), {1} quick actions, and {2} pages.", reg.HealthChecks.Count, reg.QuickActions.Count, reg.Pages.Count));
         extra.Margin = new Thickness(2, 2, 0, 0);
         root.Children.Add(extra);
 
         // Cohérence du catalogue
-        root.Children.Add(AppUi.Section(L("Cohérence du catalogue")));
+        root.Children.Add(AppUi.Section(L("Catalog consistency")));
         if (reg.Errors.Count == 0)
-            root.Children.Add(PageScaffold.InfoBar(L("Aucune incohérence détectée au chargement : identifiants uniques, catégories connues, options valides."), "", "Pp.InfoBar.Success"));
+            root.Children.Add(PageScaffold.InfoBar(L("No inconsistencies detected at load: unique IDs, known categories, valid options."), "", "Pp.InfoBar.Success"));
         else
         {
             root.Children.Add(PageScaffold.InfoBar(LP(reg.Errors.Count,
-                "{0} incohérence détectée au chargement. Les éléments concernés sont ignorés ou partiellement disponibles.",
-                "{0} incohérences détectées au chargement. Les éléments concernés sont ignorés ou partiellement disponibles."), "", "Pp.InfoBar.Warning"));
+                "{0} inconsistency detected at load. Affected items are ignored or partially available.",
+                "{0} inconsistencies detected at load. Affected items are ignored or partially available."), "", "Pp.InfoBar.Warning"));
             var list = AppUi.Bullets([.. reg.Errors.Take(30)]);
             root.Children.Add(AppUi.Card(list, new Thickness(0, 8, 0, 0)));
         }
@@ -268,32 +268,32 @@ public sealed class TransparencyPage : UserControl, INavigationAware
     {
         var rows = Rows();
         var root = new StackPanel();
-        var intro = AppUi.Caption(L("Liste exhaustive de ce que Timonier sait modifier. Le processus administrateur refuse tout réglage absent de ce catalogue : il n'existe aucun moyen de lui faire exécuter autre chose. Sélectionnez une ligne pour voir les opérations exactes."));
+        var intro = AppUi.Caption(L("Complete list of what Timonier can change. The administrator process rejects any setting that isn't in this catalog: there's no way to make it run anything else. Select a row to see the exact operations."));
         intro.Margin = new Thickness(2, 0, 0, 12);
         root.Children.Add(intro);
 
         var categories = new ComboBox { MinWidth = 220, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
-        System.Windows.Automation.AutomationProperties.SetName(categories, L("Catégorie"));
-        categories.Items.Add(L("Toutes les catégories"));
+        System.Windows.Automation.AutomationProperties.SetName(categories, L("Category"));
+        categories.Items.Add(L("All categories"));
         foreach (var c in rows.Select(r => r.Category).Distinct()) categories.Items.Add(c);
         categories.SelectedIndex = 0;
 
-        var onlyAvailable = new CheckBox { Content = L("Disponibles sur ce PC"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(14, 0, 0, 0) };
+        var onlyAvailable = new CheckBox { Content = LC("plural (settings)", "Available on this PC"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(14, 0, 0, 0) };
         var count = AppUi.Caption("");
         count.VerticalAlignment = VerticalAlignment.Center;
         count.Margin = new Thickness(14, 0, 0, 0);
 
-        var grid = MakeGrid(L("Catalogue des réglages"), 380);
-        grid.Columns.Add(Col(L("Réglage"), nameof(TweakRow.Title), new DataGridLength(2.2, DataGridLengthUnitType.Star)));
-        grid.Columns.Add(Col(L("Catégorie"), nameof(TweakRow.Category), new DataGridLength(1.1, DataGridLengthUnitType.Star)));
+        var grid = MakeGrid(L("Settings catalog"), 380);
+        grid.Columns.Add(Col(L("Setting"), nameof(TweakRow.Title), new DataGridLength(2.2, DataGridLengthUnitType.Star)));
+        grid.Columns.Add(Col(L("Category"), nameof(TweakRow.Category), new DataGridLength(1.1, DataGridLengthUnitType.Star)));
         grid.Columns.Add(Col(L("Admin"), nameof(TweakRow.Admin), new DataGridLength(70)));
-        grid.Columns.Add(Col(L("Risque"), nameof(TweakRow.Risk), new DataGridLength(96)));
-        grid.Columns.Add(Col(L("Effet"), nameof(TweakRow.Effect), new DataGridLength(1, DataGridLengthUnitType.Star)));
-        grid.Columns.Add(Col(L("Sur ce PC"), nameof(TweakRow.Availability), new DataGridLength(1.3, DataGridLengthUnitType.Star)));
+        grid.Columns.Add(Col(L("Risk"), nameof(TweakRow.Risk), new DataGridLength(96)));
+        grid.Columns.Add(Col(L("Effect"), nameof(TweakRow.Effect), new DataGridLength(1, DataGridLengthUnitType.Star)));
+        grid.Columns.Add(Col(L("On this PC"), nameof(TweakRow.Availability), new DataGridLength(1.3, DataGridLengthUnitType.Star)));
         _grid = grid;
 
         var details = new ContentControl { Margin = new Thickness(0, 14, 0, 0) };
-        details.Content = AppUi.StateCard("", L("Sélectionnez un réglage"), L("Ses options, les opérations exactes (registre, services, tâches), ses conditions et sa réversibilité s'afficheront ici."));
+        details.Content = AppUi.StateCard("", L("Select a setting"), L("Its options, exact operations (registry, services, tasks), requirements, and reversibility will appear here."));
 
         var query = "";
         void Apply()
@@ -306,9 +306,9 @@ public sealed class TransparencyPage : UserControl, INavigationAware
                     || r.Tweak.Keywords.Any(k => Contains(k, query)));
             var list = items.ToList();
             grid.ItemsSource = list;
-            count.Text = LP(list.Count, "{0} réglage", "{0} réglages");
+            count.Text = LP(list.Count, "{0} setting", "{0} settings");
         }
-        var search = AppUi.SearchBox(L("Rechercher un réglage, un identifiant…"), q => { query = q; Apply(); });
+        var search = AppUi.SearchBox(L("Search for a setting or ID…"), q => { query = q; Apply(); });
         categories.SelectionChanged += (_, _) => Apply();
         onlyAvailable.Checked += (_, _) => Apply();
         onlyAvailable.Unchecked += (_, _) => Apply();
@@ -400,7 +400,7 @@ public sealed class TransparencyPage : UserControl, INavigationAware
         var t = row.Tweak;
         var s = new StackPanel();
         var head = new DockPanel();
-        var open = AppUi.Button(L("Ouvrir le réglage"), "", "Pp.Button", (_, _) =>
+        var open = AppUi.Button(L("Open setting"), "", "Pp.Button", (_, _) =>
             AppHost.Navigator.Navigate(AppHost.Registry.PageIdForCategory(t.Category), "tweak:" + t.Id));
         DockPanel.SetDock(open, Dock.Right);
         open.VerticalAlignment = VerticalAlignment.Top;
@@ -418,29 +418,29 @@ public sealed class TransparencyPage : UserControl, INavigationAware
         var badges = new WrapPanel { Margin = new Thickness(0, 0, 0, 10) };
         void B(Border b) { b.Margin = new Thickness(0, 0, 6, 6); badges.Children.Add(b); }
         B(AppUi.Badge(KindLabel(t.Kind), "Neutral"));
-        B(t.RequiresAdmin ? AppUi.Badge(L("Droits administrateur"), "Info", "") : AppUi.Badge(L("Sans droits administrateur"), "Success", ""));
-        B(AppUi.Badge(L("Risque : {0}", RiskLabel(t.Risk).ToLower(Culture)), t.Risk == RiskLevel.Safe ? "Success" : "Warning"));
-        B(t.IsReversible ? AppUi.Badge(LC("badge", "Annulable"), "Success", "") : AppUi.Badge(LC("badge", "Non annulable"), "Warning", ""));
+        B(t.RequiresAdmin ? AppUi.Badge(L("Administrator rights"), "Info", "") : AppUi.Badge(L("No administrator rights"), "Success", ""));
+        B(AppUi.Badge(L("Risk: {0}", RiskLabel(t.Risk).ToLower(Culture)), t.Risk == RiskLevel.Safe ? "Success" : "Warning"));
+        B(t.IsReversible ? AppUi.Badge(LC("badge", "Undoable"), "Success", "") : AppUi.Badge(LC("badge", "Can't be undone"), "Warning", ""));
         if (t.Effect != ApplyEffect.None) B(AppUi.Badge(EffectLabel(t.Effect), "Warning", ""));
-        B(row.Available ? AppUi.Badge(L("Disponible sur ce PC"), "Success", "") : AppUi.Badge(L("Indisponible sur ce PC"), "Danger", ""));
+        B(row.Available ? AppUi.Badge(L("Available on this PC"), "Success", "") : AppUi.Badge(L("Unavailable on this PC"), "Danger", ""));
         s.Children.Add(badges);
 
-        if (!row.Available) s.Children.Add(PageScaffold.KeyValue(L("Pourquoi indisponible"), row.Availability));
-        if (t.Warning is not null) s.Children.Add(PageScaffold.KeyValue(L("À savoir"), t.Warning));
-        if (t.WindowsDefault is { } def && t.GetOption(def) is { } defOpt) s.Children.Add(PageScaffold.KeyValue(L("Par défaut dans Windows"), defOpt.Label));
+        if (!row.Available) s.Children.Add(PageScaffold.KeyValue(L("Why it's unavailable"), row.Availability));
+        if (t.Warning is not null) s.Children.Add(PageScaffold.KeyValue(L("Good to know"), t.Warning));
+        if (t.WindowsDefault is { } def && t.GetOption(def) is { } defOpt) s.Children.Add(PageScaffold.KeyValue(LC("field label", "Windows default"), defOpt.Label));
         var rec = t.RecommendationFor(AppHost.Profile);
-        if (rec is not null && t.GetOption(rec) is { } recOpt) s.Children.Add(PageScaffold.KeyValue(L("Recommandé pour ce PC"), recOpt.Label));
-        if (t.CustomDetect is not null) s.Children.Add(PageScaffold.KeyValue(L("Détection"), L("Personnalisée (lecture seule), en plus des opérations ci-dessous.")));
+        if (rec is not null && t.GetOption(rec) is { } recOpt) s.Children.Add(PageScaffold.KeyValue(L("Recommended for this PC"), recOpt.Label));
+        if (t.CustomDetect is not null) s.Children.Add(PageScaffold.KeyValue(L("Detection"), L("Custom (read-only), in addition to the operations below.")));
 
         foreach (var opt in t.Options)
         {
-            var title = AppUi.Text(t.Kind == TweakKind.Action ? L("Opérations exécutées") : L("Option « {0} »", opt.Label), "Pp.Body");
+            var title = AppUi.Text(t.Kind == TweakKind.Action ? L("Operations performed") : L("Option “{0}”", opt.Label), "Pp.Body");
             title.FontWeight = FontWeights.SemiBold;
             title.Margin = new Thickness(0, 14, 0, 2);
             s.Children.Add(title);
             if (opt.Description is not null) s.Children.Add(AppUi.Caption(opt.Description));
             if (opt.Operations.Count == 0)
-                s.Children.Add(AppUi.Caption(L("Aucune opération (état constaté uniquement)."), tertiary: true));
+                s.Children.Add(AppUi.Caption(L("No operations (state check only)."), tertiary: true));
             foreach (var op in opt.Operations)
             {
                 var line = new DockPanel { Margin = new Thickness(0, 3, 0, 3) };
@@ -479,34 +479,34 @@ public sealed class TransparencyPage : UserControl, INavigationAware
                 // « Selon les paramètres » n'est vrai que si l'action surcharge RequiresElevatedConfirmationFor ; sinon « Non ».
                 var overrides = !a.RequiresElevatedConfirmation && a.GetType().GetMethod(nameof(IActionHandler.RequiresElevatedConfirmationFor),
                     System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public, [typeof(IReadOnlyDictionary<string, string>)]) is not null;
-                var confirmation = a.RequiresElevatedConfirmation ? L("Toujours") : overrides ? L("Selon les paramètres") : L("Non");
-                return new ActionRow(a.Id, a.Title, ModuleOf(a.Id), a.RequiresAdmin ? L("Oui") : L("Non"), confirmation,
+                var confirmation = a.RequiresElevatedConfirmation ? L("Always") : overrides ? L("Depending on parameters") : L("No");
+                return new ActionRow(a.Id, a.Title, ModuleOf(a.Id), a.RequiresAdmin ? L("Yes") : L("No"), confirmation,
                     a.RequiresAdmin, a.RequiresElevatedConfirmation || overrides);
             })
             .OrderBy(a => a.Module, StringComparer.Create(Culture, false)).ThenBy(a => a.Title, StringComparer.Create(Culture, false))
             .ToList();
 
         var root = new StackPanel();
-        var intro = AppUi.Caption(L("Les actions paramétrées (changer le DNS, installer une application, désactiver un périphérique…) valident chaque paramètre (formats en liste blanche, longueurs bornées) dans l'interface, puis à nouveau dans le processus administrateur. Les actions sensibles affichent une confirmation depuis le processus élevé lui-même, qu'aucun programme non élevé ne peut cliquer à votre place."));
+        var intro = AppUi.Caption(L("Parameterized actions (change DNS, install an app, disable a device…) validate each parameter (allowlisted formats, bounded lengths) in the interface, then again in the administrator process. Sensitive actions show a confirmation from the elevated process itself, which no non-elevated program can click on your behalf."));
         intro.Margin = new Thickness(2, 0, 0, 12);
         root.Children.Add(intro);
 
         root.Children.Add(AppUi.Tiles(
-            AppUi.MetricTile("", rows.Count.ToString(Culture), L("actions au total")),
-            AppUi.MetricTile("", rows.Count(r => r.IsAdmin).ToString(Culture), L("exigent les droits admin"), "Info"),
-            AppUi.MetricTile("", rows.Count(r => !r.IsAdmin).ToString(Culture), L("sans droits admin"), "Success"),
-            AppUi.MetricTile("", rows.Count(r => r.HasConfirmation).ToString(Culture), L("avec confirmation élevée"), "Warning")));
+            AppUi.MetricTile("", rows.Count.ToString(Culture), L("actions in total")),
+            AppUi.MetricTile("", rows.Count(r => r.IsAdmin).ToString(Culture), L("require admin rights"), "Info"),
+            AppUi.MetricTile("", rows.Count(r => !r.IsAdmin).ToString(Culture), L("no admin rights"), "Success"),
+            AppUi.MetricTile("", rows.Count(r => r.HasConfirmation).ToString(Culture), L("with elevated confirmation"), "Warning")));
 
-        var grid = MakeGrid(L("Liste des actions"), 420);
+        var grid = MakeGrid(L("Action list"), 420);
         grid.Columns.Add(Col(L("Action"), nameof(ActionRow.Title), new DataGridLength(2, DataGridLengthUnitType.Star)));
-        grid.Columns.Add(Col(L("Identifiant"), nameof(ActionRow.Id), new DataGridLength(1.6, DataGridLengthUnitType.Star)));
+        grid.Columns.Add(Col(L("ID"), nameof(ActionRow.Id), new DataGridLength(1.6, DataGridLengthUnitType.Star)));
         grid.Columns.Add(Col(L("Module"), nameof(ActionRow.Module), new DataGridLength(1.1, DataGridLengthUnitType.Star)));
         grid.Columns.Add(Col(L("Admin"), nameof(ActionRow.Admin), new DataGridLength(72)));
-        grid.Columns.Add(Col(L("Confirmation élevée"), nameof(ActionRow.Confirmation), new DataGridLength(170)));
+        grid.Columns.Add(Col(L("Elevated confirmation"), nameof(ActionRow.Confirmation), new DataGridLength(170)));
         grid.ItemsSource = rows;
 
         var query = "";
-        var search = AppUi.SearchBox(L("Rechercher une action ou un identifiant…"), q =>
+        var search = AppUi.SearchBox(L("Search for an action or ID…"), q =>
         {
             query = q;
             grid.ItemsSource = query.Length == 0 ? rows : rows.Where(r => Contains(r.Title, query) || Contains(r.Id, query) || Contains(r.Module, query)).ToList();
@@ -528,19 +528,19 @@ public sealed class TransparencyPage : UserControl, INavigationAware
         var root = new StackPanel();
         // Phrases complètes juxtaposées : description du PC, gestion éventuelle, principe.
         var machine = !p.HardwareLoaded
-            ? L("Ce PC : {0} — édition {1}.", p.WindowsLabel, p.EditionLabel)
+            ? L("This PC: {0} — {1} edition.", p.WindowsLabel, p.EditionLabel)
             : p.HasBattery
-                ? L("Ce PC : {0} — édition {1}, {2} avec batterie.", p.WindowsLabel, p.EditionLabel, p.FormFactorLabel.ToLower(Culture))
-                : L("Ce PC : {0} — édition {1}, {2}.", p.WindowsLabel, p.EditionLabel, p.FormFactorLabel.ToLower(Culture));
+                ? L("This PC: {0} — {1} edition, {2} with battery.", p.WindowsLabel, p.EditionLabel, p.FormFactorLabel.ToLower(Culture))
+                : L("This PC: {0} — {1} edition, {2}.", p.WindowsLabel, p.EditionLabel, p.FormFactorLabel.ToLower(Culture));
         var sentences = new List<string> { machine };
-        if (p.IsManaged) sentences.Add(L("Il est géré par une organisation."));
-        sentences.Add(L("Timonier n'affiche jamais un réglage sans effet sur votre configuration comme s'il fonctionnait : il le marque indisponible et en donne la raison."));
+        if (p.IsManaged) sentences.Add(L("It's managed by an organization."));
+        sentences.Add(L("Timonier never shows a setting that has no effect on your configuration as if it worked: it marks it unavailable and gives the reason."));
         var intro = AppUi.Caption(string.Join(" ", sentences));
         intro.Margin = new Thickness(2, 0, 0, 12);
         root.Children.Add(intro);
         if (!p.HardwareLoaded)
         {
-            var info = PageScaffold.InfoBar(L("Détection du matériel en cours : les raisons liées au matériel apparaîtront dans quelques secondes."), "");
+            var info = PageScaffold.InfoBar(L("Detecting hardware: hardware-related reasons will appear in a few seconds."), "");
             info.Margin = new Thickness(0, 0, 0, 12);
             root.Children.Add(info);
         }
@@ -548,15 +548,15 @@ public sealed class TransparencyPage : UserControl, INavigationAware
         var groups = Rows().Where(r => !r.Available).GroupBy(r => r.Availability).OrderByDescending(g => g.Count()).ToList();
         if (groups.Count == 0)
         {
-            root.Children.Add(AppUi.StateCard("", L("Tout est disponible sur ce PC"),
-                L("Chaque réglage du catalogue est compatible avec votre édition de Windows, votre version et votre matériel.")));
+            root.Children.Add(AppUi.StateCard("", L("Everything is available on this PC"),
+                L("Every setting in the catalog is compatible with your Windows edition, version, and hardware.")));
             return root;
         }
         foreach (var g in groups)
         {
             var s = new StackPanel();
             var head = new DockPanel();
-            var badge = AppUi.Badge(LP(g.Count(), "{0} réglage", "{0} réglages"), "Neutral");
+            var badge = AppUi.Badge(LP(g.Count(), "{0} setting", "{0} settings"), "Neutral");
             DockPanel.SetDock(badge, Dock.Right);
             head.Children.Add(badge);
             var reason = AppUi.Text(g.Key, "Pp.Body");
@@ -573,7 +573,7 @@ public sealed class TransparencyPage : UserControl, INavigationAware
                     _pendingTweak = r.Tweak.Id;
                     SelectPendingTweak();
                 });
-                link.ToolTip = L("{0} — voir les détails", r.Category);
+                link.ToolTip = L("{0} — see details", r.Category);
                 link.Margin = new Thickness(0, 0, 16, 2);
                 items.Children.Add(link);
             }
@@ -589,40 +589,40 @@ public sealed class TransparencyPage : UserControl, INavigationAware
     {
         var p = AppHost.Profile;
         var root = new StackPanel();
-        var intro = AppUi.Caption(L("Timonier préfère vous dire ce qu'il ne fait pas plutôt que de vous laisser croire le contraire."));
+        var intro = AppUi.Caption(L("Timonier would rather tell you what it doesn't do than let you believe otherwise."));
         intro.Margin = new Thickness(2, 0, 0, 12);
         root.Children.Add(intro);
 
         var managed = p.IsManaged
-            ? L("Ce PC est géré par une organisation ({0}) : ses stratégies s'appliquent périodiquement et remplacent les valeurs modifiées localement.", string.Join(", ", new[] {
-                p.IsDomainJoined ? L("domaine Active Directory") : null, p.IsEntraJoined ? "Microsoft Entra ID" : null, p.IsMdmManaged ? "MDM/Intune" : null }
+            ? L("This PC is managed by an organization ({0}): its policies are applied periodically and replace locally changed values.", string.Join(", ", new[] {
+                p.IsDomainJoined ? L("Active Directory domain") : null, p.IsEntraJoined ? "Microsoft Entra ID" : null, p.IsMdmManaged ? "MDM/Intune" : null }
                 .Where(x => x is not null)))
-            : L("Ce PC n'est géré par aucune organisation (ni domaine, ni Entra ID, ni MDM) : vos réglages locaux ne sont pas écrasés par des stratégies distantes.");
+            : L("This PC isn't managed by any organization (no domain, Entra ID, or MDM): your local settings aren't overwritten by remote policies.");
         var telemetry = p.SupportsTelemetryOff
-            ? L("Votre édition ({0}) accepte le niveau « Sécurité » (0).", p.EditionLabel)
-            : L("Sur votre édition ({0}), Windows applique au minimum le niveau « Données de diagnostic requises » (1), même si la valeur 0 est écrite.", p.EditionLabel);
+            ? L("Your edition ({0}) supports the “Security” level (0).", p.EditionLabel)
+            : L("On your edition ({0}), Windows enforces at least the “Required diagnostic data” level (1), even if the value 0 is written.", p.EditionLabel);
 
         (string Glyph, string Title, string Text)[] items =
         [
-            ("", L("Bloquer Ctrl+Alt+Suppr ou Windows+L"),
-                L("Ces combinaisons sont traitées par Windows avant toute application (« séquence d'attention sécurisée ») : aucun logiciel ne peut les intercepter. L'accès guidé et le mode kiosque peuvent masquer les options de l'écran Ctrl+Alt+Suppr, pas empêcher la combinaison.")),
-            ("", L("Passer outre les stratégies d'une organisation"), managed),
-            ("", L("Garantir qu'un réglage survive aux mises à jour majeures"),
-                L("Les mises à jour de fonctionnalités (ex. 24H2 → 25H2) réinstallent une partie de Windows et peuvent rétablir des services, tâches, applications ou valeurs par défaut. Le journal et le tableau de bord permettent de vérifier et de réappliquer.")),
-            ("", L("Couper totalement la télémétrie sur toutes les éditions"),
-                L("Le niveau 0 des données de diagnostic n'est respecté que par les éditions Entreprise, Éducation, IoT et Server. {0}", telemetry)),
-            ("", L("Affaiblir la sécurité de Windows"),
-                L("Timonier ne propose pas de désactiver durablement Microsoft Defender, le pare-feu, le contrôle de compte d'utilisateur (UAC), SmartScreen, le démarrage sécurisé ou les mises à jour de sécurité. Il peut afficher leur état et vous aider à les réactiver. Les mises à jour peuvent être suspendues dans les limites prévues par Windows, jamais bloquées définitivement.")),
-            ("", L("Changer les applications par défaut à votre place"),
-                L("Les associations de fichiers et de protocoles (navigateur, PDF…) sont protégées par Windows (hachage de l'utilisateur, pilote UCPD). Timonier ouvre la bonne page des Paramètres : c'est vous qui validez le choix.")),
-            ("", L("Fonctions à distance ou dans le cloud"),
-                L("Pas de compte, pas de synchronisation, pas de contrôle à distance, pas de mise à jour automatique de Timonier : tout se fait sur ce PC, par vous.")),
-            ("", L("Installer des applications sans connexion"),
-                L("Timonier n'initie lui-même aucune connexion réseau. Quand vous installez ou mettez à jour une application, c'est winget (Microsoft) qui télécharge le programme depuis le site de l'éditeur ou le Microsoft Store.")),
-            ("", L("Agir sans votre accord"),
-                L("Aucun réglage n'est appliqué automatiquement. Les droits administrateur ne sont demandés qu'au moment d'une modification qui les exige, via l'invite UAC de Windows.")),
-            ("", L("Retirer définitivement des composants protégés"),
-                L("Les applications que Windows déclare non supprimables (Paramètres, composants de l'interface…) ne sont pas retirées de force : cela casse les mises à jour et d'autres fonctionnalités.")),
+            ("", L("Block Ctrl+Alt+Del or Windows+L"),
+                L("These key combinations are handled by Windows before any app (“secure attention sequence”): no software can intercept them. Guided access and kiosk mode can hide the options on the Ctrl+Alt+Del screen, but can't block the key combination.")),
+            ("", L("Override an organization's policies"), managed),
+            ("", L("Guarantee that a setting survives major updates"),
+                L("Feature updates (e.g., 24H2 → 25H2) reinstall part of Windows and may restore services, tasks, apps, or default values. History and the dashboard let you check and reapply.")),
+            ("", L("Completely turn off telemetry on all editions"),
+                L("Diagnostic data level 0 is only honored by the Enterprise, Education, IoT, and Server editions. {0}", telemetry)),
+            ("", L("Weaken Windows security"),
+                L("Timonier doesn't offer to permanently disable Microsoft Defender, the firewall, User Account Control (UAC), SmartScreen, Secure Boot, or security updates. It can show their status and help you turn them back on. Updates can be paused within the limits Windows allows, never blocked permanently.")),
+            ("", L("Change default apps for you"),
+                L("File and protocol associations (browser, PDF…) are protected by Windows (user hash, UCPD driver). Timonier opens the right Settings page: you confirm the choice yourself.")),
+            ("", L("Remote or cloud features"),
+                L("No account, no sync, no remote control, no automatic Timonier updates: everything happens on this PC, done by you.")),
+            ("", L("Install apps without a connection"),
+                L("Timonier doesn't initiate any network connection itself. When you install or update an app, winget (Microsoft) downloads the program from the publisher's website or the Microsoft Store.")),
+            ("", L("Act without your consent"),
+                L("No setting is applied automatically. Administrator rights are only requested when a change requires them, through the Windows UAC prompt.")),
+            ("", L("Permanently remove protected components"),
+                L("Apps that Windows declares non-removable (Settings, interface components…) aren't forcibly removed: doing so breaks updates and other features.")),
         ];
         foreach (var (glyph, title, text) in items)
         {
@@ -653,29 +653,29 @@ public sealed class TransparencyPage : UserControl, INavigationAware
         var root = new StackPanel();
 
         // Architecture
-        root.Children.Add(AppUi.Section(L("Comment Timonier protège votre PC")));
+        root.Children.Add(AppUi.Section(L("How Timonier protects your PC")));
         var broker = AppHost.Broker;
         var state = broker.IsRunning
             ? broker.StartedAt is { } at
-                ? L("Session administrateur active depuis {0} ; fermeture automatique après {1} min d'inactivité.", at.ToString("t", Culture), AppHost.Settings.BrokerIdleMinutes)
-                : L("Session administrateur active ; fermeture automatique après {0} min d'inactivité.", AppHost.Settings.BrokerIdleMinutes)
-            : L("Aucune session administrateur n'est ouverte en ce moment : Timonier tourne avec vos droits d'utilisateur standard.");
+                ? L("Admin session active since {0}; closes automatically after {1} min of inactivity.", at.ToString("t", Culture), AppHost.Settings.BrokerIdleMinutes)
+                : L("Admin session active; closes automatically after {0} min of inactivity.", AppHost.Settings.BrokerIdleMinutes)
+            : L("No admin session is open right now: Timonier is running with your standard user rights.");
         var stateBar = PageScaffold.InfoBar(state, broker.IsRunning ? "" : "", broker.IsRunning ? "Pp.InfoBar.Warning" : "Pp.InfoBar.Success");
         stateBar.Margin = new Thickness(0, 0, 0, 10);
         root.Children.Add(stateBar);
 
         (string Glyph, string Title, string Text)[] points =
         [
-            ("", L("Interface sans élévation"), L("La fenêtre de Timonier tourne avec vos droits normaux. Elle ne peut rien modifier qui exige les droits administrateur.")),
-            ("", L("Processus administrateur à la demande"), L("Quand une modification l'exige, un second processus Timonier est lancé via l'invite UAC de Windows. Une seule invite par session.")),
-            ("", L("Canal privé et vérifié"), L("Les deux processus communiquent par un canal nommé au nom aléatoire, accessible uniquement à votre compte et fermé au réseau. Chacun vérifie l'identité de l'autre (numéro de processus et emplacement de Timonier.exe) avant tout échange.")),
-            ("", L("Catalogue fermé"), L("Le processus administrateur n'accepte que des identifiants de réglages et d'actions compilés dans l'application. Il ne reçoit jamais de commande, de chemin de registre ni de script.")),
-            ("", L("Paramètres validés deux fois"), L("Chaque paramètre (adresse IP, identifiant d'application, nom de compte…) est vérifié par liste blanche dans l'interface, puis à nouveau par le processus administrateur.")),
-            ("", L("Confirmations affichées par le processus élevé"), L("Les actions sensibles (compte administrateur, ouverture de session automatique, installation hors catalogue…) sont confirmées dans une fenêtre du processus administrateur, qu'un programme non élevé ne peut pas cliquer à votre place.")),
-            ("", L("Journal machine protégé"), L("Les données d'annulation des modifications administrateur sont stockées dans HKLM\\SOFTWARE\\Timonier\\Journal, modifiable uniquement par les administrateurs : un programme malveillant sans droits ne peut pas y glisser de fausses instructions.")),
-            ("", L("Fermeture automatique"), L("La session administrateur se ferme après {0} min d'inactivité (réglable), et immédiatement quand Timonier se ferme.", AppHost.Settings.BrokerIdleMinutes)),
-            ("", L("Aucune ligne de commande"), L("Les outils système sont lancés par chemin absolu avec des arguments séparés, sans interpréteur de commandes ; les rares scripts PowerShell sont des constantes, les données passant par des variables d'environnement. L'injection de commande est impossible par construction.")),
-            ("", L("Aucune télémétrie, aucun réseau"), L("Timonier n'envoie rien, à personne. Il n'ouvre aucune connexion lui-même (seuls winget ou le Microsoft Store le font quand vous installez une application).")),
+            ("", L("Non-elevated interface"), L("The Timonier window runs with your normal rights. It can't change anything that requires administrator rights.")),
+            ("", L("On-demand administrator process"), L("When a change requires it, a second Timonier process is started through the Windows UAC prompt. Only one prompt per session.")),
+            ("", L("Private, verified channel"), L("The two processes communicate through a named pipe with a random name, accessible only to your account and closed to the network. Each one verifies the other's identity (process ID and Timonier.exe location) before any exchange.")),
+            ("", L("Closed catalog"), L("The administrator process only accepts setting and action IDs compiled into the app. It never receives commands, registry paths, or scripts.")),
+            ("", L("Parameters validated twice"), L("Each parameter (IP address, app ID, account name…) is checked against an allowlist in the interface, then again by the administrator process.")),
+            ("", L("Confirmations shown by the elevated process"), L("Sensitive actions (administrator account, automatic sign-in, installing outside the catalog…) are confirmed in a window of the administrator process, which a non-elevated program can't click on your behalf.")),
+            ("", L("Protected machine history"), L("Undo data for admin changes is stored in HKLM\\SOFTWARE\\Timonier\\Journal, which only administrators can change: a malicious program without rights can't slip in fake instructions.")),
+            ("", L("Automatic closing"), L("The admin session closes after {0} min of inactivity (adjustable), and immediately when Timonier closes.", AppHost.Settings.BrokerIdleMinutes)),
+            ("", L("No command line"), L("System tools are launched by absolute path with separate arguments, without a command interpreter; the few PowerShell scripts are constants, with data passed through environment variables. Command injection is impossible by design.")),
+            ("", L("No telemetry, no network"), L("Timonier sends nothing to anyone. It doesn't open any connection itself (only winget or the Microsoft Store do, when you install an app).")),
         ];
         var pointsPanel = new StackPanel();
         var first = true;
@@ -688,30 +688,30 @@ public sealed class TransparencyPage : UserControl, INavigationAware
         root.Children.Add(AppUi.Card(pointsPanel));
 
         // Données stockées
-        root.Children.Add(AppUi.Section(L("Données stockées sur ce PC")));
+        root.Children.Add(AppUi.Section(L("Data stored on this PC")));
         var dataPanel = new StackPanel();
-        dataPanel.Children.Add(AppUi.StateCard("", L("Calcul des tailles…"), busy: true));
+        dataPanel.Children.Add(AppUi.StateCard("", L("Calculating sizes…"), busy: true));
         var dataCard = AppUi.Card(dataPanel);
         root.Children.Add(dataCard);
         _ = FillDataAsync(dataPanel);
 
         // Arrière-plan
-        root.Children.Add(AppUi.Section(L("Fonctionnement en arrière-plan")));
+        root.Children.Add(AppUi.Section(L("Background operation")));
         var reasons = AppHost.Background.Reasons;
         var bg = new StackPanel();
         if (reasons.Count == 0)
-            bg.Children.Add(AppUi.SettingRow("", L("Aucune activité en arrière-plan"),
-                L("Timonier se ferme complètement quand vous fermez la fenêtre : aucun service, aucune tâche planifiée, aucun processus résident."), null));
+            bg.Children.Add(AppUi.SettingRow("", L("No background activity"),
+                L("Timonier closes completely when you close the window: no service, no scheduled task, no resident process."), null));
         else
         {
-            bg.Children.Add(AppUi.SettingRow("", L("Timonier doit rester actif"),
+            bg.Children.Add(AppUi.SettingRow("", L("Timonier needs to stay running"),
                 AppHost.Settings.AllowBackground
-                    ? L("Si vous fermez la fenêtre, Timonier restera dans la zone de notification pour :")
-                    : L("Ces fonctions en auraient besoin, mais vous avez interdit le fonctionnement en arrière-plan (Paramètres) : Timonier se fermera avec la fenêtre."), null));
+                    ? L("If you close the window, Timonier will stay in the notification area to:")
+                    : L("These features would need it, but you've disallowed background operation (Settings): Timonier will close with the window."), null));
             bg.Children.Add(AppUi.Bullets([.. reasons]));
         }
         if (AppHost.Settings.StartWithWindows || StartupRegistration.IsEnabled())
-            bg.Children.Add(AppUi.Caption(L("Timonier est configuré pour démarrer avec Windows (dans la zone de notification). Désactivable dans ses Paramètres.")));
+            bg.Children.Add(AppUi.Caption(L("Timonier is set to start with Windows (in the notification area). You can turn this off in its Settings.")));
         root.Children.Add(AppUi.Card(bg));
         return root;
     }
@@ -720,7 +720,7 @@ public sealed class TransparencyPage : UserControl, INavigationAware
     {
         var info = await Task.Run(DataInventory.Read);
         panel.Children.Clear();
-        var intro = AppUi.Caption(L("Tout reste sur ce PC. Rien n'est envoyé ni synchronisé. Aucun secret n'est stocké en clair : le code PIN est conservé sous forme de hachage PBKDF2."));
+        var intro = AppUi.Caption(L("Everything stays on this PC. Nothing is sent or synced. No secrets are stored in plain text: the PIN is stored as a PBKDF2 hash."));
         intro.Margin = new Thickness(0, 0, 0, 10);
         panel.Children.Add(intro);
         foreach (var item in info)
@@ -745,10 +745,10 @@ public sealed class TransparencyPage : UserControl, INavigationAware
             panel.Children.Add(g);
         }
         var buttons = new WrapPanel { Margin = new Thickness(0, 12, 0, 0) };
-        var open = AppUi.Button(L("Ouvrir le dossier de Timonier"), "", "Pp.Button", (_, _) => OpenFolder(AppPaths.LocalData));
+        var open = AppUi.Button(L("Open Timonier folder"), "", "Pp.Button", (_, _) => OpenFolder(AppPaths.LocalData));
         open.Margin = new Thickness(0, 0, 8, 0);
         buttons.Children.Add(open);
-        buttons.Children.Add(AppUi.Button(L("Ouvrir les journaux de diagnostic"), "", "Pp.Button", (_, _) => OpenFolder(AppPaths.Logs)));
+        buttons.Children.Add(AppUi.Button(L("Open diagnostic logs"), "", "Pp.Button", (_, _) => OpenFolder(AppPaths.Logs)));
         panel.Children.Add(buttons);
     }
 
@@ -761,7 +761,7 @@ public sealed class TransparencyPage : UserControl, INavigationAware
         }
         catch (Exception ex)
         {
-            AppHost.Toasts.Show(L("Impossible d'ouvrir le dossier : {0}", ex.Message), ToastKind.Error);
+            AppHost.Toasts.Show(L("Couldn't open the folder: {0}", ex.Message), ToastKind.Error);
         }
     }
 }

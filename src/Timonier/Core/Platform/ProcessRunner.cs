@@ -39,7 +39,7 @@ public static class SystemTools
             SystemTool.Winget => ResolveWinget(),
             _ => Path.Combine(system32, FileName(tool)),
         };
-        if (!File.Exists(path)) throw new FileNotFoundException(L("Outil système introuvable : {0}", FileName(tool)), path);
+        if (!File.Exists(path)) throw new FileNotFoundException(L("System tool not found: {0}", FileName(tool)), path);
         return path;
     }
 
@@ -253,7 +253,7 @@ public static class ProcessRunner
     public static void OpenSettingsUri(string uri)
     {
         if (!Regex.IsMatch(uri, @"^(ms-settings|windowsdefender|ms-windows-store|ms-availablenetworks|ms-actioncenter):[A-Za-z0-9\-_./?=&]{0,200}\z"))
-            throw new ArgumentException(L("URI non autorisée : {0}", uri));
+            throw new ArgumentException(L("URI not allowed: {0}", uri));
         Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true })?.Dispose();
     }
 
@@ -270,7 +270,7 @@ public static class ProcessRunner
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps || !uri.IsDefaultPort
             || uri.UserInfo.Length > 0 || !OfficialDomains.Any(d => uri.IdnHost.Equals(d, StringComparison.OrdinalIgnoreCase)
                 || uri.IdnHost.EndsWith("." + d, StringComparison.OrdinalIgnoreCase)))
-            throw new ArgumentException(L("Adresse non autorisée : {0}", url));
+            throw new ArgumentException(L("Address not allowed: {0}", url));
         Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true })?.Dispose();
     }
 
@@ -343,7 +343,7 @@ public static partial class PowerShellRunner
             foreach (var (k, v) in parameters)
             {
                 if (!ParamName().IsMatch(k)) throw new ArgumentException("Nom de paramètre PowerShell invalide : " + k);
-                if (v.Length > 8192 || v.Contains('\0')) throw new ArgumentException(L("Valeur de paramètre refusée : {0}", k));
+                if (v.Length > 8192 || v.Contains('\0')) throw new ArgumentException(L("Parameter value rejected: {0}", k));
                 env["TMN_" + k] = v;
             }
         }

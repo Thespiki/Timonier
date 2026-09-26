@@ -45,14 +45,14 @@ public sealed record RegSet(RegHive Hive, string Key, string Name, RegistryValue
 {
     public override bool RequiresAdmin => RegPaths.RequiresAdmin(Hive, Key);
     public override string Describe() =>
-        L("Registre : {0} = {1}", $"{RegPaths.Display(Hive, Key)}\\{(Name.Length == 0 ? L("(par défaut)") : Name)}", RegPaths.FormatValue(Kind, Value));
+        L("Registry: {0} = {1}", $"{RegPaths.Display(Hive, Key)}\\{(Name.Length == 0 ? L("(default)") : Name)}", RegPaths.FormatValue(Kind, Value));
 }
 
 /// <summary>Supprime une valeur de registre (état « par défaut de Windows » le plus souvent).</summary>
 public sealed record RegDeleteValue(RegHive Hive, string Key, string Name) : Operation
 {
     public override bool RequiresAdmin => RegPaths.RequiresAdmin(Hive, Key);
-    public override string Describe() => L("Registre : supprime {0} (valeur par défaut de Windows)", $"{RegPaths.Display(Hive, Key)}\\{Name}");
+    public override string Describe() => L("Registry: deletes {0} (Windows default value)", $"{RegPaths.Display(Hive, Key)}\\{Name}");
 }
 
 /// <summary>
@@ -62,7 +62,7 @@ public sealed record RegDeleteValue(RegHive Hive, string Key, string Name) : Ope
 public sealed record RegDeleteKey(RegHive Hive, string Key) : Operation
 {
     public override bool RequiresAdmin => RegPaths.RequiresAdmin(Hive, Key);
-    public override string Describe() => L("Registre : supprime la clé {0}", RegPaths.Display(Hive, Key));
+    public override string Describe() => L("Registry: deletes key {0}", RegPaths.Display(Hive, Key));
 }
 
 /// <summary>Change le type de démarrage d'un service (via le registre des services, sans ligne de commande).</summary>
@@ -70,15 +70,15 @@ public sealed record ServiceStartOp(string ServiceName, ServiceStartKind Start, 
 {
     public override bool RequiresAdmin => true;
     public override string Describe() => Start == ServiceStartKind.Disabled && StopIfDisabled
-        ? L("Service « {0} » : démarrage {1} (et arrêt immédiat)", ServiceName, ServiceStartText(Start))
-        : L("Service « {0} » : démarrage {1}", ServiceName, ServiceStartText(Start));
+        ? L("Service “{0}”: startup type {1} (and stopped immediately)", ServiceName, ServiceStartText(Start))
+        : L("Service “{0}”: startup type {1}", ServiceName, ServiceStartText(Start));
 
     internal static string ServiceStartText(ServiceStartKind k) => k switch
     {
-        ServiceStartKind.Automatic => LC("service start", "automatique"),
-        ServiceStartKind.AutomaticDelayed => LC("service start", "automatique (différé)"),
-        ServiceStartKind.Manual => LC("service start", "manuel"),
-        ServiceStartKind.Disabled => LC("service start", "désactivé"),
+        ServiceStartKind.Automatic => LC("service start", "automatic"),
+        ServiceStartKind.AutomaticDelayed => LC("service start", "automatic (delayed start)"),
+        ServiceStartKind.Manual => LC("service start", "manual"),
+        ServiceStartKind.Disabled => LC("service start", "disabled"),
         _ => k.ToString(),
     };
 }
@@ -87,7 +87,7 @@ public sealed record ServiceStartOp(string ServiceName, ServiceStartKind Start, 
 public sealed record ScheduledTaskOp(string TaskPath, bool Enabled) : Operation
 {
     public override bool RequiresAdmin => !TaskPath.StartsWith(@"\Users\", StringComparison.OrdinalIgnoreCase);
-    public override string Describe() => Enabled ? L("Tâche planifiée {0} : activée", TaskPath) : L("Tâche planifiée {0} : désactivée", TaskPath);
+    public override string Describe() => Enabled ? L("Scheduled task {0}: enabled", TaskPath) : L("Scheduled task {0}: disabled", TaskPath);
 }
 
 /// <summary>
@@ -99,14 +99,14 @@ public sealed record RunToolOp(Platform.SystemTool Tool, string[] Args, bool Adm
 {
     public override bool RequiresAdmin => Admin;
     public override string Describe() =>
-        Explanation ?? L("Commande : {0}", $"{Platform.SystemTools.FileName(Tool)} {string.Join(' ', Args)}");
+        Explanation ?? L("Command: {0}", $"{Platform.SystemTools.FileName(Tool)} {string.Join(' ', Args)}");
 }
 
 /// <summary>Notifie Windows d'un changement de paramètre (rafraîchit Explorer/thème sans redémarrage quand c'est possible).</summary>
 public sealed record BroadcastSettingChangeOp(string Area = "ImmersiveColorSet") : Operation
 {
     public override bool RequiresAdmin => false;
-    public override string Describe() => L("Notifie Windows du changement (rafraîchissement de l'interface)");
+    public override string Describe() => L("Notifies Windows of the change (refreshes the interface)");
 }
 
 public static class RegPaths

@@ -33,12 +33,12 @@ public sealed class WindowsToolsPage : UserControl, INavigationAware
 
     public WindowsToolsPage()
     {
-        var stack = PageScaffold.Create(this, L("Outils Windows"),
-            L("Consoles d'administration, panneaux classiques, dossiers spéciaux et accès direct à chaque page des Paramètres. Timonier se contente d'ouvrir l'outil choisi : rien n'est modifié."), WindowsToolsModule.Glyph);
+        var stack = PageScaffold.Create(this, L("Windows Tools"),
+            L("Admin consoles, classic panels, special folders and direct access to every Settings page. Timonier only opens the tool you choose: nothing is changed."), WindowsToolsModule.Glyph);
 
         // ------------------------------------------------------------ barre de filtre
-        _search = new TextBox { Tag = L("Filtrer : pilotes, partition, pare-feu, variables d'environnement…") }.Styled("Pp.SearchBox");
-        System.Windows.Automation.AutomationProperties.SetName(_search, L("Filtrer les outils et les paramètres"));
+        _search = new TextBox { Tag = L("Filter: drivers, partition, firewall, environment variables…") }.Styled("Pp.SearchBox");
+        System.Windows.Automation.AutomationProperties.SetName(_search, L("Filter tools and settings"));
         _search.TextChanged += (_, _) => { _debounce.Stop(); _debounce.Start(); };
         _search.KeyDown += (_, e) =>
         {
@@ -50,19 +50,19 @@ public sealed class WindowsToolsPage : UserControl, INavigationAware
         var sections = SettingsCatalog.Sections;
         var linkCount = sections.Sum(s => s.Links.Count);
 
-        AddChip(L("Tout"), null, FilterAll, tools.Count + linkCount);
+        AddChip(L("All"), null, FilterAll, tools.Count + linkCount);
         foreach (var (group, title, glyph) in ToolsCatalog.Groups)
         {
             var n = tools.Count(t => t.Group == group);
             if (n > 0) AddChip(title, glyph, (int)group, n);
         }
-        AddChip(L("Paramètres Windows"), "", FilterSettings, linkCount);
+        AddChip(L("Windows Settings"), "", FilterSettings, linkCount);
 
         var legend = new WrapPanel { Margin = new Thickness(0, 6, 0, 0) };
         legend.Children.Add(Badge(L("Admin"), "", "Pp.WarningBackground", "Pp.Warning"));
         legend.Children.Add(new TextBlock
         {
-            Text = L("Windows demande l'autorisation d'administrateur (UAC) à l'ouverture."),
+            Text = L("Windows asks for administrator permission (UAC) when it opens."),
             Margin = new Thickness(0, 0, 16, 4), VerticalAlignment = VerticalAlignment.Center,
         }.Styled("Pp.Caption"));
         if (tools.Any(t => t.ProOnly))
@@ -70,7 +70,7 @@ public sealed class WindowsToolsPage : UserControl, INavigationAware
             legend.Children.Add(Badge("Pro+", "", "Pp.InfoBackground", "Pp.Info"));
             legend.Children.Add(new TextBlock
             {
-                Text = L("Éditions Professionnel, Éducation et Entreprise."),
+                Text = L("Pro, Education and Enterprise editions."),
                 Margin = new Thickness(0, 0, 0, 4), VerticalAlignment = VerticalAlignment.Center,
             }.Styled("Pp.Caption"));
         }
@@ -99,7 +99,7 @@ public sealed class WindowsToolsPage : UserControl, INavigationAware
         // ------------------------------------------------------------ outils
         stack.Children.Add(_toolsHost);
         if (tools.Count == 0)
-            _toolsHost.Children.Add(PageScaffold.InfoBar(L("Aucun outil Windows n'a été trouvé dans le dossier System32."), "", "Pp.InfoBar.Warning"));
+            _toolsHost.Children.Add(PageScaffold.InfoBar(L("No Windows tools were found in the System32 folder."), "", "Pp.InfoBar.Warning"));
         foreach (var (group, title, glyph) in ToolsCatalog.Groups)
         {
             var items = tools.Where(t => t.Group == group).ToList();
@@ -111,12 +111,12 @@ public sealed class WindowsToolsPage : UserControl, INavigationAware
 
         // ------------------------------------------------------------ Paramètres Windows
         var settingsHeader = _settingsHeader;
-        settingsHeader.Children.Add(PageScaffold.Section(L("Paramètres Windows")));
+        settingsHeader.Children.Add(PageScaffold.Section(L("Windows Settings")));
         settingsHeader.Children.Add(new TextBlock
         {
             Text = LP(linkCount,
-                "{0} page de l'application Paramètres, classée comme dans Windows. Dépliez une section puis cliquez pour ouvrir la page.",
-                "{0} pages de l'application Paramètres, classées comme dans Windows. Dépliez une section puis cliquez pour ouvrir la page."),
+                "{0} page of the Settings app, organized as in Windows. Expand a section, then click to open the page.",
+                "{0} pages of the Settings app, organized as in Windows. Expand a section, then click to open the page."),
             TextWrapping = TextWrapping.Wrap,
         }.Styled("Pp.Caption"));
         _settingsHost.Children.Add(settingsHeader);
@@ -220,8 +220,8 @@ public sealed class WindowsToolsPage : UserControl, INavigationAware
         if (visible == 0)
         {
             _emptyText.Text = _tokens.Length > 0
-                ? L("Aucun résultat pour « {0} » dans cette catégorie. Essayez un autre mot (« pilotes », « partition », « wifi »…) ou la catégorie « Tout ».", _search.Text.Trim())
-                : L("Aucun élément dans cette catégorie sur ce PC.");
+                ? L("No results for “{0}” in this category. Try another word (“drivers”, “partition”, “wifi”…) or the “All” category.", _search.Text.Trim())
+                : L("No items in this category on this PC.");
             _empty.Visibility = Visibility.Visible;
         }
         else _empty.Visibility = Visibility.Collapsed;
@@ -279,7 +279,7 @@ public sealed class WindowsToolsPage : UserControl, INavigationAware
                 card.Visibility = ok ? Visibility.Visible : Visibility.Collapsed;
                 if (ok) n++;
             }
-            _count.Text = n == _cards.Count ? n.ToString(Culture) : L("{0} sur {1}", n, _cards.Count);
+            _count.Text = n == _cards.Count ? n.ToString(Culture) : L("{0} of {1}", n, _cards.Count);
             Root.Visibility = n > 0 ? Visibility.Visible : Visibility.Collapsed;
             return n;
         }
@@ -322,8 +322,8 @@ public sealed class WindowsToolsPage : UserControl, INavigationAware
 
             var card = new Border { Child = grid, Padding = new Thickness(12, 10, 12, 6), Margin = new Thickness(0) }.Styled("Pp.CardInteractive");
             card.ToolTip = tool.Admin
-                ? L("Ouvrir « {0} » ({1}) — Windows demandera l'autorisation d'administrateur.", tool.Title, tool.Command)
-                : L("Ouvrir « {0} » ({1})", tool.Title, tool.Command);
+                ? L("Open “{0}” ({1}) — Windows will ask for administrator permission.", tool.Title, tool.Command)
+                : L("Open “{0}” ({1})", tool.Title, tool.Command);
             MakeClickable(card, tool.Title, () => OpenWithFeedback(card, () => Open(tool)));
             return card;
         }
@@ -387,7 +387,7 @@ public sealed class WindowsToolsPage : UserControl, INavigationAware
             _tokens = tokens;
             var n = _links.Count(l => Matches(l.Hay, tokens));
             Root.Visibility = n > 0 ? Visibility.Visible : Visibility.Collapsed;
-            _count.Text = n == _links.Count ? LP(n, "{0} page", "{0} pages") : L("{0} sur {1}", n, _links.Count);
+            _count.Text = n == _links.Count ? LP(n, "{0} page", "{0} pages") : L("{0} of {1}", n, _links.Count);
             Refresh();
             return n;
         }
@@ -397,7 +397,7 @@ public sealed class WindowsToolsPage : UserControl, INavigationAware
             // Un filtre actif déplie automatiquement les sections qui contiennent des résultats.
             var open = _expanded || _tokens.Length > 0;
             _chevron.Text = open ? "" : "";
-            System.Windows.Automation.AutomationProperties.SetItemStatus(Root, open ? L("déplié") : L("replié"));
+            System.Windows.Automation.AutomationProperties.SetItemStatus(Root, open ? L("expanded") : L("collapsed"));
             _bodyHost.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
             if (!open) return;
             EnsureBuilt();

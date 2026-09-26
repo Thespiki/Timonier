@@ -79,20 +79,20 @@ internal sealed class UpdateStatus
     public HealthResult ToHealth()
     {
         if (ComFailed || LastInstall is null)
-            return new HealthResult(HealthStatus.Unknown, L("Date de la dernière mise à jour inconnue"),
-                L("L'agent Windows Update n'a pas indiqué de dernière installation réussie."));
+            return new HealthResult(HealthStatus.Unknown, L("Date of last update unknown"),
+                L("The Windows Update agent didn't report a last successful installation."));
         var days = (int)(DateTime.Now - LastInstall.Value).TotalDays;
-        var last = days <= 0 ? L("Dernière mise à jour installée aujourd'hui")
-            : days == 1 ? L("Dernière mise à jour installée hier")
-            : LP(days, "Dernière mise à jour installée il y a {0} jour", "Dernière mise à jour installée il y a {0} jours");
-        var detail = IsPaused ? L("Mises à jour suspendues jusqu'au {0}.", Format.Day(PausedUntil!.Value)) : null;
+        var last = days <= 0 ? L("Last update installed today")
+            : days == 1 ? L("Last update installed yesterday")
+            : LP(days, "Last update installed {0} day ago", "Last update installed {0} days ago");
+        var detail = IsPaused ? L("Updates paused until {0}.", Format.Day(PausedUntil!.Value)) : null;
         if (RebootPending)
-            detail = detail is null ? L("Un redémarrage est nécessaire pour terminer l'installation.")
-                : L("Un redémarrage est nécessaire pour terminer l'installation. {0}", detail);
+            detail = detail is null ? L("A restart is required to finish the installation.")
+                : L("A restart is required to finish the installation. {0}", detail);
         return days switch
         {
-            > 60 => new HealthResult(HealthStatus.Critical, LP(days, "Aucune mise à jour installée depuis {0} jour", "Aucune mise à jour installée depuis {0} jours"), detail ?? L("Ce PC ne reçoit plus les correctifs de sécurité : lancez une recherche de mises à jour.")),
-            > 30 => new HealthResult(HealthStatus.Warning, last, detail ?? L("Pensez à rechercher les mises à jour.")),
+            > 60 => new HealthResult(HealthStatus.Critical, LP(days, "No updates installed in {0} day", "No updates installed in {0} days"), detail ?? L("This PC is no longer receiving security fixes: check for updates.")),
+            > 30 => new HealthResult(HealthStatus.Warning, last, detail ?? L("Remember to check for updates.")),
             _ => new HealthResult(RebootPending ? HealthStatus.Info : HealthStatus.Good, last, detail),
         };
     }

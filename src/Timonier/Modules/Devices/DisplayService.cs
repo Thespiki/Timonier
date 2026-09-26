@@ -11,9 +11,9 @@ public sealed record DisplayInfo(
     public string OrientationLabel => Orientation switch
     {
         1 => LC("orientation", "Portrait"),
-        2 => LC("orientation", "Paysage (retourné)"),
-        3 => LC("orientation", "Portrait (retourné)"),
-        _ => LC("orientation", "Paysage"),
+        2 => LC("orientation", "Landscape (flipped)"),
+        3 => LC("orientation", "Portrait (flipped)"),
+        _ => LC("orientation", "Landscape"),
     };
 }
 
@@ -97,7 +97,7 @@ public static class DisplayService
             var model = hasMonitor ? ModelCode(monitor.DeviceID) : null;
             var monitorName = model is not null && friendly.TryGetValue(model, out var f) ? f
                 : hasMonitor && !string.IsNullOrWhiteSpace(monitor.DeviceString) && !IsGeneric(monitor.DeviceString) ? monitor.DeviceString
-                : primary ? L("Écran principal") : L("Écran secondaire");
+                : primary ? L("Main display") : L("Secondary display");
 
             // Meilleurs modes proposés par le pilote (utile pour repérer un écran 120/144 Hz réglé à 60 Hz).
             int maxW = current.dmPelsWidth, maxH = current.dmPelsHeight, maxHz = current.dmDisplayFrequency;

@@ -63,7 +63,7 @@ public static partial class Winget
         if (bar.Success)
         {
             var tail = bar.Groups["tail"].Value.Trim();
-            return tail.Length == 0 ? null : L("Progression : {0}", tail);
+            return tail.Length == 0 ? null : L("Progress: {0}", tail);
         }
         return s.Length > 300 ? s[..300] + "…" : s;
     }
@@ -80,39 +80,39 @@ public static partial class Winget
     /// <summary>Signification en français d'un code de retour winget (HRESULT APPINSTALLER_CLI_ERROR_*).</summary>
     public static string Describe(int exitCode, bool timedOut = false)
     {
-        if (timedOut) return L("délai dépassé");
+        if (timedOut) return L("timed out");
         return unchecked((uint)exitCode) switch
         {
-            0 => L("réussi"),
-            0x8A150005 => L("interrompu"),
-            0x8A150008 => L("échec du téléchargement"),
-            0x8A150010 => L("aucun installateur compatible avec ce PC"),
-            0x8A150011 => L("empreinte de l'installateur incorrecte : installation refusée par sécurité"),
-            0x8A150014 => L("introuvable dans la source winget"),
-            0x8A150016 => L("plusieurs correspondances : nom ambigu"),
-            0x8A15002B => L("déjà à jour (aucune mise à jour applicable)"),
-            0x8A15002C => L("au moins une mise à jour a échoué"),
-            0x8A150061 => L("déjà installé"),
-            0x8A150101 => L("application en cours d'utilisation : fermez-la puis réessayez"),
-            0x8A150102 => L("une autre installation est en cours"),
-            0x8A150103 => L("un fichier est en cours d'utilisation"),
-            0x8A150104 => L("dépendance manquante"),
-            0x8A150105 => L("disque plein"),
-            0x8A150106 => L("mémoire insuffisante"),
-            0x8A150107 => L("pas de connexion réseau"),
-            0x8A150108 => L("erreur de l'installateur (voir l'éditeur)"),
-            0x8A150109 => L("redémarrage nécessaire pour terminer"),
-            0x8A15010A => L("redémarrez le PC puis réessayez"),
-            0x8A15010B => L("redémarrage lancé par l'installateur"),
-            0x8A15010C => L("annulé"),
-            0x8A15010D => L("déjà installé"),
-            0x8A15010E => L("une version plus récente est déjà installée"),
-            0x8A15010F => L("bloqué par une stratégie de l'organisation"),
-            0x8A150110 => L("échec de l'installation d'une dépendance"),
-            0x8A150111 => L("utilisé par une autre application"),
-            0x8A150112 => L("paramètre refusé par l'installateur"),
-            0x8A150113 => L("non compatible avec ce système"),
-            _ => L("erreur 0x{0:X8}", unchecked((uint)exitCode)),
+            0 => L("succeeded"),
+            0x8A150005 => L("interrupted"),
+            0x8A150008 => L("download failed"),
+            0x8A150010 => L("no installer compatible with this PC"),
+            0x8A150011 => L("installer hash mismatch: installation blocked for security"),
+            0x8A150014 => L("not found in the winget source"),
+            0x8A150016 => L("multiple matches: ambiguous name"),
+            0x8A15002B => L("already up to date (no applicable update)"),
+            0x8A15002C => L("at least one update failed"),
+            0x8A150061 => L("already installed"),
+            0x8A150101 => L("app in use: close it and try again"),
+            0x8A150102 => L("another installation is in progress"),
+            0x8A150103 => L("a file is in use"),
+            0x8A150104 => L("missing dependency"),
+            0x8A150105 => L("disk full"),
+            0x8A150106 => L("not enough memory"),
+            0x8A150107 => L("no network connection"),
+            0x8A150108 => L("installer error (contact the publisher)"),
+            0x8A150109 => L("restart required to finish"),
+            0x8A15010A => L("restart the PC and try again"),
+            0x8A15010B => L("restart started by the installer"),
+            0x8A15010C => L("canceled"),
+            0x8A15010D => L("already installed"),
+            0x8A15010E => L("a newer version is already installed"),
+            0x8A15010F => L("blocked by an organization policy"),
+            0x8A150110 => L("a dependency failed to install"),
+            0x8A150111 => L("in use by another app"),
+            0x8A150112 => L("parameter rejected by the installer"),
+            0x8A150113 => L("not compatible with this system"),
+            _ => L("error 0x{0:X8}", unchecked((uint)exitCode)),
         };
     }
 

@@ -112,7 +112,7 @@ internal static unsafe partial class NetApi
         do
         {
             rc = NetUserEnum(null, 3, FILTER_NORMAL_ACCOUNT, out var buf, MAX_PREFERRED_LENGTH, out var read, out _, ref resume);
-            if (rc != NERR_Success && rc != ERROR_MORE_DATA) throw Error(rc, L("énumération des comptes"));
+            if (rc != NERR_Success && rc != ERROR_MORE_DATA) throw Error(rc, L("listing accounts"));
             try
             {
                 var items = (USER_INFO_3*)buf;
@@ -155,7 +155,7 @@ internal static unsafe partial class NetApi
     public static uint GetFlags(string user)
     {
         var rc = NetUserGetInfo(null, user, 1, out var buf);
-        if (rc != NERR_Success) throw Error(rc, L("lecture du compte"));
+        if (rc != NERR_Success) throw Error(rc, L("reading the account"));
         try { return ((USER_INFO_1*)buf)->flags; }
         finally { NetApiBufferFree(buf); }
     }
@@ -169,7 +169,7 @@ internal static unsafe partial class NetApi
         do
         {
             rc = NetLocalGroupGetMembers(null, group, 0, out var buf, MAX_PREFERRED_LENGTH, out var read, out _, ref resume);
-            if (rc != NERR_Success && rc != ERROR_MORE_DATA) throw Error(rc, L("lecture du groupe {0}", group));
+            if (rc != NERR_Success && rc != ERROR_MORE_DATA) throw Error(rc, L("reading the {0} group", group));
             try
             {
                 var items = (LOCALGROUP_MEMBERS_INFO_0*)buf;
@@ -227,7 +227,7 @@ internal static unsafe partial class NetApi
                 flags = UF_SCRIPT | UF_NORMAL_ACCOUNT | UF_DONT_EXPIRE_PASSWD | (passwordNotRequired ? UF_PASSWD_NOTREQD : 0),
             };
             var rc = NetUserAdd(null, 1, (nint)(&info), out _);
-            if (rc != NERR_Success) throw Error(rc, L("création du compte"));
+            if (rc != NERR_Success) throw Error(rc, L("creating the account"));
         }
         finally
         {
@@ -239,7 +239,7 @@ internal static unsafe partial class NetApi
     public static void DeleteUser(string name)
     {
         var rc = NetUserDel(null, name);
-        if (rc != NERR_Success) throw Error(rc, L("suppression du compte"));
+        if (rc != NERR_Success) throw Error(rc, L("deleting the account"));
     }
 
     public static void SetFullName(string name, string fullName)
@@ -249,7 +249,7 @@ internal static unsafe partial class NetApi
         {
             var info = new USER_INFO_1011 { full_name = p };
             var rc = NetUserSetInfo(null, name, 1011, (nint)(&info), out _);
-            if (rc != NERR_Success) throw Error(rc, L("modification du nom complet"));
+            if (rc != NERR_Success) throw Error(rc, L("changing the full name"));
         }
         finally { Marshal.FreeHGlobal(p); }
     }
@@ -258,7 +258,7 @@ internal static unsafe partial class NetApi
     {
         var info = new USER_INFO_1008 { flags = flags };
         var rc = NetUserSetInfo(null, name, 1008, (nint)(&info), out _);
-        if (rc != NERR_Success) throw Error(rc, L("modification du compte"));
+        if (rc != NERR_Success) throw Error(rc, L("changing the account"));
     }
 
     public static void SetPassword(string name, string password)
@@ -268,7 +268,7 @@ internal static unsafe partial class NetApi
         {
             var info = new USER_INFO_1003 { password = p };
             var rc = NetUserSetInfo(null, name, 1003, (nint)(&info), out _);
-            if (rc != NERR_Success) throw Error(rc, L("changement du mot de passe"));
+            if (rc != NERR_Success) throw Error(rc, L("changing the password"));
         }
         finally { Marshal.ZeroFreeGlobalAllocUnicode(p); }
     }
@@ -281,7 +281,7 @@ internal static unsafe partial class NetApi
         {
             var info = new USER_INFO_1020 { units_per_week = 168, logon_hours = (nint)p };
             var rc = NetUserSetInfo(null, name, 1020, (nint)(&info), out _);
-            if (rc != NERR_Success) throw Error(rc, L("enregistrement des plages horaires"));
+            if (rc != NERR_Success) throw Error(rc, L("saving the time slots"));
         }
     }
 
@@ -303,7 +303,7 @@ internal static unsafe partial class NetApi
                 ? NetLocalGroupAddMembers(null, group, 0, (nint)(&member), 1)
                 : NetLocalGroupDelMembers(null, group, 0, (nint)(&member), 1);
             if (rc == NERR_Success || (add && rc == ERROR_MEMBER_IN_ALIAS) || (!add && rc is ERROR_MEMBER_NOT_IN_ALIAS or ERROR_NO_SUCH_MEMBER)) return;
-            throw Error(rc, add ? L("ajout au groupe {0}", group) : L("retrait du groupe {0}", group));
+            throw Error(rc, add ? L("adding to the {0} group", group) : L("removing from the {0} group", group));
         }
     }
 
@@ -312,14 +312,14 @@ internal static unsafe partial class NetApi
     /// <summary>Message clair en français pour les erreurs NetAPI courantes.</summary>
     public static Exception Error(int code, string context) => code switch
     {
-        ERROR_ACCESS_DENIED => new UnauthorizedAccessException(L("Accès refusé ({0}) : droits administrateur requis.", context)),
-        NERR_UserExists => new InvalidOperationException(L("Un compte portant ce nom existe déjà.")),
-        NERR_GroupExists => new InvalidOperationException(L("Ce nom est déjà utilisé par un groupe local : choisissez-en un autre.")),
-        NERR_UserNotFound => new InvalidOperationException(L("Compte introuvable (il a peut-être été supprimé entre-temps).")),
+        ERROR_ACCESS_DENIED => new UnauthorizedAccessException(L("Access denied ({0}): administrator rights required.", context)),
+        NERR_UserExists => new InvalidOperationException(L("An account with this name already exists.")),
+        NERR_GroupExists => new InvalidOperationException(L("This name is already used by a local group: choose another one.")),
+        NERR_UserNotFound => new InvalidOperationException(L("Account not found (it may have been deleted in the meantime).")),
         NERR_PasswordTooShort or NERR_BadPassword => new InvalidOperationException(
-            L("Le mot de passe ne respecte pas la stratégie de mots de passe de ce PC (longueur, complexité ou historique).")),
-        NERR_LastAdmin => new InvalidOperationException(L("Windows refuse : c'est le dernier compte administrateur.")),
-        _ => new Win32Exception(code, L("Échec de l'opération ({0}) : {1} (code {2}).", context, new Win32Exception(code).Message, code)),
+            L("The password doesn't meet this PC's password policy (length, complexity or history).")),
+        NERR_LastAdmin => new InvalidOperationException(L("Windows refuses: this is the last administrator account.")),
+        _ => new Win32Exception(code, L("Operation failed ({0}): {1} (code {2}).", context, new Win32Exception(code).Message, code)),
     };
 
     // ------------------------------------------------------------------ Privilèges et ruches
@@ -358,7 +358,7 @@ internal static unsafe partial class NetApi
             var tp = new TOKEN_PRIVILEGES { Count = 1, Luid = luid, Attributes = enable ? SE_PRIVILEGE_ENABLED : 0 };
             if (!AdjustTokenPrivileges(token, false, ref tp, 0, 0, 0)) throw new Win32Exception(Marshal.GetLastPInvokeError());
             if (enable && Marshal.GetLastPInvokeError() == ERROR_NOT_ALL_ASSIGNED)
-                throw new UnauthorizedAccessException(L("Privilège {0} indisponible : exécution administrateur requise.", name));
+                throw new UnauthorizedAccessException(L("Privilege {0} unavailable: must run as administrator.", name));
         }
         finally { CloseHandle(token); }
     }

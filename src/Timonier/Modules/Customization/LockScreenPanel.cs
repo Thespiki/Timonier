@@ -26,7 +26,7 @@ internal sealed class LockScreenPanel : UserControl
 
         _placeholder = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         _placeholder.Children.Add(UiKit.Icon("", 22, "Pp.TextTertiary").Also(i => i.HorizontalAlignment = HorizontalAlignment.Center));
-        _placeholderText = UiKit.Text(L("Chargement…"), "Pp.Caption").Also(t => { t.Margin = new Thickness(0, 6, 0, 0); t.HorizontalAlignment = HorizontalAlignment.Center; t.TextAlignment = TextAlignment.Center; });
+        _placeholderText = UiKit.Text(L("Loading…"), "Pp.Caption").Also(t => { t.Margin = new Thickness(0, 6, 0, 0); t.HorizontalAlignment = HorizontalAlignment.Center; t.TextAlignment = TextAlignment.Center; });
         _placeholder.Children.Add(_placeholderText);
         var previewGrid = new Grid();
         previewGrid.Children.Add(_preview);
@@ -42,23 +42,23 @@ internal sealed class LockScreenPanel : UserControl
         var header = new DockPanel();
         DockPanel.SetDock(_busy, Dock.Right);
         header.Children.Add(_busy);
-        header.Children.Add(UiKit.Text(L("Écran de verrouillage"), "Pp.CardTitle").Also(t => t.FontWeight = FontWeights.SemiBold));
+        header.Children.Add(UiKit.Text(L("Lock screen"), "Pp.CardTitle").Also(t => t.FontWeight = FontWeights.SemiBold));
         details.Children.Add(header);
-        details.Children.Add(UiKit.Text(L("Image affichée quand votre session est verrouillée (Windows + L)."), "Pp.Caption")
+        details.Children.Add(UiKit.Text(L("Picture shown when your PC is locked (Windows + L)."), "Pp.Caption")
             .Also(t => t.Margin = new Thickness(0, 2, 0, 0)));
 
         var row = new WrapPanel { Margin = new Thickness(0, 12, 0, 0) };
-        _pick = UiKit.Button(L("Choisir une image…"), "", "Pp.Button", async (_, _) => await PickAsync());
+        _pick = UiKit.Button(L("Choose a picture…"), "", "Pp.Button", async (_, _) => await PickAsync());
         _pick.Margin = new Thickness(0, 0, 12, 6);
         row.Children.Add(_pick);
-        var settings = UiKit.Button(L("Paramètres de l'écran de verrouillage"), "", "Pp.LinkButton", (_, _) => AppearancePanel.OpenSettings("ms-settings:lockscreen"));
+        var settings = UiKit.Button(L("Lock screen settings"), "", "Pp.LinkButton", (_, _) => AppearancePanel.OpenSettings("ms-settings:lockscreen"));
         settings.Margin = new Thickness(0, 0, 0, 6);
         settings.VerticalAlignment = VerticalAlignment.Center;
         row.Children.Add(settings);
         details.Children.Add(row);
 
         details.Children.Add(UiKit.Text(
-                L("Remplace « Windows à la une » s'il est actif. Ce changement n'est pas annulable automatiquement : l'image précédente reste proposée dans les Paramètres. Les widgets, l'état et les applications de l'écran de verrouillage se règlent dans les Paramètres."),
+                L("Replaces “Windows spotlight” if it's on. This change can't be undone automatically: the previous picture is still offered in Settings. Lock screen widgets, status and apps are set in Settings."),
                 "Pp.Caption")
             .Themed(TextBlock.ForegroundProperty, "Pp.TextTertiary").Also(t => t.Margin = new Thickness(0, 6, 0, 0)));
 
@@ -83,7 +83,7 @@ internal sealed class LockScreenPanel : UserControl
         var image = await Task.Run(LoadCurrentImage);
         _preview.Source = image;
         _placeholder.Visibility = image is null ? Visibility.Visible : Visibility.Collapsed;
-        _placeholderText.Text = L("Aperçu indisponible");
+        _placeholderText.Text = L("Preview unavailable");
     }
 
     /// <summary>Image actuelle de l'écran de verrouillage (lecture seule), réduite pour l'aperçu.</summary>
@@ -114,15 +114,15 @@ internal sealed class LockScreenPanel : UserControl
         if (_isBusy) return;
         var dialog = new OpenFileDialog
         {
-            Title = L("Choisir l'image de l'écran de verrouillage"),
+            Title = L("Choose the lock screen picture"),
             Filter = L("Images (JPEG, PNG, BMP)") + "|" + string.Join(";", CustomizationValidate.LockScreenExtensions.Select(e => "*" + e)),
             InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
             CheckFileExists = true,
         };
         if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
-        if (!await AppHost.Dialogs.ConfirmAsync(L("Écran de verrouillage"),
-                L("L'image de l'écran de verrouillage sera remplacée par « {0} ».\n\nCe changement ne peut pas être annulé automatiquement ; vous pourrez revenir à une autre image depuis les Paramètres.", Path.GetFileName(dialog.FileName)),
-                L("Appliquer")))
+        if (!await AppHost.Dialogs.ConfirmAsync(L("Lock screen"),
+                L("The lock screen picture will be replaced with “{0}”.\n\nThis change can't be undone automatically; you can switch back to another picture in Settings.", Path.GetFileName(dialog.FileName)),
+                L("Apply")))
             return;
 
         _isBusy = true;
@@ -139,7 +139,7 @@ internal sealed class LockScreenPanel : UserControl
             }
             else
             {
-                AppHost.Toasts.Show(outcome.Message, ToastKind.Error, L("Ouvrir les Paramètres"),
+                AppHost.Toasts.Show(outcome.Message, ToastKind.Error, L("Open Settings"),
                     () => AppearancePanel.OpenSettings("ms-settings:lockscreen"));
             }
         }

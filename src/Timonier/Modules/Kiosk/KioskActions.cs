@@ -14,7 +14,7 @@ namespace Timonier.Modules.Kiosk;
 internal sealed partial class CreateKioskAccountAction : IActionHandler
 {
     public string Id => "kiosk.account.create";
-    public string Title => L("Créer un compte kiosque");
+    public string Title => L("Create a kiosk account");
     public bool RequiresAdmin => true;
 
     [GeneratedRegex(@"^[\p{L}\p{N} .'_\-]{1,64}$")]
@@ -24,7 +24,7 @@ internal sealed partial class CreateKioskAccountAction : IActionHandler
     {
         Validate.LocalUserName(Validate.Required(p, "name", 20));
         KioskRules.Password(p);
-        if (Validate.Optional(p, "fullName", 64) is { } f && !FullNameRx().IsMatch(f)) throw new ValidationException(L("Nom complet invalide."));
+        if (Validate.Optional(p, "fullName", 64) is { } f && !FullNameRx().IsMatch(f)) throw new ValidationException(L("Invalid full name."));
     }
 
     public Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
@@ -32,10 +32,10 @@ internal sealed partial class CreateKioskAccountAction : IActionHandler
         ValidateParameters(p);
         var name = Validate.LocalUserName(Validate.Required(p, "name", 20));
         p.TryGetValue("password", out var password);
-        ctx.Progress?.Report(L("Création du compte…"));
+        ctx.Progress?.Report(L("Creating the account…"));
         var sid = KioskAccounts.Create(name, string.IsNullOrEmpty(password) ? null : password, Validate.Optional(p, "fullName", 64));
         Log.Info("Kiosk", "compte kiosque créé");
-        return Task.FromResult(ActionResult.Ok(L("Compte standard « {0} » créé.", name), new Dictionary<string, string> { ["sid"] = sid, ["name"] = name }));
+        return Task.FromResult(ActionResult.Ok(L("Standard account “{0}” created.", name), new Dictionary<string, string> { ["sid"] = sid, ["name"] = name }));
     }
 }
 
@@ -43,7 +43,7 @@ internal sealed partial class CreateKioskAccountAction : IActionHandler
 internal sealed class ApplyKioskAction : IActionHandler
 {
     public string Id => "kiosk.apply";
-    public string Title => L("Configurer le mode kiosque");
+    public string Title => L("Set up kiosk mode");
     public bool RequiresAdmin => true;
     public bool RequiresElevatedConfirmation => true;
 
@@ -84,25 +84,25 @@ internal sealed class ApplyKioskAction : IActionHandler
         var plan = Parse(p);
         var target = plan.Mode switch
         {
-            KioskModes.Store => L("application du Store {0}", plan.Aumid),
+            KioskModes.Store => L("Store app {0}", plan.Aumid),
             KioskModes.Edge => plan.PublicBrowsing
-                ? L("Microsoft Edge (navigation publique) sur {0}", plan.Url)
-                : L("Microsoft Edge (affichage plein écran) sur {0}", plan.Url),
+                ? L("Microsoft Edge (public browsing) on {0}", plan.Url)
+                : L("Microsoft Edge (full-screen display) on {0}", plan.Url),
             _ => plan.Exe!,
         };
-        var restrictions = plan.Restrictions.Count == 0 ? LC("restrictions", "aucune") : string.Join(", ", plan.Restrictions.Select(r => r.Title.ToLower(Timonier.Core.Localization.Loc.Culture)));
-        return L("Transformer ce PC en borne pour le compte « {0} ».\n\n• Mode : {1}\n• Application : {2}\n• Restrictions du compte : {3}\n\nÀ sa prochaine connexion, « {4} » n'aura accès qu'à cette application. Pour quitter une session kiosque : Ctrl+Alt+Suppr puis « Se déconnecter ».", plan.User, KioskModes.Label(plan.Mode), target, restrictions, plan.User);
+        var restrictions = plan.Restrictions.Count == 0 ? LC("restrictions", "none") : string.Join(", ", plan.Restrictions.Select(r => r.Title.ToLower(Timonier.Core.Localization.Loc.Culture)));
+        return L("Turn this PC into a kiosk for the account “{0}”.\n\n• Mode: {1}\n• App: {2}\n• Account restrictions: {3}\n\nThe next time “{4}” signs in, it will only have access to this app. To leave a kiosk session: Ctrl+Alt+Del, then “Sign out”.", plan.User, KioskModes.Label(plan.Mode), target, restrictions, plan.User);
     }
 
     public async Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
     {
         var plan = Parse(p);
-        ctx.Progress?.Report(L("Vérification du compte…"));
+        ctx.Progress?.Report(L("Checking the account…"));
         var account = KioskAccounts.ResolveEligible(plan.User, ctx.UserSid);
 
         var previous = KioskState.Read();
         if (previous is { IsConfigured: true } && !string.Equals(previous.Sid, account.Sid, StringComparison.OrdinalIgnoreCase))
-            return ActionResult.Fail(L("Une borne est déjà configurée pour le compte « {0} ». Désactivez d'abord le mode kiosque, puis recommencez.", previous.User));
+            return ActionResult.Fail(L("A kiosk is already set up for the account “{0}”. Turn off kiosk mode first, then try again.", previous.User));
 
         string? shellValue = null;
         switch (plan.Mode)
@@ -115,7 +115,7 @@ internal sealed class ApplyKioskAction : IActionHandler
                 shellValue = "\"" + plan.Exe + "\"";
                 break;
             case KioskModes.Edge:
-                var edge = KioskRules.EdgePath() ?? throw new InvalidOperationException(L("Microsoft Edge n'est pas installé sur ce PC."));
+                var edge = KioskRules.EdgePath() ?? throw new InvalidOperationException(L("Microsoft Edge isn't installed on this PC."));
                 shellValue = KioskRules.EdgeCommandLine(edge, plan.Url!, plan.PublicBrowsing, plan.Idle);
                 break;
         }
@@ -139,7 +139,7 @@ internal sealed class ApplyKioskAction : IActionHandler
             var needHive = shellValue is not null || plan.Restrictions.Count > 0 || oldRestrictions.Count > 0 || shellWasSet;
             if (needHive)
             {
-                ctx.Progress?.Report(L("Configuration du compte kiosque…"));
+                ctx.Progress?.Report(L("Setting up the kiosk account…"));
                 using var hive = UserHive.Open(account, createProfile: true)!;
                 hiveTouched = true;
                 if (shellValue is not null)
@@ -173,13 +173,13 @@ internal sealed class ApplyKioskAction : IActionHandler
             // 2. Accès attribué : configuré pour une application du Store, retiré si Timonier l'avait posé et qu'on change de mode.
             if (plan.Mode == KioskModes.Store)
             {
-                ctx.Progress?.Report(L("Configuration de l'accès attribué…"));
+                ctx.Progress?.Report(L("Setting up assigned access…"));
                 var r = await PowerShellRunner.RunAsync(SetAssignedAccessScript,
                     new Dictionary<string, string> { ["AUMID"] = plan.Aumid!, ["SID"] = account.Sid }, TimeSpan.FromMinutes(2), ct: ctx.Cancellation);
                 if (!r.Success || !r.Output.Contains("OK", StringComparison.Ordinal))
                 {
                     WriteState(account, plan, shellInPlace, shellPrev, StateRestrictions(), assigned);
-                    return ActionResult.Fail(L("Windows a refusé l'accès attribué : {0} (les comptes liés à un compte Microsoft ne sont pas acceptés par cette méthode).", FirstLine(r.Error, r.Output)));
+                    return ActionResult.Fail(L("Windows rejected assigned access: {0} (accounts linked to a Microsoft account aren't supported by this method).", FirstLine(r.Error, r.Output)));
                 }
                 assigned = true;
             }
@@ -200,7 +200,7 @@ internal sealed class ApplyKioskAction : IActionHandler
 
         WriteState(account, plan, shellInPlace, shellPrev, StateRestrictions(), assigned);
         Log.Info("Kiosk", "borne configurée : " + plan.Mode);
-        return ActionResult.Ok(L("Mode kiosque configuré pour « {0} ». Il prendra effet à sa prochaine ouverture de session.", account.Name),
+        return ActionResult.Ok(L("Kiosk mode set up for “{0}”. It will take effect the next time this account signs in.", account.Name),
             new Dictionary<string, string> { ["sid"] = account.Sid, ["profileCreated"] = account.HasProfile ? "0" : "1" });
     }
 
@@ -211,7 +211,7 @@ internal sealed class ApplyKioskAction : IActionHandler
         {
             var pm = new Windows.Management.Deployment.PackageManager();
             if (!pm.FindPackages(family).Any())
-                throw new ValidationException(L("Cette application n'est pas installée sur ce PC."));
+                throw new ValidationException(L("This app isn't installed on this PC."));
         }
         catch (ValidationException) { throw; }
         catch (Exception ex) { Log.Warn("Kiosk", "vérification du paquet : " + ex.Message); }
@@ -225,7 +225,7 @@ internal sealed class ApplyKioskAction : IActionHandler
                                                                              && !l.StartsWith("At line", StringComparison.Ordinal));
             if (line is not null) return line.Length > 300 ? line[..300] + "…" : line;
         }
-        return L("erreur inconnue");
+        return L("unknown error");
     }
 
     private static string? ReadStateString(string name) =>
@@ -258,7 +258,7 @@ internal sealed class ApplyKioskAction : IActionHandler
 internal sealed class RemoveKioskAction : IActionHandler
 {
     public string Id => "kiosk.remove";
-    public string Title => L("Désactiver le mode kiosque");
+    public string Title => L("Turn off kiosk mode");
     public bool RequiresAdmin => true;
     public bool RequiresElevatedConfirmation => true;
 
@@ -272,11 +272,11 @@ internal sealed class RemoveKioskAction : IActionHandler
     {
         var state = KioskState.Read();
         var lines = new List<string>();
-        if (state is { IsConfigured: true }) lines.Add(L("• Rendre au compte « {0} » son Bureau Windows et retirer ses restrictions", state.User));
-        if (Validate.Bool(p, "assignedAccess")) lines.Add(L("• Supprimer la configuration d'accès attribué (application unique) de Windows"));
-        if (Validate.Bool(p, "autologon")) lines.Add(L("• Désactiver l'ouverture de session automatique"));
-        if (lines.Count == 0) lines.Add(L("• Aucune configuration connue : vérification uniquement"));
-        return L("Désactiver le mode kiosque :\n\n{0}", string.Join("\n", lines));
+        if (state is { IsConfigured: true }) lines.Add(L("• Give the “{0}” account back its Windows desktop and remove its restrictions", state.User));
+        if (Validate.Bool(p, "assignedAccess")) lines.Add(L("• Remove the assigned access (single-app) configuration from Windows"));
+        if (Validate.Bool(p, "autologon")) lines.Add(L("• Turn off automatic sign-in"));
+        if (lines.Count == 0) lines.Add(L("• No known configuration: check only"));
+        return L("Turn off kiosk mode:\n\n{0}", string.Join("\n", lines));
     }
 
     public async Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
@@ -292,13 +292,13 @@ internal sealed class RemoveKioskAction : IActionHandler
 
         if (state is { IsConfigured: true } && state.Sid is { } sid)
         {
-            ctx.Progress?.Report(L("Restauration du compte kiosque…"));
+            ctx.Progress?.Report(L("Restoring the kiosk account…"));
             try
             {
                 Validate.Sid(sid);
                 var account = new KioskAccount(state.User ?? sid, sid, null, false, true, false, KioskAccounts.ProfilePath(sid));
                 using var hive = UserHive.Open(account, createProfile: false);
-                if (hive is null) warnings.Add(L("profil du compte introuvable (compte supprimé ?)"));
+                if (hive is null) warnings.Add(L("account profile not found (account deleted?)"));
                 else
                 {
                     if (state.ShellValue is not null)
@@ -314,30 +314,30 @@ internal sealed class RemoveKioskAction : IActionHandler
                         var parts = entry.Split('=', 2);
                         if (parts.Length == 2 && KioskRestrictions.Get(parts[0]) is { } r) hive.Restore(r.RegKey, r.Value, parts[1]);
                     }
-                    done.Add(L("Bureau et droits habituels rendus à « {0} »", state.User));
+                    done.Add(L("desktop and usual rights given back to “{0}”", state.User));
                 }
             }
             catch (Exception ex)
             {
                 Log.Error("Kiosk", "restauration du compte", ex);
-                warnings.Add(L("restauration du compte incomplète : {0} (réessayez après la déconnexion du compte kiosque)", ex.Message));
+                warnings.Add(L("account restore incomplete: {0} (try again after the kiosk account signs out)", ex.Message));
                 accountRestoreFailed = true;
             }
         }
 
         if (Validate.Bool(p, "assignedAccess") || state?.AssignedAccess == true)
         {
-            ctx.Progress?.Report(L("Suppression de l'accès attribué…"));
+            ctx.Progress?.Report(L("Removing assigned access…"));
             var r = await PowerShellRunner.RunAsync(ApplyKioskAction.ClearAssignedAccessScript, null, TimeSpan.FromMinutes(1), ct: ctx.Cancellation);
-            if (r.Success) { done.Add(L("accès attribué supprimé")); assignedCleared = true; }
-            else warnings.Add(L("accès attribué : {0}", ApplyKioskAction.FirstLine(r.Error, r.Output)));
+            if (r.Success) { done.Add(L("assigned access removed")); assignedCleared = true; }
+            else warnings.Add(L("assigned access: {0}", ApplyKioskAction.FirstLine(r.Error, r.Output)));
         }
 
         if (Validate.Bool(p, "autologon"))
         {
-            ctx.Progress?.Report(L("Désactivation de l'ouverture automatique…"));
+            ctx.Progress?.Report(L("Turning off automatic sign-in…"));
             Autologon.Clear();
-            done.Add(L("ouverture de session automatique désactivée"));
+            done.Add(L("automatic sign-in turned off"));
         }
 
         if (accountRestoreFailed)
@@ -349,8 +349,8 @@ internal sealed class RemoveKioskAction : IActionHandler
             ClearState(keepAutologon: !Validate.Bool(p, "autologon"));
         }
         Log.Info("Kiosk", accountRestoreFailed ? "mode kiosque partiellement retiré" : "mode kiosque retiré");
-        var message = done.Count == 0 ? L("Aucune configuration de borne à retirer.") : char.ToUpper(string.Join(", ", done)[0]) + string.Join(", ", done)[1..] + ".";
-        if (warnings.Count > 0) message += L(" Attention : {0}.", string.Join(" ; ", warnings));
+        var message = done.Count == 0 ? L("No kiosk configuration to remove.") : char.ToUpper(string.Join(", ", done)[0]) + string.Join(", ", done)[1..] + ".";
+        if (warnings.Count > 0) message += L(" Warning: {0}.", string.Join(" ; ", warnings));
         return warnings.Count > 0 && done.Count == 0 ? ActionResult.Fail(message) : ActionResult.Ok(message);
     }
 
@@ -378,7 +378,7 @@ internal sealed class RemoveKioskAction : IActionHandler
 internal sealed class KioskStatusAction : IActionHandler
 {
     public string Id => "kiosk.status";
-    public string Title => L("Détecter la configuration kiosque de Windows");
+    public string Title => L("Detect the Windows kiosk configuration");
     public bool RequiresAdmin => true;
 
     private const string Script =
@@ -389,9 +389,9 @@ internal sealed class KioskStatusAction : IActionHandler
 
     public async Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
     {
-        ctx.Progress?.Report(L("Lecture de la configuration d'accès attribué…"));
+        ctx.Progress?.Report(L("Reading the assigned access configuration…"));
         var r = await PowerShellRunner.RunAsync(Script, null, TimeSpan.FromMinutes(1), ct: ctx.Cancellation);
-        if (!r.Success) return ActionResult.Fail(L("Lecture impossible : {0}", ApplyKioskAction.FirstLine(r.Error, r.Output)));
+        if (!r.Success) return ActionResult.Fail(L("Couldn't read it: {0}", ApplyKioskAction.FirstLine(r.Error, r.Output)));
         var data = new Dictionary<string, string>();
         var n = 0;
         foreach (var line in r.Output.Split('\n').Select(l => l.Trim()).Where(l => l.StartsWith("AA|", StringComparison.Ordinal)))
@@ -404,7 +404,7 @@ internal sealed class KioskStatusAction : IActionHandler
             n++;
         }
         data["aa.count"] = n.ToString(CultureInfo.InvariantCulture);
-        return ActionResult.Ok(n == 0 ? L("Aucun accès attribué (application unique) n'est configuré dans Windows.") : L("Accès attribué détecté."), data);
+        return ActionResult.Ok(n == 0 ? L("No assigned access (single app) is configured in Windows.") : L("Assigned access detected."), data);
     }
 }
 
@@ -414,7 +414,7 @@ internal static class Autologon
     public static void Set(string user)
     {
         using var lm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
-        using var k = lm.OpenSubKey(KioskRules.WinlogonKey, true) ?? throw new InvalidOperationException(L("Clé Winlogon introuvable."));
+        using var k = lm.OpenSubKey(KioskRules.WinlogonKey, true) ?? throw new InvalidOperationException(L("Winlogon key not found."));
         using (var state = lm.CreateSubKey(KioskRules.StateKey, true))
         {
             if (state.GetValue("AutologonUser") is null)
@@ -459,7 +459,7 @@ internal static class Autologon
 internal sealed class SetAutologonAction : IActionHandler
 {
     public string Id => "kiosk.autologon.set";
-    public string Title => L("Ouvrir automatiquement la session du compte kiosque");
+    public string Title => L("Automatically sign in to the kiosk account");
     public bool RequiresAdmin => true;
     public bool RequiresElevatedConfirmation => true;
 
@@ -470,30 +470,30 @@ internal sealed class SetAutologonAction : IActionHandler
     }
 
     public string DescribeForConfirmation(IReadOnlyDictionary<string, string> p) =>
-        L("Ouvrir automatiquement la session « {0} » au démarrage du PC.\n\nToute personne qui allume ce PC arrivera directement sur la borne, sans mot de passe. Le mot de passe est stocké dans un secret protégé du système (LSA), jamais en clair dans le registre.", Validate.LocalUserName(p["user"]));
+        L("Automatically sign in to “{0}” when the PC starts.\n\nAnyone who turns on this PC will go straight to the kiosk, with no password. The password is stored in a protected system secret (LSA), never in plain text in the registry.", Validate.LocalUserName(p["user"]));
 
     public Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
     {
         ValidateParameters(p);
         var account = KioskAccounts.ResolveEligible(p["user"], ctx.UserSid);
         var password = p.TryGetValue("password", out var pw) ? pw : "";
-        ctx.Progress?.Report(L("Vérification du mot de passe…"));
+        ctx.Progress?.Report(L("Checking the password…"));
         var check = KioskNative.CheckCredentials(account.Name, password);
         if (check == KioskNative.ERROR_LOGON_FAILURE)
-            return Task.FromResult(ActionResult.Fail(L("Mot de passe incorrect pour « {0} ». L'ouverture automatique n'a pas été configurée.", account.Name)));
+            return Task.FromResult(ActionResult.Fail(L("Incorrect password for “{0}”. Automatic sign-in wasn't set up.", account.Name)));
         if (check != 0) Log.Warn("Kiosk", $"vérification des identifiants : code {check}");
 
         KioskNative.StorePrivateData("DefaultPassword", password);
         Autologon.Set(account.Name);
         Log.Info("Kiosk", "ouverture de session automatique configurée");
-        return Task.FromResult(ActionResult.Ok(L("La session « {0} » s'ouvrira automatiquement au prochain démarrage.", account.Name)));
+        return Task.FromResult(ActionResult.Ok(L("“{0}” will sign in automatically at the next startup.", account.Name)));
     }
 }
 
 internal sealed class ClearAutologonAction : IActionHandler
 {
     public string Id => "kiosk.autologon.clear";
-    public string Title => L("Désactiver l'ouverture de session automatique");
+    public string Title => L("Turn off automatic sign-in");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) { }
@@ -502,6 +502,6 @@ internal sealed class ClearAutologonAction : IActionHandler
     {
         Autologon.Clear();
         Log.Info("Kiosk", "ouverture de session automatique désactivée");
-        return Task.FromResult(ActionResult.Ok(L("Ouverture de session automatique désactivée : le mot de passe mémorisé a été effacé.")));
+        return Task.FromResult(ActionResult.Ok(L("Automatic sign-in turned off: the saved password was erased.")));
     }
 }

@@ -20,42 +20,42 @@ public sealed class AppPagesModule : IModule
 
     public void Register(ModuleRegistry r)
     {
-        r.AddPage(new PageInfo(JournalPageId, L("Journal des modifications"), JournalGlyph, NavSection.App, 10, () => new JournalPage())
+        r.AddPage(new PageInfo(JournalPageId, L("Change history"), JournalGlyph, NavSection.App, 10, () => new JournalPage())
         {
-            Description = L("Tout ce que Timonier a modifié sur ce PC, avec la possibilité d'annuler."),
-            Keywords = [L("journal, historique, annuler, undo, restaurer, modifications, changements, revenir en arrière, export csv")],
+            Description = L("Everything Timonier has changed on this PC, with the option to undo it."),
+            Keywords = [L("history, change history, log, undo, restore, changes, revert, roll back, go back, csv export")],
         });
-        r.AddPage(new PageInfo(TransparencyPageId, L("Transparence"), TransparencyGlyph, NavSection.App, 20, () => new TransparencyPage())
+        r.AddPage(new PageInfo(TransparencyPageId, L("Transparency"), TransparencyGlyph, NavSection.App, 20, () => new TransparencyPage())
         {
-            Description = L("Ce que Timonier peut faire, comment il le fait, ce qu'il ne fait pas et les données qu'il conserve."),
-            Keywords = [L("transparence, sécurité de timonier, limites, catalogue, opérations, registre modifié, données stockées, confidentialité de timonier, télémétrie, arrière-plan")],
+            Description = L("What Timonier can do, how it does it, what it doesn't do, and the data it keeps."),
+            Keywords = [L("transparency, timonier security, limits, catalog, operations, registry changes, stored data, timonier privacy, telemetry, background")],
         });
-        r.AddPage(new PageInfo(SettingsPageId, L("Paramètres de Timonier"), SettingsGlyph, NavSection.App, 30, () => new SettingsPage())
+        r.AddPage(new PageInfo(SettingsPageId, L("Timonier settings"), SettingsGlyph, NavSection.App, 30, () => new SettingsPage())
         {
-            Description = L("Thème, code PIN, session administrateur, démarrage avec Windows, réinitialisation."),
-            Keywords = [L("paramètres, préférences, options, réglages de timonier, thème, code pin, mode avancé, démarrer avec windows, à propos, version")],
+            Description = L("Theme, PIN, admin session, start with Windows, reset."),
+            Keywords = [L("settings, preferences, options, timonier settings, theme, pin, advanced mode, start with windows, about, version")],
         });
 
-        r.AddQuickAction(new QuickAction("app.journal", L("Journal des modifications"), JournalGlyph,
-            L("Voir et annuler les modifications faites par Timonier."),
+        r.AddQuickAction(new QuickAction("app.journal", L("Change history"), JournalGlyph,
+            L("View and undo changes made by Timonier."),
             () => { AppHost.Navigator.Navigate(JournalPageId); return Task.CompletedTask; })
         {
-            Keywords = [L("annuler, historique, journal, undo, revenir en arrière, restaurer un réglage")],
+            Keywords = [L("undo, history, log, revert, roll back, go back, restore a setting")],
             Order = 90,
         });
 
         // Lecture seule (fichier JSON local + HKLM) : exécuté hors du thread UI par le tableau de bord.
-        r.AddHealthCheck(HealthCheck.Sync("app.journal", L("Modifications de Timonier"), JournalGlyph, JournalPageId, () =>
+        r.AddHealthCheck(HealthCheck.Sync("app.journal", L("Timonier changes"), JournalGlyph, JournalPageId, () =>
         {
             var all = JournalWriter.UserStore.All().Concat(MachineJournalStore.ReadAll()).ToList();
             var undoable = all.Count(e => e.CanUndo);
             if (all.Count == 0)
-                return new HealthResult(HealthStatus.Good, L("Aucune modification"), L("Timonier n'a encore rien modifié sur ce PC."));
+                return new HealthResult(HealthStatus.Good, L("No changes"), L("Timonier hasn't changed anything on this PC yet."));
             var today = all.Count(e => e.At.LocalDateTime.Date == DateTime.Today && !e.Undone);
             return new HealthResult(HealthStatus.Info,
-                LP(undoable, "{0} modification annulable", "{0} modifications annulables"),
-                today == 0 ? L("Aucune modification aujourd'hui.")
-                    : LP(today, "{0} modification aujourd'hui. Tout est annulable depuis le journal.", "{0} modifications aujourd'hui. Tout est annulable depuis le journal."));
+                LP(undoable, "{0} change you can undo", "{0} changes you can undo"),
+                today == 0 ? L("No changes today.")
+                    : LP(today, "{0} change today. Everything can be undone from History.", "{0} changes today. Everything can be undone from History."));
         }));
 
         RegisterSearchEntries(r);
@@ -74,45 +74,45 @@ public sealed class AppPagesModule : IModule
                 Id = "app." + id, Title = title, Subtitle = subtitle, Glyph = glyph, PageId = page, PageParameter = param, Keywords = keywords,
             });
 
-        Add("journal.undo", L("Annuler une modification"), L("Journal › revenir à l'état précédent"), "", JournalPageId, "filter:undoable",
-            L("annuler, undo, revenir en arriere, restaurer un reglage, defaire"));
-        Add("journal.undoall", L("Annuler toutes les modifications du jour"), L("Journal › annulation groupée (session ou journée)"), "",
-            JournalPageId, "filter:undoable", L("tout annuler, annuler tout, annuler la session, retour etat initial"));
-        Add("journal.export", L("Exporter le journal (CSV)"), L("Journal › fichier CSV lisible dans Excel"), "", JournalPageId, null,
-            L("export, csv, excel, sauvegarder l'historique"));
-        Add("journal.clear", L("Vider le journal"), L("Journal › effacer l'historique utilisateur"), "", JournalPageId, null,
-            L("effacer historique, supprimer journal, vider historique"));
+        Add("journal.undo", L("Undo a change"), L("History › go back to the previous state"), "", JournalPageId, "filter:undoable",
+            L("undo, revert, go back, restore a setting, roll back"));
+        Add("journal.undoall", L("Undo all of today's changes"), L("History › bulk undo (session or day)"), "",
+            JournalPageId, "filter:undoable", L("undo all, undo everything, undo session, revert all, restore initial state"));
+        Add("journal.export", L("Export history (CSV)"), L("History › CSV file you can open in Excel"), "", JournalPageId, null,
+            L("export, csv, excel, save history, back up history"));
+        Add("journal.clear", L("Clear history"), L("History › clear user history"), "", JournalPageId, null,
+            L("clear history, delete history, erase log, empty history"));
 
-        Add("transparency.catalog", L("Tout ce que Timonier peut modifier"), L("Transparence › liste complète des réglages et opérations"),
-            TransparencyGlyph, TransparencyPageId, "tab:tweaks", L("catalogue, operations, cles de registre, que modifie timonier"));
-        Add("transparency.actions", L("Actions de Timonier"), L("Transparence › actions paramétrées, admin et confirmations"), TransparencyGlyph,
-            TransparencyPageId, "tab:actions", L("actions, liste des actions, confirmation elevee"));
-        Add("transparency.unavailable", L("Fonctions indisponibles sur ce PC"), L("Transparence › regroupées par raison"), "",
-            TransparencyPageId, "tab:unavailable", L("indisponible, pas disponible, grise, edition, non supporte"));
-        Add("transparency.limits", L("Ce que Timonier ne peut pas faire"), L("Transparence › limites honnêtes"), "", TransparencyPageId,
-            "tab:limits", L("limites, impossible, ctrl alt suppr, strategie de groupe, mdm, applications par defaut"));
-        Add("transparency.security", L("Sécurité de Timonier"), L("Transparence › architecture, élévation, vérifications"), "",
-            TransparencyPageId, "tab:security", L("securite, broker, uac, elevation, canal nomme, pipe"));
-        Add("transparency.data", L("Données stockées par Timonier"), L("Transparence › fichiers et registre utilisés"), "",
-            TransparencyPageId, "tab:security", L("donnees, fichiers, stockage, localappdata, telemetrie, vie privee de timonier"));
-        Add("transparency.background", L("Timonier en arrière-plan"), L("Transparence › pourquoi l'application reste active"), "",
-            TransparencyPageId, "tab:security", L("arriere-plan, zone de notification, tray, reste ouvert"));
+        Add("transparency.catalog", L("Everything Timonier can change"), L("Transparency › full list of settings and operations"),
+            TransparencyGlyph, TransparencyPageId, "tab:tweaks", L("catalog, operations, registry keys, what timonier changes"));
+        Add("transparency.actions", L("Timonier actions"), L("Transparency › parameterized actions, admin, and confirmations"), TransparencyGlyph,
+            TransparencyPageId, "tab:actions", L("actions, action list, elevated confirmation"));
+        Add("transparency.unavailable", L("Features unavailable on this PC"), L("Transparency › grouped by reason"), "",
+            TransparencyPageId, "tab:unavailable", L("unavailable, not available, grayed out, edition, not supported, unsupported"));
+        Add("transparency.limits", L("What Timonier can't do"), L("Transparency › honest limits"), "", TransparencyPageId,
+            "tab:limits", L("limits, impossible, ctrl alt del, group policy, mdm, default apps"));
+        Add("transparency.security", L("Timonier security"), L("Transparency › architecture, elevation, checks"), "",
+            TransparencyPageId, "tab:security", L("security, broker, uac, elevation, named pipe, pipe"));
+        Add("transparency.data", L("Data stored by Timonier"), L("Transparency › files and registry used"), "",
+            TransparencyPageId, "tab:security", L("data, files, storage, localappdata, telemetry, timonier privacy"));
+        Add("transparency.background", L("Timonier in the background"), L("Transparency › why the app stays running"), "",
+            TransparencyPageId, "tab:security", L("background, notification area, tray, system tray, stays open"));
 
-        Add("settings.theme", L("Thème de Timonier"), L("Paramètres › Système, clair ou sombre"), "", SettingsPageId, "section:appearance",
-            L("theme, mode sombre, dark mode, clair, apparence de timonier"));
-        Add("settings.pin", L("Code PIN de Timonier"), L("Paramètres › protéger l'ouverture de l'application"), "", SettingsPageId,
-            "section:security", L("code pin, mot de passe, verrouiller, proteger timonier, pin"));
-        Add("settings.startup", L("Démarrer Timonier avec Windows"), L("Paramètres › lancement à l'ouverture de session"), "", SettingsPageId,
-            "section:behavior", L("demarrer avec windows, demarrage automatique, lancer au demarrage, autostart"));
-        Add("settings.admin", L("Session administrateur"), L("Paramètres › délai de fermeture automatique, fermer maintenant"), "",
-            SettingsPageId, "section:security", L("admin, administrateur, uac, elevation, fermer la session admin, delai"));
-        Add("settings.advanced", L("Mode avancé"), L("Paramètres › afficher les réglages réservés aux utilisateurs avertis"), "",
-            SettingsPageId, "section:behavior", L("mode avance, expert, reglages avances"));
-        Add("settings.animations", L("Réduire les animations"), L("Paramètres › interface plus sobre et plus légère"), "", SettingsPageId,
-            "section:appearance", L("animations, effets, reduire les animations"));
-        Add("settings.reset", L("Réinitialiser Timonier"), L("Paramètres › revenir aux préférences par défaut"), "", SettingsPageId,
-            "section:data", L("reinitialiser, reset, remise a zero, par defaut"));
-        Add("settings.about", L("À propos de Timonier"), L("Paramètres › version, raccourcis clavier"), "", SettingsPageId, "section:about",
-            L("a propos, version, raccourcis clavier, aide"));
+        Add("settings.theme", L("Timonier theme"), L("Settings › System, light or dark"), "", SettingsPageId, "section:appearance",
+            L("theme, dark mode, light mode, light, dark, appearance, timonier appearance, color scheme"));
+        Add("settings.pin", L("Timonier PIN"), L("Settings › protect access to the app"), "", SettingsPageId,
+            "section:security", L("pin, pin code, password, passcode, lock, protect timonier"));
+        Add("settings.startup", L("Start Timonier with Windows"), L("Settings › launch when you sign in"), "", SettingsPageId,
+            "section:behavior", L("start with windows, automatic startup, launch at startup, run at startup, autostart, startup"));
+        Add("settings.admin", L("Admin session"), L("Settings › auto-close delay, close now"), "",
+            SettingsPageId, "section:security", L("admin, administrator, uac, elevation, close admin session, timeout, delay"));
+        Add("settings.advanced", L("Advanced mode"), L("Settings › show settings reserved for experienced users"), "",
+            SettingsPageId, "section:behavior", L("advanced mode, expert, advanced settings, power user"));
+        Add("settings.animations", L("Reduce animations"), L("Settings › simpler, lighter interface"), "", SettingsPageId,
+            "section:appearance", L("animations, effects, reduce animations, reduce motion, motion"));
+        Add("settings.reset", L("Reset Timonier"), L("Settings › restore default preferences"), "", SettingsPageId,
+            "section:data", L("reset, restore defaults, factory reset, default, defaults"));
+        Add("settings.about", L("About Timonier"), L("Settings › version, keyboard shortcuts"), "", SettingsPageId, "section:about",
+            L("about, version, keyboard shortcuts, hotkeys, help"));
     }
 }

@@ -16,13 +16,13 @@ internal static class CustomizationTweaks
     private const string C = CustomizationModule.Category;
 
     // Groupes (sous-titres de la page, dans cet ordre).
-    public static readonly string GroupColors = L("Couleurs");
-    public static readonly string GroupTaskbar = L("Barre des tâches");
-    public static readonly string GroupStart = L("Menu Démarrer");
-    public static readonly string GroupExplorer = L("Explorateur de fichiers");
-    public static readonly string GroupDesktop = L("Bureau et fenêtres");
-    public static readonly string GroupLogon = L("Connexion et verrouillage");
-    public static readonly string GroupInput = L("Souris et clavier");
+    public static readonly string GroupColors = L("Colors");
+    public static readonly string GroupTaskbar = L("Taskbar");
+    public static readonly string GroupStart = L("Start menu");
+    public static readonly string GroupExplorer = L("File Explorer");
+    public static readonly string GroupDesktop = L("Desktop and windows");
+    public static readonly string GroupLogon = L("Sign-in and lock");
+    public static readonly string GroupInput = L("Mouse and keyboard");
 
     // Clés de registre (HKCU sauf mention contraire).
     internal const string Personalize = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
@@ -82,21 +82,21 @@ internal static class CustomizationTweaks
 
     private static IEnumerable<TweakDefinition> ColorTweaks()
     {
-        yield return Tweak.Choice("custom.theme.apps", L("Mode des applications"),
-                L("Clair ou sombre pour les applications : Paramètres, Explorateur de fichiers, applications modernes. Certains logiciels plus anciens ignorent ce réglage."))
+        yield return Tweak.Choice("custom.theme.apps", L("App mode"),
+                L("Light or dark for apps: Settings, File Explorer, modern apps. Some older software ignores this setting."))
             .In(C, GroupColors)
-            .Keywords(L("theme, sombre, clair, dark mode, light mode, mode nuit, applications"))
-            .Option("light", L("Clair"), Reg.CuDword(Personalize, "AppsUseLightTheme", 1), Colors)
-            .Option("dark", L("Sombre"), Reg.CuDword(Personalize, "AppsUseLightTheme", 0), Colors)
+            .Keywords(L("theme, dark, light, dark mode, light mode, night mode, apps"))
+            .Option("light", L("Light"), Reg.CuDword(Personalize, "AppsUseLightTheme", 1), Colors)
+            .Option("dark", L("Dark"), Reg.CuDword(Personalize, "AppsUseLightTheme", 0), Colors)
             .WindowsDefault("light")
             .Build();
 
-        yield return Tweak.Choice("custom.theme.system", L("Mode de Windows"),
-                L("Couleurs de la barre des tâches, du menu Démarrer et du centre de notifications."))
+        yield return Tweak.Choice("custom.theme.system", L("Windows mode"),
+                L("Colors of the taskbar, Start menu and notification center."))
             .In(C, GroupColors)
-            .Keywords(L("theme, sombre, clair, barre des taches, dark mode, menu demarrer"))
-            .Option("light", L("Clair"), Reg.CuDword(Personalize, "SystemUsesLightTheme", 1), Colors)
-            .Option("dark", L("Sombre"), Reg.CuDword(Personalize, "SystemUsesLightTheme", 0), Colors)
+            .Keywords(L("theme, dark, light, taskbar, dark mode, start menu"))
+            .Option("light", L("Light"), Reg.CuDword(Personalize, "SystemUsesLightTheme", 1), Colors)
+            .Option("dark", L("Dark"), Reg.CuDword(Personalize, "SystemUsesLightTheme", 0), Colors)
             // Absent du registre : Windows 11 est clair par défaut, Windows 10 sombre.
             .Detect(() => RegistryAccess.ReadDword(RegHive.CurrentUser, Personalize, "SystemUsesLightTheme") switch
             {
@@ -106,37 +106,37 @@ internal static class CustomizationTweaks
             })
             .Build();
 
-        yield return Tweak.Toggle("custom.colors.autoaccent", L("Couleur d'accent automatique"),
-                L("Windows choisit la couleur d'accent d'après votre fond d'écran et la fait évoluer avec lui. La couleur est recalculée au prochain changement de fond d'écran (ou à la prochaine ouverture de session)."))
+        yield return Tweak.Toggle("custom.colors.autoaccent", L("Automatic accent color"),
+                L("Windows picks the accent color from your wallpaper and keeps it in sync. The color is recalculated the next time the wallpaper changes (or the next time you sign in)."))
             .In(C, GroupColors)
-            .Keywords(L("accent, couleur, fond d'ecran, automatique, accent color, wallpaper"))
+            .Keywords(L("accent, color, wallpaper, automatic, accent color"))
             .WhenOn(Reg.CuDword(DesktopKey, "AutoColorization", 1), Colors)
             .WhenOff(Reg.CuDword(DesktopKey, "AutoColorization", 0), Colors)
             .WindowsDefault(Off)
             .Build();
 
-        yield return Tweak.Toggle("custom.colors.accentstart", L("Couleur d'accent sur Démarrer et la barre des tâches"),
-                L("Colore le menu Démarrer, la barre des tâches et le centre de notifications avec la couleur d'accent. Sous Windows 11, n'a d'effet que si le mode de Windows est sombre."))
+        yield return Tweak.Toggle("custom.colors.accentstart", L("Accent color on Start and taskbar"),
+                L("Colors the Start menu, taskbar and notification center with the accent color. On Windows 11, this only works when the Windows mode is dark."))
             .In(C, GroupColors)
-            .Keywords(L("accent, couleur, barre des taches, menu demarrer, taskbar color"))
+            .Keywords(L("accent, color, taskbar, start menu, taskbar color"))
             .WhenOn(Reg.CuDword(Personalize, "ColorPrevalence", 1), Colors)
             .WhenOff(Reg.CuDword(Personalize, "ColorPrevalence", 0), Colors)
             .WindowsDefault(Off)
             .Build();
 
-        yield return Tweak.Toggle("custom.colors.accenttitlebars", L("Couleur d'accent sur les barres de titre"),
-                L("Affiche la couleur d'accent sur la barre de titre et la bordure des fenêtres. Si le changement n'apparaît pas tout de suite, il sera visible à la prochaine ouverture de session."))
+        yield return Tweak.Toggle("custom.colors.accenttitlebars", L("Accent color on title bars"),
+                L("Shows the accent color on window title bars and borders. If the change doesn't appear right away, you'll see it the next time you sign in."))
             .In(C, GroupColors)
-            .Keywords(L("accent, barre de titre, bordure, fenetre, title bar, border"))
+            .Keywords(L("accent, title bar, border, window, window color"))
             .WhenOn(Reg.CuDword(Dwm, "ColorPrevalence", 1), Colors)
             .WhenOff(Reg.CuDword(Dwm, "ColorPrevalence", 0), Colors)
             .WindowsDefault(Off)
             .Build();
 
-        yield return Tweak.Toggle("custom.colors.transparency", L("Effets de transparence"),
-                L("Effet translucide (Mica, acrylique) de la barre des tâches, du menu Démarrer et de certaines fenêtres. Le désactiver soulage légèrement les PC modestes."))
+        yield return Tweak.Toggle("custom.colors.transparency", L("Transparency effects"),
+                L("Translucent effect (Mica, acrylic) on the taskbar, Start menu and some windows. Turning it off slightly lightens the load on low-end PCs."))
             .In(C, GroupColors)
-            .Keywords(L("transparence, transparency, acrylique, mica, flou, blur, translucide"))
+            .Keywords(L("transparency, acrylic, mica, blur, translucent"))
             .Tags("lowend", "battery")
             .WhenOn(Reg.CuDword(Personalize, "EnableTransparency", 1), Colors)
             .WhenOff(Reg.CuDword(Personalize, "EnableTransparency", 0), Colors)
@@ -151,52 +151,52 @@ internal static class CustomizationTweaks
 
     private static IEnumerable<TweakDefinition> TaskbarTweaks()
     {
-        yield return Tweak.Choice("custom.taskbar.alignment", L("Alignement de la barre des tâches"),
-                L("Position du bouton Démarrer et des applications épinglées : au centre (Windows 11) ou à gauche comme sous Windows 10."))
+        yield return Tweak.Choice("custom.taskbar.alignment", L("Taskbar alignment"),
+                L("Position of the Start button and pinned apps: centered (Windows 11) or on the left as in Windows 10."))
             .In(C, GroupTaskbar)
-            .Keywords(L("alignement, gauche, centre, icones, taskbar alignment, left, center, bouton demarrer"))
+            .Keywords(L("alignment, left, center, icons, taskbar alignment, start button"))
             .Requires(Requires.Windows11)
-            .Option("left", L("À gauche"), Reg.CuDword(Adv, "TaskbarAl", 0), Tray)
-            .Option("center", L("Au centre"), Reg.CuDword(Adv, "TaskbarAl", 1), Tray)
+            .Option("left", L("Left"), Reg.CuDword(Adv, "TaskbarAl", 0), Tray)
+            .Option("center", LC("taskbar alignment", "Center"), Reg.CuDword(Adv, "TaskbarAl", 1), Tray)
             .WindowsDefault("center")
             .Build();
 
-        yield return Tweak.Choice("custom.taskbar.search", L("Recherche dans la barre des tâches"),
-                L("Forme de l'accès à la recherche Windows sur la barre des tâches. Même masquée, la recherche reste accessible : appuyez sur la touche Windows puis tapez votre recherche."))
+        yield return Tweak.Choice("custom.taskbar.search", L("Search on the taskbar"),
+                L("How Windows Search appears on the taskbar. Even when hidden, search is still available: press the Windows key and type what you're looking for."))
             .In(C, GroupTaskbar)
-            .Keywords(L("recherche, loupe, zone de recherche, search box, search icon, masquer recherche"))
+            .Keywords(L("search, magnifying glass, search box, search icon, hide search"))
             .Requires(Requires.Windows11_22H2)
-            .Option("hidden", L("Masquée"), Reg.CuDword(Search, "SearchboxTaskbarMode", 0), Tray)
-            .Option("icon", L("Icône seule"), Reg.CuDword(Search, "SearchboxTaskbarMode", 1), Tray)
-            .Option("iconlabel", L("Icône et libellé"), Reg.CuDword(Search, "SearchboxTaskbarMode", 3), Tray)
-            .Option("box", L("Zone de recherche"), Reg.CuDword(Search, "SearchboxTaskbarMode", 2), Tray)
+            .Option("hidden", LC("feminine", "Hidden"), Reg.CuDword(Search, "SearchboxTaskbarMode", 0), Tray)
+            .Option("icon", L("Icon only"), Reg.CuDword(Search, "SearchboxTaskbarMode", 1), Tray)
+            .Option("iconlabel", L("Icon and label"), Reg.CuDword(Search, "SearchboxTaskbarMode", 3), Tray)
+            .Option("box", L("Search box"), Reg.CuDword(Search, "SearchboxTaskbarMode", 2), Tray)
             .WindowsDefault("box")
             .Build();
 
-        yield return Tweak.Choice("custom.taskbar.search.win10", L("Recherche dans la barre des tâches (Windows 10)"),
-                L("Forme de l'accès à la recherche Windows sur la barre des tâches de Windows 10. Même masquée, la recherche reste accessible : appuyez sur la touche Windows puis tapez votre recherche."))
+        yield return Tweak.Choice("custom.taskbar.search.win10", L("Search on the taskbar (Windows 10)"),
+                L("How Windows Search appears on the Windows 10 taskbar. Even when hidden, search is still available: press the Windows key and type what you're looking for."))
             .In(C, GroupTaskbar)
-            .Keywords(L("recherche, loupe, zone de recherche, search box, cortana"))
+            .Keywords(L("search, magnifying glass, search box, cortana"))
             .Requires(Requires.Windows10Only)
-            .Option("hidden", L("Masquée"), Reg.CuDword(Search, "SearchboxTaskbarMode", 0), Tray)
-            .Option("icon", L("Icône seule"), Reg.CuDword(Search, "SearchboxTaskbarMode", 1), Tray)
-            .Option("box", L("Zone de recherche"), Reg.CuDword(Search, "SearchboxTaskbarMode", 2), Tray)
+            .Option("hidden", LC("feminine", "Hidden"), Reg.CuDword(Search, "SearchboxTaskbarMode", 0), Tray)
+            .Option("icon", L("Icon only"), Reg.CuDword(Search, "SearchboxTaskbarMode", 1), Tray)
+            .Option("box", L("Search box"), Reg.CuDword(Search, "SearchboxTaskbarMode", 2), Tray)
             .WindowsDefault("box")
             .Build();
 
-        yield return Tweak.Toggle("custom.taskbar.taskview", L("Bouton Vue des tâches"),
-                L("Bouton qui affiche les fenêtres ouvertes et les bureaux virtuels. Le raccourci Windows + Tab reste disponible."))
+        yield return Tweak.Toggle("custom.taskbar.taskview", L("Task view button"),
+                L("Button that shows open windows and virtual desktops. The Windows + Tab shortcut is still available."))
             .In(C, GroupTaskbar)
-            .Keywords(L("vue des taches, task view, bureaux virtuels, virtual desktop, timeline"))
+            .Keywords(L("task view, virtual desktops, virtual desktop, timeline"))
             .WhenOn(Reg.CuDword(Adv, "ShowTaskViewButton", 1), Tray)
             .WhenOff(Reg.CuDword(Adv, "ShowTaskViewButton", 0), Tray)
             .WindowsDefault(On)
             .Build();
 
-        yield return Tweak.Toggle("custom.taskbar.widgets", L("Bouton Widgets"),
-                L("Bouton météo et actualités de la barre des tâches (seul le bouton est concerné : Windows + W reste disponible). Sur certaines versions récentes, Windows protège ce réglage et peut refuser qu'une autre application que Paramètres le modifie : utilisez alors Paramètres › Personnalisation › Barre des tâches."))
+        yield return Tweak.Toggle("custom.taskbar.widgets", L("Widgets button"),
+                L("Weather and news button on the taskbar (only the button is affected: Windows + W is still available). On some recent versions, Windows protects this setting and may prevent apps other than Settings from changing it: in that case, use Settings › Personalization › Taskbar."))
             .In(C, GroupTaskbar)
-            .Keywords(L("widgets, meteo, actualites, news, weather, bouton widgets"))
+            .Keywords(L("widgets, weather, news, widgets button"))
             .Tags("family", "office")
             .Requires(Requires.Windows11)
             .WhenOn(Reg.CuDword(Adv, "TaskbarDa", 1), Tray)
@@ -204,120 +204,120 @@ internal static class CustomizationTweaks
             .WindowsDefault(On)
             .Build();
 
-        yield return Tweak.Toggle("custom.taskbar.chat", L("Bouton Conversation (Microsoft Teams)"),
-                L("Bouton Conversation de Windows 11 21H2 et 22H2, qui ouvre la version personnelle de Microsoft Teams."))
+        yield return Tweak.Toggle("custom.taskbar.chat", L("Chat button (Microsoft Teams)"),
+                L("Chat button in Windows 11 21H2 and 22H2, which opens the personal version of Microsoft Teams."))
             .In(C, GroupTaskbar)
-            .Keywords(L("chat, conversation, teams, bouton teams, discussion"))
+            .Keywords(L("chat, teams, teams button, conversation, messaging"))
             .Tags("family", "office")
             .Requires(Requires.When(p => p.Build is >= 22000 and < 22631,
-                L("Le bouton Conversation n'existe que sur Windows 11 21H2 et 22H2.")))
+                L("The Chat button only exists on Windows 11 21H2 and 22H2.")))
             .WhenOn(Reg.CuDword(Adv, "TaskbarMn", 1), Tray)
             .WhenOff(Reg.CuDword(Adv, "TaskbarMn", 0), Tray)
             .WindowsDefault(On)
             .Build();
 
-        yield return Tweak.Toggle("custom.taskbar.copilot", L("Bouton Copilot"),
-                L("Bouton Copilot de la barre des tâches de Windows 11 22H2 et 23H2. Seul le bouton est concerné : la désactivation de Copilot lui-même se trouve dans la page Confidentialité."))
+        yield return Tweak.Toggle("custom.taskbar.copilot", L("Copilot button"),
+                L("Copilot button on the Windows 11 22H2 and 23H2 taskbar. Only the button is affected: turning off Copilot itself is on the Privacy page."))
             .In(C, GroupTaskbar)
-            .Keywords(L("copilot, ia, assistant, bouton copilot, ai"))
+            .Keywords(L("copilot, ai, assistant, copilot button"))
             .Requires(Requires.When(p => p.Build is >= 22621 and < 26100,
-                L("Depuis Windows 11 24H2, Copilot est une application : détachez-la de la barre des tâches.")))
+                L("Since Windows 11 24H2, Copilot is an app: unpin it from the taskbar.")))
             .WhenOn(Reg.CuDword(Adv, "ShowCopilotButton", 1), Tray)
             .WhenOff(Reg.CuDword(Adv, "ShowCopilotButton", 0), Tray)
             .WindowsDefault(On)
             .Build();
 
-        yield return Tweak.Toggle("custom.taskbar.endtask", L("« Fin de tâche » au clic droit"),
-                L("Ajoute « Fin de tâche » au menu contextuel des applications de la barre des tâches, pour fermer de force une application bloquée sans ouvrir le Gestionnaire des tâches. Les données non enregistrées sont perdues."))
+        yield return Tweak.Toggle("custom.taskbar.endtask", L("“End task” on right-click"),
+                L("Adds “End task” to the right-click menu of apps on the taskbar, to force-close a frozen app without opening Task Manager. Unsaved data is lost."))
             .In(C, GroupTaskbar)
-            .Keywords(L("fin de tache, end task, forcer fermeture, application bloquee, kill, tuer"))
+            .Keywords(L("end task, force close, force quit, frozen app, not responding, kill"))
             .Tags("dev", "office")
-            .Requires(Requires.When(p => p.Build >= 22631, L("Nécessite Windows 11 23H2 ou plus récent.")))
+            .Requires(Requires.When(p => p.Build >= 22631, L("Requires Windows 11 23H2 or later.")))
             .WhenOn(Reg.CuDword(TaskbarDev, "TaskbarEndTask", 1), Tray)
             .WhenOff(Reg.CuDword(TaskbarDev, "TaskbarEndTask", 0), Tray)
             .WindowsDefault(Off)
             .Build();
 
-        yield return Tweak.Toggle("custom.taskbar.seconds", L("Secondes dans l'horloge"),
-                L("Affiche les secondes dans l'horloge de la barre des tâches. Microsoft indique que cela consomme un peu plus d'énergie."))
+        yield return Tweak.Toggle("custom.taskbar.seconds", L("Seconds in the clock"),
+                L("Shows seconds in the taskbar clock. Microsoft says this uses a little more power."))
             .In(C, GroupTaskbar)
-            .Keywords(L("secondes, horloge, heure, clock, seconds"))
+            .Keywords(L("seconds, clock, time"))
             .Tags("dev")
             .Requires(Requires.When(p => p.Build < 22000 || p.Build >= 22621,
-                L("Sur Windows 11, l'affichage des secondes nécessite la version 22H2 ou plus récente.")))
+                L("On Windows 11, showing seconds requires version 22H2 or later.")))
             .Effect(ApplyEffect.RestartExplorer)
             .WhenOn(Reg.CuDword(Adv, "ShowSecondsInSystemClock", 1), Tray)
             .WhenOff(Reg.CuDword(Adv, "ShowSecondsInSystemClock", 0), Tray)
             .WindowsDefault(Off)
             .Build();
 
-        yield return Tweak.Choice("custom.taskbar.combine", L("Regroupement des boutons"),
-                L("Regroupe les fenêtres d'une même application sous un seul bouton et masque ou non leur nom."))
+        yield return Tweak.Choice("custom.taskbar.combine", L("Button combining"),
+                L("Groups windows of the same app under a single button, with or without hiding their labels."))
             .In(C, GroupTaskbar)
-            .Keywords(L("regrouper, combiner, libelles, etiquettes, combine, labels, never combine, jamais"))
+            .Keywords(L("group, combine, labels, never combine, taskbar buttons"))
             .Tags("office")
             .Requires(Requires.When(p => p.Build < 22000 || p.Build >= 22631,
-                L("Sous Windows 11, ce choix n'est disponible qu'à partir de la version 23H2.")))
-            .Option("always", L("Toujours, sans libellés"), Reg.CuDword(Adv, "TaskbarGlomLevel", 0), Tray)
-            .Option("whenfull", L("Quand la barre est pleine"), Reg.CuDword(Adv, "TaskbarGlomLevel", 1), Tray)
-            .Option("never", L("Jamais"), Reg.CuDword(Adv, "TaskbarGlomLevel", 2), Tray)
+                L("On Windows 11, this option is only available from version 23H2.")))
+            .Option("always", L("Always, hide labels"), Reg.CuDword(Adv, "TaskbarGlomLevel", 0), Tray)
+            .Option("whenfull", L("When taskbar is full"), Reg.CuDword(Adv, "TaskbarGlomLevel", 1), Tray)
+            .Option("never", L("Never"), Reg.CuDword(Adv, "TaskbarGlomLevel", 2), Tray)
             .WindowsDefault("always")
             .Build();
 
-        yield return Tweak.Toggle("custom.taskbar.badges", L("Badges sur les applications"),
-                L("Pastilles de notification (messages non lus, etc.) sur les icônes de la barre des tâches."))
+        yield return Tweak.Toggle("custom.taskbar.badges", L("Badges on apps"),
+                L("Notification badges (unread messages, etc.) on taskbar icons."))
             .In(C, GroupTaskbar)
-            .Keywords(L("badge, pastille, compteur, non lus, notification"))
+            .Keywords(L("badge, counter, unread, notification"))
             .WhenOn(Reg.CuDword(Adv, "TaskbarBadges", 1), Tray)
             .WhenOff(Reg.CuDword(Adv, "TaskbarBadges", 0), Tray)
             .WindowsDefault(On)
             .Build();
 
-        yield return Tweak.Toggle("custom.taskbar.flashing", L("Clignotement des applications"),
-                L("Une application qui demande votre attention fait clignoter son bouton dans la barre des tâches."))
+        yield return Tweak.Toggle("custom.taskbar.flashing", L("Flashing apps"),
+                L("An app that needs your attention flashes its button on the taskbar."))
             .In(C, GroupTaskbar)
-            .Keywords(L("clignoter, clignotement, flash, flashing, attention"))
+            .Keywords(L("flash, flashing, blink, attention"))
             .Requires(Requires.Windows11_22H2)
             .WhenOn(Reg.CuDword(Adv, "TaskbarFlashing", 1), Tray)
             .WhenOff(Reg.CuDword(Adv, "TaskbarFlashing", 0), Tray)
             .WindowsDefault(On)
             .Build();
 
-        yield return Tweak.Toggle("custom.taskbar.multimonitor", L("Barre des tâches sur tous les écrans"),
-                L("Avec plusieurs écrans, affiche une barre des tâches sur chacun d'eux (sinon seulement sur l'écran principal)."))
+        yield return Tweak.Toggle("custom.taskbar.multimonitor", L("Taskbar on all displays"),
+                L("With multiple displays, shows a taskbar on each of them (otherwise only on the main display)."))
             .In(C, GroupTaskbar)
-            .Keywords(L("plusieurs ecrans, multi ecran, second ecran, multiple displays, dual screen, moniteur"))
+            .Keywords(L("multiple displays, multi-monitor, second screen, dual screen, monitor"))
             .Effect(ApplyEffect.RestartExplorer)
             .WhenOn(Reg.CuDword(Adv, "MMTaskbarEnabled", 1), Tray)
             .WhenOff(Reg.CuDword(Adv, "MMTaskbarEnabled", 0), Tray)
             .WindowsDefault(On)
             .Build();
 
-        yield return Tweak.Choice("custom.taskbar.multimonitor.buttons", L("Boutons des fenêtres avec plusieurs écrans"),
-                L("Barres des tâches sur lesquelles apparaissent les boutons des fenêtres ouvertes, quand la barre est affichée sur tous les écrans."))
+        yield return Tweak.Choice("custom.taskbar.multimonitor.buttons", L("Window buttons with multiple displays"),
+                L("Taskbars where buttons for open windows appear, when the taskbar is shown on all displays."))
             .In(C, GroupTaskbar)
-            .Keywords(L("plusieurs ecrans, multi ecran, second ecran, boutons, multiple displays"))
+            .Keywords(L("multiple displays, multi-monitor, second screen, buttons"))
             .Effect(ApplyEffect.RestartExplorer)
-            .Option("all", L("Sur toutes les barres"), Reg.CuDword(Adv, "MMTaskbarMode", 0), Tray)
-            .Option("mainandwhere", L("Barre principale et écran de la fenêtre"), Reg.CuDword(Adv, "MMTaskbarMode", 1), Tray)
-            .Option("where", L("Écran de la fenêtre uniquement"), Reg.CuDword(Adv, "MMTaskbarMode", 2), Tray)
+            .Option("all", L("All taskbars"), Reg.CuDword(Adv, "MMTaskbarMode", 0), Tray)
+            .Option("mainandwhere", L("Main taskbar and taskbar where window is open"), Reg.CuDword(Adv, "MMTaskbarMode", 1), Tray)
+            .Option("where", L("Taskbar where window is open"), Reg.CuDword(Adv, "MMTaskbarMode", 2), Tray)
             .WindowsDefault("all")
             .Build();
 
-        yield return Tweak.Toggle("custom.taskbar.showdesktop", L("Coin « Afficher le bureau »"),
-                L("Cliquer à l'extrémité droite de la barre des tâches réduit toutes les fenêtres pour afficher le bureau."))
+        yield return Tweak.Toggle("custom.taskbar.showdesktop", L("“Show desktop” corner"),
+                L("Clicking the far right end of the taskbar minimizes all windows to show the desktop."))
             .In(C, GroupTaskbar)
-            .Keywords(L("afficher le bureau, show desktop, coin, reduire tout, peek"))
+            .Keywords(L("show desktop, corner, minimize all, peek"))
             .Requires(Requires.Windows11_22H2)
             .WhenOn(Reg.CuDword(Adv, "TaskbarSd", 1), Tray)
             .WhenOff(Reg.CuDword(Adv, "TaskbarSd", 0), Tray)
             .WindowsDefault(On)
             .Build();
 
-        yield return Tweak.Toggle("custom.taskbar.smallicons", L("Petits boutons de la barre des tâches"),
-                L("Réduit la hauteur de la barre des tâches de Windows 10 en utilisant de petites icônes."))
+        yield return Tweak.Toggle("custom.taskbar.smallicons", L("Small taskbar buttons"),
+                L("Reduces the height of the Windows 10 taskbar by using small icons."))
             .In(C, GroupTaskbar)
-            .Keywords(L("petites icones, small icons, taille, hauteur, compacte"))
+            .Keywords(L("small icons, size, height, compact"))
             .Requires(Requires.Windows10Only)
             .Effect(ApplyEffect.RestartExplorer)
             .WhenOn(Reg.CuDword(Adv, "TaskbarSmallIcons", 1), Tray)
@@ -332,35 +332,35 @@ internal static class CustomizationTweaks
 
     private static IEnumerable<TweakDefinition> StartTweaks()
     {
-        yield return Tweak.Choice("custom.start.layout", L("Disposition du menu Démarrer"),
-                L("Répartition de l'espace entre les applications épinglées et la section « Recommandé ». Peut rester sans effet sur le menu Démarrer remanié diffusé fin 2025, qui n'a plus ce choix."))
+        yield return Tweak.Choice("custom.start.layout", L("Start menu layout"),
+                L("How space is split between pinned apps and the “Recommended” section. May have no effect on the redesigned Start menu released in late 2025, which no longer has this option."))
             .In(C, GroupStart)
-            .Keywords(L("menu demarrer, epingles, recommande, disposition, start layout, more pins"))
+            .Keywords(L("start menu, pins, pinned, recommended, layout, start layout, more pins"))
             .Requires(Requires.Windows11_22H2)
             .Effect(ApplyEffect.SignOut)
-            .Option("default", L("Par défaut"), Reg.CuDword(Adv, "Start_Layout", 0))
-            .Option("pins", L("Plus d'épingles"), Reg.CuDword(Adv, "Start_Layout", 1))
-            .Option("recommendations", L("Plus de recommandations"), Reg.CuDword(Adv, "Start_Layout", 2))
+            .Option("default", L("Default"), Reg.CuDword(Adv, "Start_Layout", 0))
+            .Option("pins", L("More pins"), Reg.CuDword(Adv, "Start_Layout", 1))
+            .Option("recommendations", L("More recommendations"), Reg.CuDword(Adv, "Start_Layout", 2))
             .WindowsDefault("default")
             .Build();
 
-        yield return Tweak.Choice("custom.start.mostused", L("Liste « Plus utilisées » de Démarrer"),
-                L("Impose l'affichage ou le masquage des applications les plus utilisées dans le menu Démarrer, pour tous les utilisateurs du PC (stratégie Windows). « Selon les Paramètres » laisse chacun choisir."))
+        yield return Tweak.Choice("custom.start.mostused", L("“Most used” list in Start"),
+                L("Forces showing or hiding the most used apps in the Start menu for all users of the PC (Windows policy). “Per Settings” lets each person choose."))
             .In(C, GroupStart)
-            .Keywords(L("plus utilisees, most used, applications frequentes, menu demarrer, liste"))
+            .Keywords(L("most used, frequent apps, start menu, list"))
             .Requires(Requires.Windows11_22H2)
             .Effect(ApplyEffect.SignOut)
-            .Option("user", L("Selon les Paramètres"), Reg.LmDel(ExplorerPolicy, "ShowOrHideMostUsedApps"))
-            .Option("show", L("Toujours affichée"), Reg.LmDword(ExplorerPolicy, "ShowOrHideMostUsedApps", 1))
-            .Option("hide", L("Toujours masquée"), Reg.LmDword(ExplorerPolicy, "ShowOrHideMostUsedApps", 2))
+            .Option("user", L("Per Settings"), Reg.LmDel(ExplorerPolicy, "ShowOrHideMostUsedApps"))
+            .Option("show", L("Always shown"), Reg.LmDword(ExplorerPolicy, "ShowOrHideMostUsedApps", 1))
+            .Option("hide", L("Always hidden"), Reg.LmDword(ExplorerPolicy, "ShowOrHideMostUsedApps", 2))
             .WindowsDefault("user")
             .Build();
 
-        yield return Tweak.Toggle("custom.start.recentlyadded", L("Applications récemment ajoutées dans Démarrer"),
-                L("Liste des applications installées récemment dans le menu Démarrer. « Masquées » l'impose pour tous les utilisateurs (stratégie Windows) ; « Autorisées » laisse le choix dans Paramètres."))
+        yield return Tweak.Toggle("custom.start.recentlyadded", L("Recently added apps in Start"),
+                L("List of recently installed apps in the Start menu. “Hidden” enforces it for all users (Windows policy); “Allowed” leaves the choice in Settings."))
             .In(C, GroupStart)
-            .Keywords(L("recemment ajoutees, recently added, nouvelles applications, menu demarrer"))
-            .Labels(L("Autorisées"), L("Masquées"))
+            .Keywords(L("recently added, new apps, start menu"))
+            .Labels(LC("feminine plural", "Allowed"), LC("feminine plural", "Hidden"))
             .Effect(ApplyEffect.SignOut)
             .WhenOn(Reg.LmDel(ExplorerPolicy, "HideRecentlyAddedApps"))
             .WhenOff(Reg.LmDword(ExplorerPolicy, "HideRecentlyAddedApps", 1))
@@ -374,10 +374,10 @@ internal static class CustomizationTweaks
 
     private static IEnumerable<TweakDefinition> ExplorerTweaks()
     {
-        yield return Tweak.Toggle("custom.explorer.extensions", L("Afficher les extensions de fichiers"),
-                L("Montre « .pdf », « .exe »… à la fin des noms de fichiers. Recommandé : aide à repérer les fichiers piégés (ex. « facture.pdf.exe »)."))
+        yield return Tweak.Toggle("custom.explorer.extensions", L("Show file name extensions"),
+                L("Shows “.pdf”, “.exe”… at the end of file names. Recommended: helps you spot booby-trapped files (e.g. “invoice.pdf.exe”)."))
             .In(C, GroupExplorer)
-            .Keywords(L("extension, fichier, exe, type de fichier"))
+            .Keywords(L("extension, file, exe, file type, file extension"))
             .Tags("security", "office")
             .WhenOn(Reg.CuDword(Adv, "HideFileExt", 0))
             .WhenOff(Reg.CuDword(Adv, "HideFileExt", 1))
@@ -386,82 +386,82 @@ internal static class CustomizationTweaks
             .Effect(ApplyEffect.RestartExplorer)
             .Build();
 
-        yield return Tweak.Toggle("custom.explorer.hidden", L("Fichiers et dossiers cachés"),
-                L("Affiche les éléments marqués « caché » (AppData, dossiers de configuration…), en semi-transparence. Appuyez sur F5 dans les fenêtres déjà ouvertes."))
+        yield return Tweak.Toggle("custom.explorer.hidden", L("Hidden files and folders"),
+                L("Shows items marked “hidden” (AppData, configuration folders…), semi-transparent. Press F5 in windows that are already open."))
             .In(C, GroupExplorer)
-            .Keywords(L("fichiers caches, hidden files, appdata, masques, invisibles"))
+            .Keywords(L("hidden files, appdata, show hidden, invisible"))
             .Tags("dev")
             .WhenOn(Reg.CuDword(Adv, "Hidden", 1))
             .WhenOff(Reg.CuDword(Adv, "Hidden", 2))
             .WindowsDefault(Off)
             .Build();
 
-        yield return Tweak.Toggle("custom.explorer.superhidden", L("Fichiers protégés du système"),
-                L("Affiche les fichiers système protégés (desktop.ini, pagefile.sys…). Inutile au quotidien. Appuyez sur F5 dans les fenêtres déjà ouvertes."))
+        yield return Tweak.Toggle("custom.explorer.superhidden", L("Protected operating system files"),
+                L("Shows protected system files (desktop.ini, pagefile.sys…). Not needed day to day. Press F5 in windows that are already open."))
             .In(C, GroupExplorer)
-            .Keywords(L("fichiers systeme, proteges, super hidden, desktop.ini, systeme"))
+            .Keywords(L("system files, protected, super hidden, desktop.ini, system"))
             .Tags("dev")
             .Risk(RiskLevel.Advanced)
-            .Warning(L("Supprimer ou modifier ces fichiers peut empêcher Windows de fonctionner ou de démarrer."))
+            .Warning(L("Deleting or modifying these files can stop Windows from working or starting."))
             .WhenOn(Reg.CuDword(Adv, "ShowSuperHidden", 1))
             .WhenOff(Reg.CuDword(Adv, "ShowSuperHidden", 0))
             .WindowsDefault(Off)
             .Build();
 
-        yield return Tweak.Choice("custom.explorer.launchto", L("Ouvrir l'Explorateur sur"),
-                L("Page affichée à l'ouverture de l'Explorateur de fichiers (Windows + E)."))
+        yield return Tweak.Choice("custom.explorer.launchto", L("Open File Explorer to"),
+                L("Page shown when File Explorer opens (Windows + E)."))
             .In(C, GroupExplorer)
-            .Keywords(L("ce pc, this pc, acces rapide, accueil, quick access, home, ouverture, poste de travail"))
+            .Keywords(L("this pc, quick access, home, open to, my computer"))
             .Tags("office")
-            .Option("home", L("Accueil (Accès rapide)"), Reg.CuDword(Adv, "LaunchTo", 2))
-            .Option("thispc", L("Ce PC"), Reg.CuDword(Adv, "LaunchTo", 1))
+            .Option("home", L("Home (Quick access)"), Reg.CuDword(Adv, "LaunchTo", 2))
+            .Option("thispc", L("This PC"), Reg.CuDword(Adv, "LaunchTo", 1))
             .WindowsDefault("home")
             .Build();
 
-        yield return Tweak.Toggle("custom.explorer.compact", L("Affichage compact"),
-                L("Réduit l'espacement entre les éléments de l'Explorateur, que Windows 11 agrandit pour le tactile. S'applique aux nouvelles fenêtres."))
+        yield return Tweak.Toggle("custom.explorer.compact", L("Compact view"),
+                L("Reduces the spacing between items in File Explorer, which Windows 11 enlarges for touch. Applies to new windows."))
             .In(C, GroupExplorer)
-            .Keywords(L("compact, espacement, densite, compact view, padding"))
+            .Keywords(L("compact, spacing, density, compact view, padding"))
             .Requires(Requires.Windows11)
             .WhenOn(Reg.CuDword(Adv, "UseCompactMode", 1))
             .WhenOff(Reg.CuDword(Adv, "UseCompactMode", 0))
             .WindowsDefault(Off)
             .Build();
 
-        yield return Tweak.Toggle("custom.explorer.checkboxes", L("Cases à cocher des éléments"),
-                L("Ajoute une case à cocher sur chaque fichier pour en sélectionner plusieurs sans maintenir Ctrl : pratique au doigt ou au pavé tactile."))
+        yield return Tweak.Toggle("custom.explorer.checkboxes", L("Item check boxes"),
+                L("Adds a check box to each file so you can select several without holding Ctrl: handy with a finger or a touchpad."))
             .In(C, GroupExplorer)
-            .Keywords(L("cases a cocher, checkbox, selection, tactile, selectionner"))
+            .Keywords(L("check boxes, checkbox, selection, touch, select"))
             .WhenOn(Reg.CuDword(Adv, "AutoCheckSelect", 1))
             .WhenOff(Reg.CuDword(Adv, "AutoCheckSelect", 0))
             .WindowsDefault(Off)
             .RecommendWhen(p => p.HardwareLoaded && p.HasTouch ? On : null)
             .Build();
 
-        yield return Tweak.Toggle("custom.explorer.fullpath", L("Chemin complet dans la barre de titre"),
-                L("Affiche le chemin complet du dossier (ex. C:\\Users\\…\\Documents) dans le titre de la fenêtre ou de l'onglet."))
+        yield return Tweak.Toggle("custom.explorer.fullpath", L("Full path in the title bar"),
+                L("Shows the folder's full path (e.g. C:\\Users\\…\\Documents) in the window or tab title."))
             .In(C, GroupExplorer)
-            .Keywords(L("chemin complet, full path, barre de titre, adresse, titre"))
+            .Keywords(L("full path, title bar, address, title"))
             .Tags("dev", "office")
             .WhenOn(Reg.CuDword(CabinetState, "FullPath", 1))
             .WhenOff(Reg.CuDword(CabinetState, "FullPath", 0))
             .WindowsDefault(Off)
             .Build();
 
-        yield return Tweak.Toggle("custom.explorer.syncnotifications", L("Notifications des services de synchronisation"),
-                L("Messages de OneDrive ou d'autres services de synchronisation affichés dans l'Explorateur, souvent des suggestions d'abonnement ou de fonctionnalités."))
+        yield return Tweak.Toggle("custom.explorer.syncnotifications", L("Sync provider notifications"),
+                L("Messages from OneDrive or other sync services shown in File Explorer, often subscription or feature suggestions."))
             .In(C, GroupExplorer)
-            .Keywords(L("onedrive, notifications, synchronisation, sync provider, publicite explorateur"))
+            .Keywords(L("onedrive, notifications, sync, sync provider, explorer ads"))
             .WhenOn(Reg.CuDword(Adv, "ShowSyncProviderNotifications", 1))
             .WhenOff(Reg.CuDword(Adv, "ShowSyncProviderNotifications", 0))
             .WindowsDefault(On)
             .Recommend(Off)
             .Build();
 
-        yield return Tweak.Toggle("custom.explorer.classicmenu", L("Menu contextuel complet (style Windows 10)"),
-                L("Le clic droit affiche directement toutes les options, sans passer par « Afficher plus d'options » (Maj + F10). Astuce non documentée par Microsoft mais très répandue : une mise à jour de Windows pourrait la rendre inopérante."))
+        yield return Tweak.Toggle("custom.explorer.classicmenu", L("Full context menu (Windows 10 style)"),
+                L("Right-clicking shows all options right away, without going through “Show more options” (Shift + F10). A widespread tweak not documented by Microsoft: a Windows update could make it stop working."))
             .In(C, GroupExplorer)
-            .Keywords(L("menu contextuel, clic droit, afficher plus d'options, classic context menu, ancien menu, windows 10"))
+            .Keywords(L("context menu, right-click, show more options, classic context menu, old menu, windows 10"))
             .Tags("office")
             .Requires(Requires.Windows11)
             .Effect(ApplyEffect.RestartExplorer)
@@ -472,11 +472,11 @@ internal static class CustomizationTweaks
             .WindowsDefault(Off)
             .Build();
 
-        yield return Tweak.Toggle("custom.explorer.gallery", L("Galerie dans le volet de navigation"),
-                L("Raccourci « Galerie » (vue chronologique de vos photos) dans la colonne de gauche de l'Explorateur. Méthode non documentée par Microsoft, sans risque et annulable."))
+        yield return Tweak.Toggle("custom.explorer.gallery", L("Gallery in the navigation pane"),
+                L("“Gallery” shortcut (a timeline view of your photos) in the left column of File Explorer. Method not documented by Microsoft, safe and can be undone."))
             .In(C, GroupExplorer)
-            .Keywords(L("galerie, gallery, volet de navigation, navigation pane, photos"))
-            .Requires(Requires.When(p => p.Build >= 22631, L("La Galerie n'existe qu'à partir de Windows 11 23H2.")))
+            .Keywords(L("gallery, navigation pane, photos"))
+            .Requires(Requires.When(p => p.Build >= 22631, L("Gallery only exists from Windows 11 23H2.")))
             .Effect(ApplyEffect.RestartExplorer)
             .WhenOn(Reg.CuDelKey(GalleryClsid))
             .WhenOff(Reg.CuDelKey(GalleryClsid), Reg.CuDword(GalleryClsid, PinnedToNavPane, 0))
@@ -484,10 +484,10 @@ internal static class CustomizationTweaks
             .WindowsDefault(On)
             .Build();
 
-        yield return Tweak.Toggle("custom.explorer.home", L("Accueil dans le volet de navigation"),
-                L("Raccourci « Accueil » (fichiers récents et favoris) dans la colonne de gauche de l'Explorateur. Si vous le masquez, choisissez « Ce PC » comme page d'ouverture. Méthode non documentée par Microsoft, annulable."))
+        yield return Tweak.Toggle("custom.explorer.home", L("Home in the navigation pane"),
+                L("“Home” shortcut (recent and favorite files) in the left column of File Explorer. If you hide it, choose “This PC” as the start page. Method not documented by Microsoft, can be undone."))
             .In(C, GroupExplorer)
-            .Keywords(L("accueil, home, acces rapide, quick access, volet de navigation, navigation pane"))
+            .Keywords(L("home, quick access, navigation pane"))
             .Requires(Requires.Windows11_22H2)
             .Effect(ApplyEffect.RestartExplorer)
             .WhenOn(Reg.CuDelKey(HomeClsid))
@@ -496,32 +496,32 @@ internal static class CustomizationTweaks
             .WindowsDefault(On)
             .Build();
 
-        yield return Tweak.Choice("custom.explorer.driveletters", L("Lettres des lecteurs"),
-                L("Position de la lettre (C:, D:…) dans le nom des lecteurs affichés par l'Explorateur."))
+        yield return Tweak.Choice("custom.explorer.driveletters", L("Drive letters"),
+                L("Position of the letter (C:, D:…) in drive names shown by File Explorer."))
             .In(C, GroupExplorer)
-            .Keywords(L("lettre de lecteur, drive letter, c:, disque, lecteur"))
+            .Keywords(L("drive letter, c:, disk, drive"))
             .Effect(ApplyEffect.RestartExplorer)
-            .Option("after", L("Après le nom"), Reg.CuDel(Explorer, "ShowDriveLettersFirst"))
-            .Option("before", L("Avant le nom"), Reg.CuDword(Explorer, "ShowDriveLettersFirst", 4))
-            .Option("network", L("Avant le nom (réseau uniquement)"), Reg.CuDword(Explorer, "ShowDriveLettersFirst", 1))
-            .Option("hidden", L("Masquées"), Reg.CuDword(Explorer, "ShowDriveLettersFirst", 2))
+            .Option("after", L("After the name"), Reg.CuDel(Explorer, "ShowDriveLettersFirst"))
+            .Option("before", L("Before the name"), Reg.CuDword(Explorer, "ShowDriveLettersFirst", 4))
+            .Option("network", L("Before the name (network drives only)"), Reg.CuDword(Explorer, "ShowDriveLettersFirst", 1))
+            .Option("hidden", LC("feminine plural", "Hidden"), Reg.CuDword(Explorer, "ShowDriveLettersFirst", 2))
             .WindowsDefault("after")
             .Build();
 
-        yield return Tweak.Toggle("custom.explorer.shortcutsuffix", L("Suffixe « - Raccourci » des nouveaux raccourcis"),
-                L("Windows ajoute « - Raccourci » au nom des raccourcis que vous créez. Désactivé, le raccourci porte simplement le nom de l'élément. Les raccourcis existants ne sont pas renommés."))
+        yield return Tweak.Toggle("custom.explorer.shortcutsuffix", L("“ - Shortcut” suffix on new shortcuts"),
+                L("Windows adds “ - Shortcut” to the name of shortcuts you create. When off, the shortcut simply has the item's name. Existing shortcuts aren't renamed."))
             .In(C, GroupExplorer)
-            .Keywords(L("raccourci, suffixe, shortcut, - raccourci, nom du raccourci"))
+            .Keywords(L("shortcut, suffix, - shortcut, shortcut name"))
             .Effect(ApplyEffect.RestartExplorer)
             .WhenOn(Reg.CuDel(NamingTemplates, "ShortcutNameTemplate"))
             .WhenOff(Reg.CuString(NamingTemplates, "ShortcutNameTemplate", "\"%s.lnk\""))
             .WindowsDefault(On)
             .Build();
 
-        yield return Tweak.Toggle("custom.explorer.statusbar", L("Barre d'état"),
-                L("Ligne en bas des fenêtres de l'Explorateur indiquant le nombre d'éléments et la taille de la sélection."))
+        yield return Tweak.Toggle("custom.explorer.statusbar", L("Status bar"),
+                L("Line at the bottom of File Explorer windows showing the number of items and the size of the selection."))
             .In(C, GroupExplorer)
-            .Keywords(L("barre d'etat, status bar, nombre d'elements, selection"))
+            .Keywords(L("status bar, item count, number of items, selection"))
             .WhenOn(Reg.CuDword(Adv, "ShowStatusBar", 1))
             .WhenOff(Reg.CuDword(Adv, "ShowStatusBar", 0))
             .WindowsDefault(On)
@@ -534,55 +534,55 @@ internal static class CustomizationTweaks
 
     private static IEnumerable<TweakDefinition> DesktopTweaks()
     {
-        yield return DesktopIcon("custom.desktop.thispc", L("Icône « Ce PC » sur le bureau"),
-            L("Raccourci vers les lecteurs et les dossiers de l'ordinateur."),
-            "{20D04FE0-3AEA-1069-A2D8-08002B30309D}", visibleByDefault: false, L("ce pc, poste de travail, this pc, ordinateur"));
-        yield return DesktopIcon("custom.desktop.recyclebin", L("Icône « Corbeille » sur le bureau"),
-            L("Accès à la Corbeille depuis le bureau (elle reste accessible dans l'Explorateur)."),
-            "{645FF040-5081-101B-9F08-00AA002F954E}", visibleByDefault: true, L("corbeille, recycle bin, poubelle"));
-        yield return DesktopIcon("custom.desktop.userfolder", L("Icône du dossier personnel sur le bureau"),
-            L("Raccourci vers votre dossier utilisateur (Documents, Images, Téléchargements…)."),
-            "{59031a47-3f72-44a7-89c5-5595fe6b30ee}", visibleByDefault: false, L("dossier utilisateur, fichiers de l'utilisateur, user folder, profil"));
-        yield return DesktopIcon("custom.desktop.network", L("Icône « Réseau » sur le bureau"),
-            L("Raccourci vers les ordinateurs et appareils partagés du réseau local."),
-            "{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}", visibleByDefault: false, L("reseau, network, voisinage reseau"));
-        yield return DesktopIcon("custom.desktop.controlpanel", L("Icône « Panneau de configuration » sur le bureau"),
-            L("Raccourci vers le Panneau de configuration classique."),
-            "{5399E694-6CE5-4D6C-8FCE-1D8870FDCBA0}", visibleByDefault: false, L("panneau de configuration, control panel"));
+        yield return DesktopIcon("custom.desktop.thispc", L("“This PC” icon on the desktop"),
+            L("Shortcut to the computer's drives and folders."),
+            "{20D04FE0-3AEA-1069-A2D8-08002B30309D}", visibleByDefault: false, L("this pc, my computer, computer"));
+        yield return DesktopIcon("custom.desktop.recyclebin", L("“Recycle Bin” icon on the desktop"),
+            L("Access to the Recycle Bin from the desktop (it's still available in File Explorer)."),
+            "{645FF040-5081-101B-9F08-00AA002F954E}", visibleByDefault: true, L("recycle bin, trash, bin"));
+        yield return DesktopIcon("custom.desktop.userfolder", L("User's files icon on the desktop"),
+            L("Shortcut to your user folder (Documents, Pictures, Downloads…)."),
+            "{59031a47-3f72-44a7-89c5-5595fe6b30ee}", visibleByDefault: false, L("user folder, user's files, profile, home folder"));
+        yield return DesktopIcon("custom.desktop.network", L("“Network” icon on the desktop"),
+            L("Shortcut to shared computers and devices on the local network."),
+            "{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}", visibleByDefault: false, L("network, network neighborhood"));
+        yield return DesktopIcon("custom.desktop.controlpanel", L("“Control Panel” icon on the desktop"),
+            L("Shortcut to the classic Control Panel."),
+            "{5399E694-6CE5-4D6C-8FCE-1D8870FDCBA0}", visibleByDefault: false, L("control panel"));
 
-        yield return Tweak.Toggle("custom.windows.snap", L("Ancrage des fenêtres (Snap)"),
-                L("Faire glisser une fenêtre vers un bord ou un coin de l'écran la redimensionne (moitié, quart de l'écran). Désactivé, les dispositions d'ancrage et l'assistance à l'ancrage sont aussi indisponibles."))
+        yield return Tweak.Toggle("custom.windows.snap", L("Snap windows"),
+                L("Dragging a window to an edge or corner of the screen resizes it (half or quarter of the screen). When off, snap layouts and Snap assist are unavailable too."))
             .In(C, GroupDesktop)
-            .Keywords(L("ancrage, snap, aero snap, cote a cote, redimensionner, moitie ecran"))
+            .Keywords(L("snap, aero snap, side by side, resize, half screen, split screen"))
             .Effect(ApplyEffect.SignOut)
             .WhenOn(Reg.CuString(DesktopKey, "WindowArrangementActive", "1"))
             .WhenOff(Reg.CuString(DesktopKey, "WindowArrangementActive", "0"))
             .WindowsDefault(On)
             .Build();
 
-        yield return Tweak.Toggle("custom.windows.snaplayouts", L("Dispositions d'ancrage au survol"),
-                L("Survoler le bouton Agrandir d'une fenêtre propose des dispositions (deux colonnes, grille…). Le raccourci Windows + Z reste disponible."))
+        yield return Tweak.Toggle("custom.windows.snaplayouts", L("Snap layouts on hover"),
+                L("Hovering over a window's Maximize button suggests layouts (two columns, grid…). The Windows + Z shortcut is still available."))
             .In(C, GroupDesktop)
-            .Keywords(L("snap layouts, dispositions, agrandir, survol, ancrage, grille"))
+            .Keywords(L("snap layouts, layouts, maximize, hover, snap, grid"))
             .Requires(Requires.Windows11)
             .WhenOn(Reg.CuDword(Adv, "EnableSnapAssistFlyout", 1))
             .WhenOff(Reg.CuDword(Adv, "EnableSnapAssistFlyout", 0))
             .WindowsDefault(On)
             .Build();
 
-        yield return Tweak.Toggle("custom.windows.snapassist", L("Assistance à l'ancrage"),
-                L("Après avoir ancré une fenêtre, Windows propose vos autres fenêtres ouvertes pour remplir l'espace restant."))
+        yield return Tweak.Toggle("custom.windows.snapassist", L("Snap assist"),
+                L("After you snap a window, Windows suggests your other open windows to fill the remaining space."))
             .In(C, GroupDesktop)
-            .Keywords(L("snap assist, assistance, ancrage, suggestions fenetres"))
+            .Keywords(L("snap assist, snap, window suggestions"))
             .WhenOn(Reg.CuDword(Adv, "SnapAssist", 1))
             .WhenOff(Reg.CuDword(Adv, "SnapAssist", 0))
             .WindowsDefault(On)
             .Build();
 
-        yield return Tweak.Toggle("custom.windows.shake", L("Secouer pour réduire les autres fenêtres"),
-                L("Secouer la barre de titre d'une fenêtre réduit toutes les autres (« Aero Shake »). Désactivé par défaut sous Windows 11, activé sous Windows 10."))
+        yield return Tweak.Toggle("custom.windows.shake", L("Shake to minimize other windows"),
+                L("Shaking a window's title bar minimizes all the others (“Aero Shake”). Off by default on Windows 11, on by default on Windows 10."))
             .In(C, GroupDesktop)
-            .Keywords(L("secouer, aero shake, shake, reduire fenetres, barre de titre"))
+            .Keywords(L("shake, aero shake, minimize windows, title bar"))
             .WhenOn(Reg.CuDword(Adv, "DisallowShaking", 0))
             .WhenOff(Reg.CuDword(Adv, "DisallowShaking", 1))
             .Detect(() => RegistryAccess.ReadDword(RegHive.CurrentUser, Adv, "DisallowShaking") switch
@@ -593,23 +593,23 @@ internal static class CustomizationTweaks
             })
             .Build();
 
-        yield return Tweak.Choice("custom.windows.alttabtabs", L("Onglets Microsoft Edge dans Alt+Tab"),
-                L("Onglets des applications compatibles (Microsoft Edge) proposés par Alt+Tab et l'ancrage des fenêtres. Selon la version de Windows, « Tous les onglets » peut être limité aux plus récents."))
+        yield return Tweak.Choice("custom.windows.alttabtabs", L("Microsoft Edge tabs in Alt+Tab"),
+                L("Tabs of compatible apps (Microsoft Edge) shown by Alt+Tab and window snapping. Depending on the Windows version, “All tabs” may be limited to the most recent ones."))
             .In(C, GroupDesktop)
-            .Keywords(L("alt tab, onglets, edge, tabs, basculer fenetres"))
-            .Requires(Requires.When(p => p.Build >= 19042, L("Nécessite Windows 10 20H2 ou plus récent.")))
-            .Option("default", L("Réglage par défaut"), Reg.CuDel(Adv, "MultiTaskingAltTabFilter"))
-            .Option("none", L("Fenêtres uniquement"), Reg.CuDword(Adv, "MultiTaskingAltTabFilter", 3))
-            .Option("three", L("3 onglets récents"), Reg.CuDword(Adv, "MultiTaskingAltTabFilter", 2))
-            .Option("five", L("5 onglets récents"), Reg.CuDword(Adv, "MultiTaskingAltTabFilter", 1))
-            .Option("all", L("Tous les onglets"), Reg.CuDword(Adv, "MultiTaskingAltTabFilter", 0))
+            .Keywords(L("alt tab, tabs, edge, switch windows"))
+            .Requires(Requires.When(p => p.Build >= 19042, L("Requires Windows 10 20H2 or later.")))
+            .Option("default", L("Default setting"), Reg.CuDel(Adv, "MultiTaskingAltTabFilter"))
+            .Option("none", L("Open windows only"), Reg.CuDword(Adv, "MultiTaskingAltTabFilter", 3))
+            .Option("three", L("3 most recent tabs"), Reg.CuDword(Adv, "MultiTaskingAltTabFilter", 2))
+            .Option("five", L("5 most recent tabs"), Reg.CuDword(Adv, "MultiTaskingAltTabFilter", 1))
+            .Option("all", L("All tabs"), Reg.CuDword(Adv, "MultiTaskingAltTabFilter", 0))
             .WindowsDefault("default")
             .Build();
 
-        yield return Tweak.Toggle("custom.desktop.jpegquality", L("Qualité maximale des fonds d'écran JPEG"),
-                L("Windows recompresse les fonds d'écran JPEG à 85 % de qualité, ce qui peut créer des artefacts visibles. À 100 %, l'image est conservée sans perte visible. S'applique au prochain changement de fond d'écran."))
+        yield return Tweak.Toggle("custom.desktop.jpegquality", L("Maximum JPEG wallpaper quality"),
+                L("Windows recompresses JPEG wallpapers at 85% quality, which can cause visible artifacts. At 100%, the picture is kept with no visible loss. Applies the next time the wallpaper changes."))
             .In(C, GroupDesktop)
-            .Keywords(L("qualite fond d'ecran, jpeg, compression, wallpaper quality, artefacts, flou fond d'ecran"))
+            .Keywords(L("wallpaper quality, jpeg, compression, artifacts, blurry wallpaper"))
             .WhenOn(Reg.CuDword(DesktopKey, "JPEGImportQuality", 100))
             .WhenOff(Reg.CuDel(DesktopKey, "JPEGImportQuality"))
             .WindowsDefault(Off)
@@ -617,10 +617,10 @@ internal static class CustomizationTweaks
     }
 
     private static TweakDefinition DesktopIcon(string id, string title, string description, string clsid, bool visibleByDefault, params string[] keywords) =>
-        Tweak.Toggle(id, title, L("{0} Visible après actualisation du bureau (F5) ou redémarrage de l'Explorateur.", description))
+        Tweak.Toggle(id, title, L("{0} Visible after refreshing the desktop (F5) or restarting Explorer.", description))
             .In(C, GroupDesktop)
-            .Keywords([.. keywords, L("icones du bureau, desktop icons, bureau")])
-            .Labels(L("Affichée"), L("Masquée"))
+            .Keywords([.. keywords, L("desktop icons, desktop")])
+            .Labels(LC("feminine", "Shown"), LC("feminine", "Hidden"))
             .Effect(ApplyEffect.RestartExplorer)
             .WhenOn(Reg.CuDword(DesktopIcons, clsid, 0))
             .WhenOff(Reg.CuDword(DesktopIcons, clsid, 1))
@@ -633,28 +633,28 @@ internal static class CustomizationTweaks
 
     private static IEnumerable<TweakDefinition> LogonTweaks()
     {
-        yield return Tweak.Toggle("custom.logon.acrylic", L("Effet de flou sur l'écran de connexion"),
-                L("Flou (acrylique) appliqué à l'image de fond derrière la zone de connexion. Désactivé, l'image reste nette. Stratégie Windows : s'applique à tous les utilisateurs."))
+        yield return Tweak.Toggle("custom.logon.acrylic", L("Blur effect on the sign-in screen"),
+                L("Blur (acrylic) applied to the background picture behind the sign-in area. When off, the picture stays sharp. Windows policy: applies to all users."))
             .In(C, GroupLogon)
-            .Keywords(L("flou, acrylique, ecran de connexion, login, blur, arriere plan connexion"))
+            .Keywords(L("blur, acrylic, sign-in screen, login, logon background"))
             .WhenOn(Reg.LmDel(SystemPolicy, "DisableAcrylicBackgroundOnLogon"))
             .WhenOff(Reg.LmDword(SystemPolicy, "DisableAcrylicBackgroundOnLogon", 1))
             .WindowsDefault(On)
             .Build();
 
-        yield return Tweak.Toggle("custom.logon.background", L("Image de fond sur l'écran de connexion"),
-                L("Affiche l'image de l'écran de verrouillage derrière la zone de connexion. Désactivé, un fond de couleur unie est utilisé. S'applique à tous les utilisateurs. Valeur de stratégie absente des modèles d'administration de Microsoft mais très répandue : une mise à jour de Windows pourrait la rendre inopérante."))
+        yield return Tweak.Toggle("custom.logon.background", L("Background picture on the sign-in screen"),
+                L("Shows the lock screen picture behind the sign-in area. When off, a solid color background is used. Applies to all users. This policy value isn't in Microsoft's administrative templates but is widely used: a Windows update could make it stop working."))
             .In(C, GroupLogon)
-            .Keywords(L("ecran de connexion, image de fond, sign-in screen, logon background, arriere plan connexion"))
+            .Keywords(L("sign-in screen, background picture, logon background, login background"))
             .WhenOn(Reg.LmDel(SystemPolicy, "DisableLogonBackgroundImage"))
             .WhenOff(Reg.LmDword(SystemPolicy, "DisableLogonBackgroundImage", 1))
             .WindowsDefault(On)
             .Build();
 
-        yield return Tweak.Toggle("custom.logon.verbose", L("Messages d'état détaillés"),
-                L("Au démarrage, à l'arrêt et à l'ouverture de session, Windows affiche l'étape en cours (« Application des paramètres de stratégie de groupe… ») au lieu de « Veuillez patienter ». Utile pour diagnostiquer une lenteur."))
+        yield return Tweak.Toggle("custom.logon.verbose", L("Verbose status messages"),
+                L("At startup, shutdown and sign-in, Windows shows the current step (“Applying Group Policy settings…”) instead of “Please wait”. Useful for diagnosing slowness."))
             .In(C, GroupLogon)
-            .Keywords(L("messages detailles, verbose, diagnostic demarrage, veuillez patienter, lenteur demarrage"))
+            .Keywords(L("verbose messages, verbose, startup diagnostics, please wait, slow startup, slow boot"))
             .Tags("dev")
             .Risk(RiskLevel.Moderate)
             .WhenOn(Reg.LmDword(SystemPoliciesLegacy, "VerboseStatus", 1))
@@ -662,10 +662,10 @@ internal static class CustomizationTweaks
             .WindowsDefault(Off)
             .Build();
 
-        yield return Tweak.Toggle("custom.logon.numlock", L("Verr. num activé au démarrage"),
-                L("Active le pavé numérique dès l'écran de connexion. Sur certains PC, le réglage du BIOS/UEFI l'emporte. Sur un portable sans pavé numérique séparé, des lettres taperaient alors des chiffres : n'activez pas ce réglage."))
+        yield return Tweak.Toggle("custom.logon.numlock", L("Num Lock on at startup"),
+                L("Turns on the numeric keypad from the sign-in screen. On some PCs, the BIOS/UEFI setting takes precedence. On a laptop without a separate numeric keypad, some letters would then type numbers: don't turn this setting on."))
             .In(C, GroupLogon)
-            .Keywords(L("verr num, numlock, pave numerique, num lock, chiffres"))
+            .Keywords(L("num lock, numlock, numeric keypad, numbers"))
             .Tags("office")
             .WhenOn(Reg.DefString(DefaultKeyboard, "InitialKeyboardIndicators", "2147483650"))
             .WhenOff(Reg.DefString(DefaultKeyboard, "InitialKeyboardIndicators", "2147483648"))
@@ -674,10 +674,10 @@ internal static class CustomizationTweaks
                 : Off)
             .Build();
 
-        yield return Tweak.Toggle("custom.logon.startupsound", L("Son de démarrage de Windows"),
-                L("Son joué à l'affichage de l'écran de connexion lors du démarrage du PC. S'applique à tous les utilisateurs."))
+        yield return Tweak.Toggle("custom.logon.startupsound", L("Windows startup sound"),
+                L("Sound played when the sign-in screen appears as the PC starts. Applies to all users."))
             .In(C, GroupLogon)
-            .Keywords(L("son de demarrage, startup sound, jingle, son windows, musique demarrage"))
+            .Keywords(L("startup sound, jingle, windows sound, boot sound"))
             .WhenOn(Reg.LmDword(BootAnimation, "DisableStartupSound", 0))
             .WhenOff(Reg.LmDword(BootAnimation, "DisableStartupSound", 1))
             // La stratégie « Désactiver le son de démarrage de Windows » (Logon.admx), si elle est définie, l'emporte.
@@ -697,10 +697,10 @@ internal static class CustomizationTweaks
 
     private static IEnumerable<TweakDefinition> InputTweaks()
     {
-        yield return Tweak.Toggle("custom.mouse.precision", L("Améliorer la précision du pointeur"),
-                L("Accélération de la souris : le pointeur va plus loin quand vous bougez vite. Beaucoup de joueurs et de graphistes préfèrent la désactiver pour un déplacement proportionnel et prévisible."))
+        yield return Tweak.Toggle("custom.mouse.precision", L("Enhance pointer precision"),
+                L("Mouse acceleration: the pointer travels farther when you move quickly. Many gamers and designers prefer to turn it off for proportional, predictable movement."))
             .In(C, GroupInput)
-            .Keywords(L("acceleration souris, precision du pointeur, mouse acceleration, enhance pointer precision, souris, pointeur"))
+            .Keywords(L("mouse acceleration, pointer precision, enhance pointer precision, mouse, pointer"))
             .Tags("gaming")
             .Effect(ApplyEffect.SignOut)
             .WhenOn(Reg.CuString(MouseKey, "MouseSpeed", "1"), Reg.CuString(MouseKey, "MouseThreshold1", "6"), Reg.CuString(MouseKey, "MouseThreshold2", "10"))
@@ -708,15 +708,15 @@ internal static class CustomizationTweaks
             .WindowsDefault(On)
             .Build();
 
-        yield return AccessibilityShortcut("custom.keyboard.stickykeys", L("Raccourci des touches rémanentes (Maj × 5)"),
-            L("Appuyer 5 fois sur Maj propose d'activer les touches rémanentes."),
-            StickyKeys, "510", "506", L("touches remanentes, sticky keys, maj 5 fois, shift"));
-        yield return AccessibilityShortcut("custom.keyboard.filterkeys", L("Raccourci des touches filtres (Maj droite 8 s)"),
-            L("Maintenir la touche Maj de droite 8 secondes propose d'activer les touches filtres (frappes brèves ou répétées ignorées)."),
-            FilterKeys, "126", "122", L("touches filtres, filter keys, maj droite"));
-        yield return AccessibilityShortcut("custom.keyboard.togglekeys", L("Raccourci des touches bascules (Verr. num 5 s)"),
-            L("Maintenir Verr. num 5 secondes active les touches bascules (bip à l'appui de Verr. maj, Verr. num et Arrêt défil)."),
-            ToggleKeys, "62", "58", L("touches bascules, toggle keys, bip verr maj"));
+        yield return AccessibilityShortcut("custom.keyboard.stickykeys", L("Sticky keys shortcut (Shift × 5)"),
+            L("Pressing Shift 5 times offers to turn on sticky keys."),
+            StickyKeys, "510", "506", L("sticky keys, shift 5 times, shift"));
+        yield return AccessibilityShortcut("custom.keyboard.filterkeys", L("Filter keys shortcut (right Shift 8 s)"),
+            L("Holding the right Shift key for 8 seconds offers to turn on filter keys (brief or repeated keystrokes are ignored)."),
+            FilterKeys, "126", "122", L("filter keys, right shift"));
+        yield return AccessibilityShortcut("custom.keyboard.togglekeys", L("Toggle keys shortcut (Num Lock 5 s)"),
+            L("Holding Num Lock for 5 seconds turns on toggle keys (a beep when you press Caps Lock, Num Lock and Scroll Lock)."),
+            ToggleKeys, "62", "58", L("toggle keys, caps lock beep"));
     }
 
     /// <summary>
@@ -725,9 +725,9 @@ internal static class CustomizationTweaks
     /// </summary>
     private static TweakDefinition AccessibilityShortcut(string id, string title, string description, string key,
         string onValue, string offValue, params string[] keywords) =>
-        Tweak.Toggle(id, title, L("{0} Désactiver ce raccourci évite les fenêtres ouvertes par erreur (en jeu notamment) ; la fonction reste disponible dans Paramètres › Accessibilité. Les autres options de la fonction reprennent leur valeur par défaut.", description))
+        Tweak.Toggle(id, title, L("{0} Turning off this shortcut prevents windows from opening by mistake (especially while gaming); the feature is still available in Settings › Accessibility. The feature's other options go back to their default values.", description))
             .In(C, GroupInput)
-            .Keywords([.. keywords, L("accessibilite, raccourci clavier, clavier")])
+            .Keywords([.. keywords, L("accessibility, keyboard shortcut, keyboard")])
             .Tags("gaming")
             .Effect(ApplyEffect.SignOut)
             .WhenOn(Reg.CuString(key, "Flags", onValue))

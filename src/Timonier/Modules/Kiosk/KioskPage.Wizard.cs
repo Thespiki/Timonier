@@ -15,12 +15,12 @@ namespace Timonier.Modules.Kiosk;
 
 public sealed partial class KioskPage
 {
-    private static readonly string[] StepTitles = [L("Compte kiosque"), L("Application"), L("Options"), L("Appliquer")];
+    private static readonly string[] StepTitles = [L("Kiosk account"), L("App"), L("Options"), L("Apply")];
     private static readonly (int Minutes, string Label)[] IdleChoices =
     [
-        (0, L("Jamais")),
+        (0, L("Never")),
         (2, LP(2, "{0} minute", "{0} minutes")), (5, LP(5, "{0} minute", "{0} minutes")), (10, LP(10, "{0} minute", "{0} minutes")),
-        (15, LP(15, "{0} minute", "{0} minutes")), (30, LP(30, "{0} minute", "{0} minutes")), (60, LP(1, "{0} heure", "{0} heures")),
+        (15, LP(15, "{0} minute", "{0} minutes")), (30, LP(30, "{0} minute", "{0} minutes")), (60, LP(1, "{0} hour", "{0} hours")),
     ];
 
     // --- État de l'assistant
@@ -60,10 +60,10 @@ public sealed partial class KioskPage
         stack.Children.Add(Divider(new Thickness(-16, 16, -16, 12)));
 
         var footer = new DockPanel();
-        var back = Button(L("Précédent"), "", "Pp.Button", (_, _) => ShowStep(_step - 1));
+        var back = Button(L("Back"), "", "Pp.Button", (_, _) => ShowStep(_step - 1));
         DockPanel.SetDock(back, Dock.Left);
         footer.Children.Add(back);
-        var next = Button(L("Suivant"), "", "Pp.AccentButton", (_, _) => ShowStep(_step + 1));
+        var next = Button(L("Next"), "", "Pp.AccentButton", (_, _) => ShowStep(_step + 1));
         DockPanel.SetDock(next, Dock.Right);
         footer.Children.Add(next);
         _hint.VerticalAlignment = VerticalAlignment.Center;
@@ -89,13 +89,13 @@ public sealed partial class KioskPage
 
     private string? AppProblem() => _mode switch
     {
-        KioskModes.Store when !_profile.SupportsAssignedAccess => L("L'accès attribué n'est pas disponible sur cette édition."),
-        KioskModes.Store => _storeApp is null ? L("Choisissez une application dans la liste.") : null,
-        KioskModes.Edge when _edgePath is null => L("Microsoft Edge n'est pas installé."),
+        KioskModes.Store when !_profile.SupportsAssignedAccess => L("Assigned access isn't available on this edition."),
+        KioskModes.Store => _storeApp is null ? L("Choose an app from the list.") : null,
+        KioskModes.Edge when _edgePath is null => L("Microsoft Edge isn't installed."),
         KioskModes.Edge => KioskRules.TryUrl(_url, out var e) ? null : e,
-        KioskModes.Win32 when _exe is null => L("Choisissez le programme à lancer."),
-        KioskModes.Win32 => File.Exists(_exe) ? KioskRules.ExeLocationProblem(_exe!, _account?.ProfilePath) : L("Le programme choisi est introuvable."),
-        _ => L("Choisissez un type d'application."),
+        KioskModes.Win32 when _exe is null => L("Choose the program to run."),
+        KioskModes.Win32 => File.Exists(_exe) ? KioskRules.ExeLocationProblem(_exe!, _account?.ProfilePath) : L("The selected program can't be found."),
+        _ => L("Choose an app type."),
     };
 
     private bool CanReach(int index)
@@ -130,7 +130,7 @@ public sealed partial class KioskPage
         _next.IsEnabled = valid && !_busy;
         _hint.Text = _step switch
         {
-            0 when !valid => L("Choisissez ou créez un compte standard."),
+            0 when !valid => L("Choose or create a standard account."),
             1 when !valid => AppProblem() ?? "",
             _ => "",
         };
@@ -178,11 +178,11 @@ public sealed partial class KioskPage
             var button = new Button
             {
                 Content = item, Padding = new Thickness(6, 4, 10, 4), HorizontalContentAlignment = HorizontalAlignment.Left,
-                ToolTip = reachable || current ? null : L("Terminez d'abord les étapes précédentes."),
+                ToolTip = reachable || current ? null : L("Finish the previous steps first."),
             }.Styled("Pp.SubtleButton");
             // Pas d'IsEnabled=false : l'état désactivé grise aussi l'étape en cours. Le clic n'est simplement pas branché.
             button.Opacity = reachable || current ? 1 : 0.55;
-            System.Windows.Automation.AutomationProperties.SetName(button, L("Étape {0} : {1}", i + 1, StepTitles[i]));
+            System.Windows.Automation.AutomationProperties.SetName(button, L("Step {0}: {1}", i + 1, StepTitles[i]));
             var target = i;
             if (reachable && !current) button.Click += (_, _) => ShowStep(target);
             else button.Cursor = System.Windows.Input.Cursors.Arrow;
@@ -201,15 +201,15 @@ public sealed partial class KioskPage
 
     private string StepSummary(int i) => i switch
     {
-        0 => _account?.Name ?? L("À choisir"),
+        0 => _account?.Name ?? L("Not chosen yet"),
         1 => _mode switch
         {
-            KioskModes.Store => _storeApp?.Name ?? L("Application du Store"),
+            KioskModes.Store => _storeApp?.Name ?? L("Store app"),
             KioskModes.Edge => "Microsoft Edge",
-            _ => _exe is null ? L("Programme classique") : Path.GetFileName(_exe),
+            _ => _exe is null ? L("Classic program") : Path.GetFileName(_exe),
         },
         2 => LP(_restrictions.Count, "{0} restriction", "{0} restrictions") + (_autologonEnabled ? " · " + LC("autologon", "auto") : ""),
-        _ => L("Vérifier et lancer"),
+        _ => L("Review and start"),
     };
 
     private static StackPanel StepIntro(string title, string text)
@@ -254,14 +254,14 @@ public sealed partial class KioskPage
     private StackPanel BuildAccountStep()
     {
         var stack = new StackPanel();
-        stack.Children.Add(StepIntro(L("Quel compte utilisera la borne ?"),
-            L("Un compte local standard réservé à la borne. Vous gardez votre compte administrateur pour la gérer ; les administrateurs et votre propre compte ne peuvent pas être choisis.")));
+        stack.Children.Add(StepIntro(L("Which account will the kiosk use?"),
+            L("A standard local account reserved for the kiosk. You keep your administrator account to manage it; administrators and your own account can't be selected.")));
 
         var tools = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
-        var refresh = IconButton("", L("Actualiser la liste des comptes"), async (_, _) => await LoadAccountsAsync());
+        var refresh = IconButton("", L("Refresh the account list"), async (_, _) => await LoadAccountsAsync());
         DockPanel.SetDock(refresh, Dock.Right);
         tools.Children.Add(refresh);
-        var create = Button(L("Créer un compte kiosque"), "", "Pp.Button", (_, _) => ToggleCreateForm(true));
+        var create = Button(L("Create a kiosk account"), "", "Pp.Button", (_, _) => ToggleCreateForm(true));
         create.HorizontalAlignment = HorizontalAlignment.Left;
         tools.Children.Add(create);
         _createButton = create;
@@ -281,30 +281,30 @@ public sealed partial class KioskPage
         _accountsList.Children.Clear();
         if (_accountsError is not null)
         {
-            _accountsList.Children.Add(State("", L("Impossible de lister les comptes"), _accountsError));
+            _accountsList.Children.Add(State("", L("Couldn't list the accounts"), _accountsError));
             return;
         }
         if (_accounts is null)
         {
-            _accountsList.Children.Add(State("", L("Lecture des comptes locaux…"), busy: true));
+            _accountsList.Children.Add(State("", L("Reading local accounts…"), busy: true));
             return;
         }
         var eligible = _accounts.Where(IsEligible).ToList();
         // Sans compte éligible, la création devient l'action principale de l'étape.
         _createButton?.SetResourceReference(StyleProperty, eligible.Count == 0 ? "Pp.AccentButton" : "Pp.Button");
         if (eligible.Count == 0)
-            _accountsList.Children.Add(State("", L("Aucun compte standard disponible"), L("Créez un compte kiosque dédié avec le bouton ci-dessus : c'est la méthode recommandée.")));
+            _accountsList.Children.Add(State("", L("No standard account available"), L("Create a dedicated kiosk account with the button above: it's the recommended method.")));
         foreach (var a in _accounts)
         {
             var ok = IsEligible(a);
             var selected = ok && _account?.Sid == a.Sid;
             string caption;
             Border? badge = null;
-            if (a.IsCurrent) { caption = L("C'est le compte que vous utilisez en ce moment."); badge = Badge(L("Vous"), "Neutral"); }
-            else if (a.IsAdmin) { caption = L("Un administrateur pourrait sortir du mode kiosque."); badge = Badge(L("Administrateur"), "Warning", ""); }
-            else if (!a.Enabled) { caption = L("Ce compte est désactivé."); badge = Badge(L("Désactivé"), "Neutral"); }
-            else caption = a.HasProfile ? L("Compte standard · déjà utilisé sur ce PC") : L("Compte standard · jamais connecté (son profil sera créé automatiquement)");
-            if (selected) badge = Badge(L("Choisi"),"Accent", "");
+            if (a.IsCurrent) { caption = L("This is the account you're using right now."); badge = Badge(L("You"), "Neutral"); }
+            else if (a.IsAdmin) { caption = L("An administrator could exit kiosk mode."); badge = Badge(L("Administrator"), "Warning", ""); }
+            else if (!a.Enabled) { caption = L("This account is disabled."); badge = Badge(L("Off"), "Neutral"); }
+            else caption = a.HasProfile ? L("Standard account · already used on this PC") : L("Standard account · never signed in (its profile will be created automatically)");
+            if (selected) badge = Badge(L("Selected"),"Accent", "");
 
             var row = Row(null, a.DisplayName, caption, badge);
             var tile = GlyphTile("", ok ? "Pp.AccentSubtle" : "Pp.NeutralBackground", ok ? "Pp.AccentText" : "Pp.Neutral", 32);
@@ -333,8 +333,8 @@ public sealed partial class KioskPage
     private Border BuildCreateForm()
     {
         var stack = new StackPanel();
-        stack.Children.Add(Text(L("Nouveau compte kiosque"), "Pp.CardTitle"));
-        stack.Children.Add(Caption(L("Compte local standard (groupe Utilisateurs uniquement), sans expiration du mot de passe.")));
+        stack.Children.Add(Text(L("New kiosk account"), "Pp.CardTitle"));
+        stack.Children.Add(Caption(L("Standard local account (Users group only), with no password expiration.")));
 
         var grid = new Grid { Margin = new Thickness(0, 4, 0, 0) };
         grid.ColumnDefinitions.Add(new ColumnDefinition());
@@ -344,17 +344,17 @@ public sealed partial class KioskPage
         var full = new TextBox { MaxLength = 64 };
         var pw = new PasswordBox { MaxLength = 127 };
         var pw2 = new PasswordBox { MaxLength = 127 };
-        System.Windows.Automation.AutomationProperties.SetName(name, L("Nom du compte"));
-        System.Windows.Automation.AutomationProperties.SetName(full, L("Nom affiché"));
-        System.Windows.Automation.AutomationProperties.SetName(pw, L("Mot de passe"));
-        System.Windows.Automation.AutomationProperties.SetName(pw2, L("Confirmation du mot de passe"));
-        AddField(grid, 0, 0, L("Nom du compte (20 caractères max.)"), name);
-        AddField(grid, 0, 2, L("Nom affiché (facultatif)"), full);
-        AddField(grid, 2, 0, L("Mot de passe (facultatif)"), pw);
+        System.Windows.Automation.AutomationProperties.SetName(name, L("Account name"));
+        System.Windows.Automation.AutomationProperties.SetName(full, L("Display name"));
+        System.Windows.Automation.AutomationProperties.SetName(pw, L("Password"));
+        System.Windows.Automation.AutomationProperties.SetName(pw2, LC("field name", "Confirm password"));
+        AddField(grid, 0, 0, L("Account name (20 characters max.)"), name);
+        AddField(grid, 0, 2, L("Display name (optional)"), full);
+        AddField(grid, 2, 0, L("Password (optional)"), pw);
         AddField(grid, 2, 2, L("Confirmation"), pw2);
         stack.Children.Add(grid);
 
-        var note = Caption(L("Sans mot de passe, n'importe qui peut ouvrir cette session depuis l'écran de connexion — ce qui est généralement le but d'une borne. Avec un mot de passe, activez l'ouverture automatique à l'étape « Options »."));
+        var note = Caption(L("Without a password, anyone can open this session from the sign-in screen — which is usually the point of a kiosk. With a password, turn on automatic sign-in in the “Options” step."));
         note.Margin = new Thickness(0, 8, 0, 0);
         stack.Children.Add(note);
 
@@ -366,20 +366,20 @@ public sealed partial class KioskPage
 
         var progress = new ProgressBar { IsIndeterminate = true, Width = 120, Height = 3, Visibility = Visibility.Collapsed, Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
         Button? createBtn = null;
-        var cancelBtn = Button(L("Annuler"), null, "Pp.SubtleButton", (_, _) =>
+        var cancelBtn = Button(L("Undo"), null, "Pp.SubtleButton", (_, _) =>
         {
             pw.Clear();   // ne garde pas un mot de passe abandonné dans le formulaire
             pw2.Clear();
             ToggleCreateForm(false);
         });
-        createBtn = Button(L("Créer le compte"), "", "Pp.AccentButton", async (_, _) =>
+        createBtn = Button(L("Create account"), "", "Pp.AccentButton", async (_, _) =>
         {
             error.Visibility = Visibility.Collapsed;
             string user;
             try { user = Validate.LocalUserName(name.Text); }
             catch (ValidationException ex) { ShowError(ex.Message); return; }
-            if (_accounts?.Any(a => string.Equals(a.Name, user, StringComparison.OrdinalIgnoreCase)) == true) { ShowError(L("Le compte « {0} » existe déjà : sélectionnez-le dans la liste.", user)); return; }
-            if (pw.Password != pw2.Password) { ShowError(L("Les deux mots de passe ne correspondent pas.")); return; }
+            if (_accounts?.Any(a => string.Equals(a.Name, user, StringComparison.OrdinalIgnoreCase)) == true) { ShowError(L("The account “{0}” already exists: select it in the list.", user)); return; }
+            if (pw.Password != pw2.Password) { ShowError(L("The two passwords don't match.")); return; }
 
             createBtn!.IsEnabled = false;
             cancelBtn.IsEnabled = false;
@@ -447,15 +447,15 @@ public sealed partial class KioskPage
     private StackPanel BuildAppStep()
     {
         var stack = new StackPanel();
-        stack.Children.Add(StepIntro(L("Quelle application doit s'afficher ?"),
-            L("Elle s'ouvrira seule, en plein écran, à chaque connexion du compte « {0} ».", _account?.Name)));
+        stack.Children.Add(StepIntro(L("Which app should be displayed?"),
+            L("It will open on its own, in full screen, every time the account “{0}” signs in.", _account?.Name)));
 
         var modes = new UniformGrid { Columns = 3, Margin = new Thickness(-3, 0, -3, 8) };
-        modes.Children.Add(ModeTile(KioskModes.Store, "", L("Application du Store"), L("Accès attribué : plein écran, sans Bureau."),
-            _profile.SupportsAssignedAccess ? null : L("Édition non compatible")));
-        modes.Children.Add(ModeTile(KioskModes.Edge, "", "Microsoft Edge", L("Un site web en plein écran ou en navigation publique."),
-            _edgePath is null ? L("Edge absent") : null));
-        modes.Children.Add(ModeTile(KioskModes.Win32, "", L("Application classique"), L("Un programme .exe à la place du Bureau."), null));
+        modes.Children.Add(ModeTile(KioskModes.Store, "", L("Store app"), L("Assigned access: full screen, no desktop."),
+            _profile.SupportsAssignedAccess ? null : L("Edition not supported")));
+        modes.Children.Add(ModeTile(KioskModes.Edge, "", "Microsoft Edge", L("A website in full screen or public browsing."),
+            _edgePath is null ? L("Edge not installed") : null));
+        modes.Children.Add(ModeTile(KioskModes.Win32, "", L("Classic app"), L("An .exe program instead of the desktop."), null));
         stack.Children.Add(modes);
 
         stack.Children.Add(_mode switch
@@ -503,8 +503,8 @@ public sealed partial class KioskPage
     private StackPanel BuildStorePanel()
     {
         var stack = new StackPanel();
-        var search = new TextBox { Tag = L("Rechercher une application…"), Text = _storeFilter, Margin = new Thickness(0, 4, 0, 10) }.Styled("Pp.SearchBox");
-        System.Windows.Automation.AutomationProperties.SetName(search, L("Rechercher une application"));
+        var search = new TextBox { Tag = L("Search for an app…"), Text = _storeFilter, Margin = new Thickness(0, 4, 0, 10) }.Styled("Pp.SearchBox");
+        System.Windows.Automation.AutomationProperties.SetName(search, L("Search for an app"));
         var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
         timer.Tick += (_, _) => { timer.Stop(); _storeFilter = search.Text.Trim(); RenderStoreList(); };
         search.TextChanged += (_, _) => { timer.Stop(); timer.Start(); };
@@ -515,7 +515,7 @@ public sealed partial class KioskPage
         scroll.Content = _storeList;
         stack.Children.Add(scroll);
 
-        var info = PageScaffold.InfoBar(L("L'application doit aussi être disponible pour le compte kiosque. Les applications fournies avec Windows le sont pour tous les comptes ; pour une application installée depuis le Microsoft Store par vous seul, ouvrez une fois la session kiosque et installez-la depuis le Store. Windows refuse aussi les comptes liés à un compte Microsoft pour cette méthode."), "");
+        var info = PageScaffold.InfoBar(L("The app must also be available to the kiosk account. Apps that come with Windows are available to all accounts; for an app you installed from the Microsoft Store for yourself only, sign in to the kiosk session once and install it from the Store. Windows also rejects accounts linked to a Microsoft account for this method."), "");
         info.Margin = new Thickness(0, 10, 0, 0);
         stack.Children.Add(info);
 
@@ -544,15 +544,15 @@ public sealed partial class KioskPage
         _storeList.Children.Clear();
         if (_storeError is not null)
         {
-            var retry = Button(L("Réessayer"), "", "Pp.Button", async (_, _) => await LoadStoreAppsAsync());
+            var retry = Button(L("Try again"), "", "Pp.Button", async (_, _) => await LoadStoreAppsAsync());
             retry.HorizontalAlignment = HorizontalAlignment.Center;
-            _storeList.Children.Add(State("", L("Impossible de lister les applications"), _storeError));
+            _storeList.Children.Add(State("", L("Couldn't list the apps"), _storeError));
             _storeList.Children.Add(retry);
             return;
         }
         if (_storeApps is null)
         {
-            _storeList.Children.Add(State("", L("Recherche des applications installées…"), busy: true));
+            _storeList.Children.Add(State("", L("Searching for installed apps…"), busy: true));
             return;
         }
         var filter = _storeFilter;
@@ -560,7 +560,7 @@ public sealed partial class KioskPage
                                             || a.Aumid.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
         if (matches.Count == 0)
         {
-            _storeList.Children.Add(State("", L("Aucune application trouvée"), filter.Length > 0 ? L("Essayez un autre nom.") : null));
+            _storeList.Children.Add(State("", L("No apps found"), filter.Length > 0 ? L("Try another name.") : null));
             return;
         }
         // La sélection reste visible en tête, même si elle ne correspond pas au filtre.
@@ -577,7 +577,7 @@ public sealed partial class KioskPage
                 }.Brushed(Border.BackgroundProperty, "Pp.ControlFill")
                 : GlyphTile("", size: 32);
             icon.Margin = new Thickness(0, 0, 12, 0);
-            var row = Row(null, app.Name, app.Aumid, selected ? Badge(L("Choisie"),"Accent", "") : null);
+            var row = Row(null, app.Name, app.Aumid, selected ? Badge(LC("feminine", "Selected"),"Accent", "") : null);
             DockPanel.SetDock(icon, Dock.Left);
             row.Children.Insert(row.Children.Count - 1, icon);
             var a = app;
@@ -590,7 +590,7 @@ public sealed partial class KioskPage
             _storeList.Children.Add(tile);
         }
         if (matches.Count > max)
-            _storeList.Children.Add(Caption(LP(matches.Count - max, "{0} autre application : affinez la recherche.", "{0} autres applications : affinez la recherche."), tertiary: true));
+            _storeList.Children.Add(Caption(LP(matches.Count - max, "{0} more app: refine your search.", "{0} more apps: refine your search."), tertiary: true));
     }
 
     // --- Edge
@@ -598,9 +598,9 @@ public sealed partial class KioskPage
     private StackPanel BuildEdgePanel()
     {
         var stack = new StackPanel();
-        stack.Children.Add(FieldLabel(L("Adresse du site à afficher")));
+        stack.Children.Add(FieldLabel(L("Website address to display")));
         var url = new TextBox { Text = _url, MaxLength = 2048 };
-        System.Windows.Automation.AutomationProperties.SetName(url, L("Adresse du site"));
+        System.Windows.Automation.AutomationProperties.SetName(url, L("Website address"));
         var urlError = Caption("");
         urlError.Brushed(TextBlock.ForegroundProperty, "Pp.Danger");
         urlError.Margin = new Thickness(0, 4, 0, 0);
@@ -615,26 +615,26 @@ public sealed partial class KioskPage
         stack.Children.Add(url);
         stack.Children.Add(urlError);
 
-        stack.Children.Add(FieldLabel(L("Type de borne")));
+        stack.Children.Add(FieldLabel(L("Kiosk type")));
         var kinds = new UniformGrid { Columns = 2, Margin = new Thickness(-3, 0, -3, 0) };
-        kinds.Children.Add(EdgeKindTile(false, "", L("Affichage public"),
-            L("Une seule page en plein écran, sans barre d'adresse ni onglets : affichage dynamique ou borne interactive.")));
-        kinds.Children.Add(EdgeKindTile(true, "", L("Navigation publique"),
-            L("Navigation InPrivate limitée, avec barre d'adresse et onglets ; historique et cookies effacés à la fermeture.")));
+        kinds.Children.Add(EdgeKindTile(false, "", L("Public display"),
+            L("A single full-screen page, with no address bar or tabs: digital signage or interactive kiosk.")));
+        kinds.Children.Add(EdgeKindTile(true, "", L("Public browsing"),
+            L("Limited InPrivate browsing, with an address bar and tabs; history and cookies are cleared on close.")));
         stack.Children.Add(kinds);
 
-        stack.Children.Add(FieldLabel(L("Retour à la page d'accueil après inactivité")));
+        stack.Children.Add(FieldLabel(L("Return to the home page after inactivity")));
         var idle = new ComboBox { Width = 220, HorizontalAlignment = HorizontalAlignment.Left };
         foreach (var (m, label) in IdleChoices) idle.Items.Add(new ComboBoxItem { Content = label, Tag = m });
         idle.SelectedIndex = Math.Max(0, Array.FindIndex(IdleChoices, c => c.Minutes == _idle));
         idle.SelectionChanged += (_, _) => { if (idle.SelectedItem is ComboBoxItem { Tag: int m }) _idle = m; };
-        System.Windows.Automation.AutomationProperties.SetName(idle, L("Délai d'inactivité"));
+        System.Windows.Automation.AutomationProperties.SetName(idle, L("Idle timeout"));
         stack.Children.Add(idle);
-        var idleNote = Caption(L("Sans interaction pendant ce délai, Edge revient à l'adresse de départ (et efface la session en navigation publique)."));
+        var idleNote = Caption(L("If there's no interaction during this time, Edge returns to the starting address (and clears the session in public browsing)."));
         idleNote.Margin = new Thickness(0, 4, 0, 0);
         stack.Children.Add(idleNote);
 
-        var how = Caption(L("Timonier lance Edge avec ses options officielles de mode kiosque (--kiosk, --edge-kiosk-type) à la place du Bureau de ce compte."));
+        var how = Caption(L("Timonier starts Edge with its official kiosk mode options (--kiosk, --edge-kiosk-type) instead of this account's desktop."));
         how.Margin = new Thickness(0, 12, 0, 0);
         stack.Children.Add(how);
 
@@ -658,25 +658,25 @@ public sealed partial class KioskPage
     private Border BuildWindowsWizardGuide()
     {
         var s = new StackPanel();
-        s.Children.Add(Text(L("Vous préférez l'assistant kiosque de Windows ?"), "Pp.CardTitle"));
-        var intro = Caption(L("Il configure Edge par l'accès attribué et crée lui-même le compte kiosque. Dans ce cas, n'appliquez pas la configuration de Timonier :"));
+        s.Children.Add(Text(L("Prefer the Windows kiosk wizard?"), "Pp.CardTitle"));
+        var intro = Caption(L("It sets up Edge through assigned access and creates the kiosk account itself. In that case, don't apply Timonier's configuration:"));
         intro.Margin = new Thickness(0, 2, 0, 6);
         s.Children.Add(intro);
         string[] steps =
         [
-            L("Ouvrez Paramètres › Comptes › Autres utilisateurs, puis dans « Configurer un kiosque », cliquez sur « Commencer »."),
-            L("Donnez un nom au compte kiosque : Windows le crée pour vous."),
-            L("Choisissez Microsoft Edge dans la liste des applications."),
-            L("Choisissez l'usage « panneau d'affichage numérique ou interactif » (affichage public) ou « navigateur public », puis collez l'adresse du site."),
-            L("Réglez le délai de redémarrage après inactivité et fermez les Paramètres. Déconnectez-vous pour tester la borne."),
+            L("Open Settings › Accounts › Other users, then under “Set up a kiosk”, click “Get started”."),
+            L("Give the kiosk account a name: Windows creates it for you."),
+            L("Choose Microsoft Edge from the list of apps."),
+            L("Choose the “As a digital sign or interactive display” use (public display) or “As a public browser”, then paste the site address."),
+            L("Set the restart time after inactivity and close Settings. Sign out to test the kiosk."),
         ];
         for (var i = 0; i < steps.Length; i++) s.Children.Add(NumberedStep(i + 1, steps[i]));
-        var open = Button(L("Ouvrir l'assistant de Windows"), "", "Pp.Button", (_, _) => OpenAssignedAccessSettings());
-        var copy = Button(L("Copier l'adresse"),"", "Pp.SubtleButton", (_, _) =>
+        var open = Button(L("Open the Windows wizard"), "", "Pp.Button", (_, _) => OpenAssignedAccessSettings());
+        var copy = Button(L("Copy address"),"", "Pp.SubtleButton", (_, _) =>
         {
-            if (!KioskRules.TryUrl(_url, out var e)) { AppHost.Toasts.Show(e ?? L("Adresse invalide."), ToastKind.Warning); return; }
-            try { Clipboard.SetText(_url); AppHost.Toasts.Show(L("Adresse copiée dans le Presse-papiers."), ToastKind.Success); }
-            catch (Exception ex) { AppHost.Toasts.Show(L("Copie impossible : {0}", ex.Message), ToastKind.Error); }
+            if (!KioskRules.TryUrl(_url, out var e)) { AppHost.Toasts.Show(e ?? L("Invalid address."), ToastKind.Warning); return; }
+            try { Clipboard.SetText(_url); AppHost.Toasts.Show(L("Address copied to the clipboard."), ToastKind.Success); }
+            catch (Exception ex) { AppHost.Toasts.Show(L("Couldn't copy: {0}", ex.Message), ToastKind.Error); }
         });
         copy.Margin = new Thickness(8, 0, 0, 0);
         var buttons = Horizontal(open, copy);
@@ -696,7 +696,7 @@ public sealed partial class KioskPage
     private StackPanel BuildWin32Panel()
     {
         var stack = new StackPanel();
-        var pick = Button(_exe is null ? L("Choisir un programme…") : L("Choisir un autre programme…"), "", _exe is null ? "Pp.AccentButton" : "Pp.Button", (_, _) => PickExe());
+        var pick = Button(_exe is null ? L("Choose a program…") : L("Choose another program…"), "", _exe is null ? "Pp.AccentButton" : "Pp.Button", (_, _) => PickExe());
         pick.HorizontalAlignment = HorizontalAlignment.Left;
         pick.Margin = new Thickness(0, 4, 0, 10);
         stack.Children.Add(pick);
@@ -720,10 +720,10 @@ public sealed partial class KioskPage
             if (AppProblem() is { } problem) stack.Children.Add(PageScaffold.InfoBar(problem, "", "Pp.InfoBar.Warning"));
         }
 
-        stack.Children.Add(Bullet(L("Le programme remplace le Bureau, la barre des tâches et le menu Démarrer pour ce compte uniquement ; les autres comptes ne sont pas touchés.")));
-        stack.Children.Add(Bullet(L("C'est une alternative légère à Shell Launcher (réservé aux éditions Entreprise et Éducation) : si le programme se ferme, il n'est pas relancé et l'écran reste noir.")));
-        stack.Children.Add(Bullet(L("Pour quitter la session : Ctrl+Alt+Suppr, puis « Se déconnecter ».")));
-        stack.Children.Add(Bullet(L("Choisissez un programme installé pour tous les utilisateurs (Program Files) : le compte kiosque n'a pas accès à vos dossiers personnels.")));
+        stack.Children.Add(Bullet(L("The program replaces the desktop, taskbar and Start menu for this account only; other accounts aren't affected.")));
+        stack.Children.Add(Bullet(L("It's a lightweight alternative to Shell Launcher (only available on Enterprise and Education editions): if the program closes, it isn't restarted and the screen stays black.")));
+        stack.Children.Add(Bullet(L("To leave the session: Ctrl+Alt+Del, then “Sign out”.")));
+        stack.Children.Add(Bullet(L("Choose a program installed for all users (Program Files): the kiosk account has no access to your personal folders.")));
         return stack;
     }
 
@@ -731,8 +731,8 @@ public sealed partial class KioskPage
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Title = L("Programme à lancer sur la borne"),
-            Filter = L("Programmes (*.exe)") + "|*.exe",
+            Title = L("Program to run on the kiosk"),
+            Filter = L("Programs (*.exe)") + "|*.exe",
             CheckFileExists = true,
             InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
         };
@@ -754,11 +754,11 @@ public sealed partial class KioskPage
     private StackPanel BuildOptionsStep()
     {
         var stack = new StackPanel();
-        stack.Children.Add(StepIntro(L("Verrouiller le compte kiosque"),
-            L("Stratégies appliquées au seul compte « {0} ». Timonier mémorise les valeurs d'origine pour les restaurer au retrait.", _account?.Name)));
+        stack.Children.Add(StepIntro(L("Lock down the kiosk account"),
+            L("Policies applied only to the account “{0}”. Timonier remembers the original values to restore them when the kiosk is removed.", _account?.Name)));
         if (_mode == KioskModes.Store)
         {
-            var note = PageScaffold.InfoBar(L("Avec l'accès attribué, Windows bloque déjà le Bureau et les autres applications : ces restrictions sont une protection supplémentaire."), "");
+            var note = PageScaffold.InfoBar(L("With assigned access, Windows already blocks the desktop and other apps: these restrictions are an extra layer of protection."), "");
             note.Margin = new Thickness(0, 0, 0, 10);
             stack.Children.Add(note);
         }
@@ -777,21 +777,21 @@ public sealed partial class KioskPage
         }
 
         stack.Children.Add(Divider(new Thickness(-16, 16, -16, 16)));
-        stack.Children.Add(Text(L("Ouverture de session automatique"), "Pp.CardTitle"));
+        stack.Children.Add(Text(L("Automatic sign-in"), "Pp.CardTitle"));
         var autoToggle = new CheckBox { IsChecked = _autologonEnabled }.Styled("Pp.ToggleSwitch");
-        System.Windows.Automation.AutomationProperties.SetName(autoToggle, L("Ouverture de session automatique"));
-        var autoRow = Row(null, L("Ouvrir automatiquement la session « {0} » au démarrage", _account?.Name),
-            L("La borne est prête sans intervention après une coupure de courant ou une mise à jour."), autoToggle);
+        System.Windows.Automation.AutomationProperties.SetName(autoToggle, L("Automatic sign-in"));
+        var autoRow = Row(null, L("Automatically sign in to “{0}” at startup", _account?.Name),
+            L("The kiosk is ready with no intervention after a power outage or an update."), autoToggle);
         autoRow.Margin = new Thickness(0, 6, 0, 0);
         stack.Children.Add(autoRow);
 
         var details = new StackPanel { Margin = new Thickness(0, 8, 0, 0), Visibility = _autologonEnabled ? Visibility.Visible : Visibility.Collapsed };
-        details.Children.Add(FieldLabel(L("Mot de passe du compte « {0} » (laissez vide s'il n'en a pas)", _account?.Name)));
+        details.Children.Add(FieldLabel(L("Password for the account “{0}” (leave blank if it has none)", _account?.Name)));
         var pw = new PasswordBox { MaxLength = 127, Width = 320, HorizontalAlignment = HorizontalAlignment.Left, Password = _autologonPassword };
-        System.Windows.Automation.AutomationProperties.SetName(pw, L("Mot de passe du compte kiosque"));
+        System.Windows.Automation.AutomationProperties.SetName(pw, L("Kiosk account password"));
         pw.PasswordChanged += (_, _) => _autologonPassword = pw.Password;
         details.Children.Add(pw);
-        var risk = PageScaffold.InfoBar(L("Risque physique : toute personne qui allume ce PC arrive directement sur la borne, et si elle parvient à en sortir, elle dispose d'une session ouverte. Réservez cette option à un PC placé dans un lieu surveillé. Le mot de passe est conservé dans un secret protégé du système (LSA), jamais en clair dans le registre."),
+        var risk = PageScaffold.InfoBar(L("Physical risk: anyone who turns on this PC goes straight to the kiosk, and if they manage to exit it, they have a signed-in session. Only use this option on a PC in a supervised location. The password is kept in a protected system secret (LSA), never in plain text in the registry."),
             "", "Pp.InfoBar.Warning");
         risk.Margin = new Thickness(0, 10, 0, 0);
         details.Children.Add(risk);
@@ -808,34 +808,34 @@ public sealed partial class KioskPage
     private StackPanel BuildApplyStep()
     {
         var stack = new StackPanel();
-        stack.Children.Add(StepIntro(L("Vérifiez puis appliquez"),
-            L("Windows vous demandera une confirmation administrateur. Rien ne change pour votre propre compte.")));
+        stack.Children.Add(StepIntro(L("Review, then apply"),
+            L("Windows will ask you for administrator confirmation. Nothing changes for your own account.")));
 
-        stack.Children.Add(PageScaffold.KeyValue(L("Compte kiosque"), _account is null ? "—"
-            : _account.HasProfile ? _account.DisplayName : L("{0} (profil créé automatiquement)", _account.DisplayName)));
+        stack.Children.Add(PageScaffold.KeyValue(L("Kiosk account"), _account is null ? "—"
+            : _account.HasProfile ? _account.DisplayName : L("{0} (profile created automatically)", _account.DisplayName)));
         stack.Children.Add(PageScaffold.KeyValue(L("Mode"), KioskModes.Label(_mode)));
-        stack.Children.Add(PageScaffold.KeyValue(L("Application"), _mode switch
+        stack.Children.Add(PageScaffold.KeyValue(L("App"), _mode switch
         {
             KioskModes.Store => $"{_storeApp?.Name} ({_storeApp?.Aumid})",
-            KioskModes.Edge => $"{_url} · {(_publicBrowsing ? L("navigation publique") : L("affichage public plein écran"))}"
-                               + (_idle > 0 ? " · " + L("retour à l'accueil après {0}", IdleChoices.First(c => c.Minutes == _idle).Label) : ""),
+            KioskModes.Edge => $"{_url} · {(_publicBrowsing ? L("public browsing") : L("full-screen public display"))}"
+                               + (_idle > 0 ? " · " + L("return to home page after {0}", IdleChoices.First(c => c.Minutes == _idle).Label) : ""),
             _ => _exe ?? "—",
         }));
         var names = KioskRestrictions.All.Where(r => _restrictions.Contains(r.Key)).Select(r => r.Title).ToList();
-        stack.Children.Add(PageScaffold.KeyValue(L("Restrictions"), names.Count == 0 ? L("Aucune") : string.Join(" · ", names)));
-        stack.Children.Add(PageScaffold.KeyValue(L("Ouverture automatique"),_autologonEnabled ? L("Oui (mot de passe protégé par LSA)") : L("Non")));
+        stack.Children.Add(PageScaffold.KeyValue(L("Restrictions"), names.Count == 0 ? LC("feminine", "None") : string.Join(" · ", names)));
+        stack.Children.Add(PageScaffold.KeyValue(LC("short form", "Automatic sign-in"),_autologonEnabled ? L("Yes (password protected by LSA)") : L("No")));
 
-        var test = PageScaffold.InfoBar(L("Avant de laisser la borne en libre-service : déconnectez-vous, ouvrez la session kiosque pour vérifier, puis revenez avec Ctrl+Alt+Suppr › « Se déconnecter ». Gardez un compte administrateur dont vous connaissez le mot de passe."), "", "Pp.InfoBar.Warning");
+        var test = PageScaffold.InfoBar(L("Before leaving the kiosk for public use: sign out, sign in to the kiosk session to check it, then come back with Ctrl+Alt+Del › “Sign out”. Keep an administrator account whose password you know."), "", "Pp.InfoBar.Warning");
         test.Margin = new Thickness(0, 14, 0, 0);
         stack.Children.Add(test);
         if (_state is { IsConfigured: true } && _account is not null && _state.Sid != _account.Sid)
-            stack.Children.Add(PageScaffold.InfoBar(L("Une borne est déjà configurée pour « {0} » : désactivez-la d'abord (section « État et retrait »).", _state.User), "", "Pp.InfoBar.Danger"));
+            stack.Children.Add(PageScaffold.InfoBar(L("A kiosk is already set up for “{0}”: turn it off first (“Status and removal” section).", _state.User), "", "Pp.InfoBar.Danger"));
 
         var status = Caption("");
         status.VerticalAlignment = VerticalAlignment.Center;
         status.Margin = new Thickness(12, 0, 0, 0);
         var progress = new ProgressBar { IsIndeterminate = true, Width = 120, Height = 3, Margin = new Thickness(12, 0, 0, 0), Visibility = Visibility.Collapsed, VerticalAlignment = VerticalAlignment.Center };
-        var apply = Button(L("Appliquer la configuration"), "", "Pp.AccentButton");
+        var apply = Button(L("Apply configuration"), "", "Pp.AccentButton");
         apply.Click += async (_, _) => await ApplyAsync(apply, progress, status);
         var row = Horizontal(apply, progress, status);
         row.Margin = new Thickness(0, 6, 0, 0);
@@ -878,12 +878,12 @@ public sealed partial class KioskPage
         var reporter = new Progress<string>(s => status.Text = s);
         try
         {
-            status.Text = L("Configuration de la borne…");
+            status.Text = L("Setting up the kiosk…");
             var outcome = await AppHost.Engine.RunActionAsync("kiosk.apply", BuildApplyParameters(), reporter);
             if (!outcome.Success)
             {
                 status.Text = "";
-                if (outcome.Cancelled) AppHost.Toasts.Show(L("Configuration annulée."), ToastKind.Info);
+                if (outcome.Cancelled) AppHost.Toasts.Show(L("Setup canceled."), ToastKind.Info);
                 else ShowApplyResult(false, outcome.Message);
                 return;
             }
@@ -892,12 +892,12 @@ public sealed partial class KioskPage
             var autologonOk = false;
             if (_autologonEnabled)
             {
-                status.Text = L("Ouverture de session automatique…");
+                status.Text = L("Setting up automatic sign-in…");
                 var parameters = new Dictionary<string, string> { ["user"] = _account.Name };
                 if (_autologonPassword.Length > 0) parameters["password"] = _autologonPassword;
                 var auto = await AppHost.Engine.RunActionAsync("kiosk.autologon.set", parameters, reporter);
                 autologonOk = auto.Success;
-                autologonMessage = auto.Success ? null : L("La borne est configurée, mais pas l'ouverture automatique : {0}", auto.Message);
+                autologonMessage = auto.Success ? null : L("The kiosk is set up, but automatic sign-in isn't: {0}", auto.Message);
                 if (auto.Success) _autologonPassword = ""; // ne garde pas le mot de passe en mémoire plus que nécessaire
             }
             status.Text = "";
@@ -912,7 +912,7 @@ public sealed partial class KioskPage
             });
 
             ShowApplyResult(true, outcome.Message, autologonMessage);
-            AppHost.Toasts.Show(L("Mode kiosque configuré pour « {0} ».", _account.Name), ToastKind.Success);
+            AppHost.Toasts.Show(L("Kiosk mode set up for “{0}”.", _account.Name), ToastKind.Success);
             await RefreshStatusAsync();
         }
         finally
@@ -933,9 +933,9 @@ public sealed partial class KioskPage
         _applyResult.Children.Add(bar);
         if (warning is not null) _applyResult.Children.Add(PageScaffold.InfoBar(warning, "", "Pp.InfoBar.Warning"));
         if (!success) return;
-        var signOut = Button(L("Se déconnecter pour tester"), "", "Pp.Button", async (_, _) =>
+        var signOut = Button(L("Sign out to test"), "", "Pp.Button", async (_, _) =>
         {
-            if (!await AppHost.Dialogs.ConfirmAsync(L("Se déconnecter"), L("Enregistrez votre travail : toutes vos applications seront fermées. Sur l'écran de connexion, choisissez « {0} » pour tester la borne.", _account?.Name), L("Se déconnecter"))) return;
+            if (!await AppHost.Dialogs.ConfirmAsync(L("Sign out"), L("Save your work: all your apps will be closed. On the sign-in screen, choose “{0}” to test the kiosk.", _account?.Name), L("Sign out"))) return;
             await SystemEffects.SignOutNowAsync();
         });
         signOut.HorizontalAlignment = HorizontalAlignment.Left;

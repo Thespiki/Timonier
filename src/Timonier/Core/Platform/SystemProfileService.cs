@@ -170,7 +170,7 @@ public static partial class SystemProfileService
     /// Libellé (traduit) placé dans <see cref="SystemProfile.Manufacturer"/> quand le fabricant n'est pas renseigné :
     /// le comparer à cette propriété, jamais à un texte écrit en dur.
     /// </summary>
-    public static string UnknownManufacturer => L("Fabricant non renseigné");
+    public static string UnknownManufacturer => L("Manufacturer not specified");
 
     /// <summary>Le fabricant brut (micrologiciel) est-il absent ou un texte de remplissage ? Indépendant de la langue.</summary>
     public static bool IsUnknownManufacturer(string raw)
@@ -265,7 +265,7 @@ public static partial class SystemProfileService
             disks.Add(new DiskInfo
             {
                 Model = (d["FriendlyName"] as string ?? "").Trim(),
-                Bus = bus switch { 17 => "NVMe", 11 => "SATA", 7 => "USB", 8 => "RAID", 10 => "SAS", 12 => "SD", 13 => "MMC", 15 => LC("disk bus", "Virtuel"), _ => LC("disk bus", "Autre") },
+                Bus = bus switch { 17 => "NVMe", 11 => "SATA", 7 => "USB", 8 => "RAID", 10 => "SAS", 12 => "SD", 13 => "MMC", 15 => LC("disk bus", "Virtual"), _ => LC("disk bus", "Other") },
                 Media = bus == 17 ? DiskMedia.Nvme : media switch { 3 => DiskMedia.Hdd, 4 => DiskMedia.Ssd, _ => bus is 12 or 13 ? DiskMedia.Ssd : DiskMedia.Unknown },
                 SizeBytes = Convert.ToInt64(d["Size"] ?? 0L),
                 IsSystemDisk = systemDisk.HasValue && d["DeviceId"] as string == systemDisk.Value.ToString(),

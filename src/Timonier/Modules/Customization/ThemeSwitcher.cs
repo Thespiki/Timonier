@@ -34,9 +34,9 @@ internal static class ThemeSwitcher
         {
             AppHost.Toasts.Show(mode switch
             {
-                "light" => L("Le mode clair est déjà actif."),
-                "dark" => L("Le mode sombre est déjà actif."),
-                _ => L("Le mode mixte est déjà actif."),
+                "light" => L("Light mode is already on."),
+                "dark" => L("Dark mode is already on."),
+                _ => L("Mixed mode is already on."),
             }, ToastKind.Info);
             return true;
         }
@@ -53,12 +53,12 @@ internal static class ThemeSwitcher
 
         var applied = mode switch
         {
-            "light" => L("Mode clair appliqué."),
-            "dark" => L("Mode sombre appliqué."),
-            _ => L("Mode mixte appliqué."),
+            "light" => L("Light mode applied."),
+            "dark" => L("Dark mode applied."),
+            _ => L("Mixed mode applied."),
         };
         if (ids.Count > 0)
-            AppHost.Toasts.Show(applied, ToastKind.Success, L("Annuler"), () => _ = UndoAsync(ids, silent: false));
+            AppHost.Toasts.Show(applied, ToastKind.Success, L("Undo"), () => _ = UndoAsync(ids, silent: false));
         else
             AppHost.Toasts.Show(applied, ToastKind.Success);
         return true;
@@ -78,7 +78,7 @@ internal static class ThemeSwitcher
                 AppHost.Toasts.ShowOutcome(outcome);
             }
         }
-        if (ok && !silent) AppHost.Toasts.Show(L("Mode précédent rétabli."), ToastKind.Success);
+        if (ok && !silent) AppHost.Toasts.Show(L("Previous mode restored."), ToastKind.Success);
     }
 
     /// <summary>Mode résultant d'un couple (applications, Windows) : "light", "dark" ou "mixed" (identifiant stable).</summary>
@@ -87,22 +87,22 @@ internal static class ThemeSwitcher
     /// <summary>Nom affiché du mode (Mode clair, Mode sombre, Mode mixte).</summary>
     public static string ModeName(string apps, string system) => ModeKey(apps, system) switch
     {
-        "light" => L("Mode clair"),
-        "dark" => L("Mode sombre"),
-        _ => L("Mode mixte"),
+        "light" => L("Light mode"),
+        "dark" => L("Dark mode"),
+        _ => L("Mixed mode"),
     };
 
     /// <summary>Action rapide du tableau de bord : sombre si l'on est en clair, clair sinon.</summary>
     public static QuickAction CreateQuickAction() =>
-        new("custom.toggle-theme", L("Basculer clair / sombre"), "",
-            L("Passe Windows et les applications en mode sombre, ou revient au mode clair."),
+        new("custom.toggle-theme", L("Switch light / dark"), "",
+            L("Switches Windows and apps to dark mode, or back to light mode."),
             async () =>
             {
                 if (AppsLight()) await ApplyAsync("dark", "dark");
                 else await ApplyAsync("light", "light");
             })
         {
-            Keywords = [L("mode sombre, mode clair, dark mode, light mode, theme, basculer, nuit")],
+            Keywords = [L("dark mode, light mode, theme, switch, toggle, night")],
             Order = 40,
         };
 }

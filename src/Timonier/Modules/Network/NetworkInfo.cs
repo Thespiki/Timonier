@@ -44,10 +44,10 @@ internal sealed class AdapterInfo
     {
         AdapterKind.Wifi => "Wi-Fi",
         AdapterKind.Ethernet => "Ethernet",
-        AdapterKind.Mobile => L("Réseau mobile"),
+        AdapterKind.Mobile => L("Cellular"),
         AdapterKind.Vpn => L("VPN / tunnel"),
-        AdapterKind.Virtual => L("Carte virtuelle"),
-        _ => L("Autre"),
+        AdapterKind.Virtual => L("Virtual adapter"),
+        _ => L("Other"),
     };
 
     public string Glyph => Kind switch
@@ -79,7 +79,7 @@ internal sealed class AdapterInfo
     {
         get
         {
-            if (DnsServers.Count == 0) return L("Aucun serveur DNS");
+            if (DnsServers.Count == 0) return L("No DNS servers");
             var provider = DnsProviders.Identify(DnsServers);
             return provider is not null ? provider.Name : string.Join(", ", DnsServers.Take(2));
         }
@@ -270,10 +270,10 @@ internal static class NetworkInfo
 
     public static string ConnectivityLabel(ConnectivityLevel level) => level switch
     {
-        ConnectivityLevel.Internet => L("Connecté à Internet"),
-        ConnectivityLevel.ConstrainedInternet => L("Accès limité (portail de connexion ?)"),
-        ConnectivityLevel.LocalAccess => L("Réseau local uniquement"),
-        ConnectivityLevel.None => L("Aucune connexion"),
-        _ => L("État inconnu"),
+        ConnectivityLevel.Internet => L("Connected to the internet"),
+        ConnectivityLevel.ConstrainedInternet => L("Limited access (sign-in portal?)"),
+        ConnectivityLevel.LocalAccess => L("Local network only"),
+        ConnectivityLevel.None => L("No connection"),
+        _ => L("Unknown state"),
     };
 }

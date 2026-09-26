@@ -30,7 +30,7 @@ public sealed class TweakListView : UserControl
         Content = _root;
 
         _recommendText = new TextBlock { Style = (Style)FindResource("Pp.Body"), VerticalAlignment = VerticalAlignment.Center };
-        var applyButton = new Button { Content = L("Appliquer les recommandations"), Style = (Style)FindResource("Pp.AccentButton"), Margin = new Thickness(12, 0, 0, 0) };
+        var applyButton = new Button { Content = L("Apply recommendations"), Style = (Style)FindResource("Pp.AccentButton"), Margin = new Thickness(12, 0, 0, 0) };
         applyButton.Click += async (_, _) => await ApplyRecommendationsAsync();
         var barGrid = new DockPanel { LastChildFill = true };
         DockPanel.SetDock(applyButton, Dock.Right);
@@ -73,14 +73,14 @@ public sealed class TweakListView : UserControl
             _root.Children.Add(new TextBlock
             {
                 Text = LP(hiddenCount,
-                    "{0} réglage avancé masqué. Activez le « mode avancé » dans les paramètres de Timonier pour l'afficher.",
-                    "{0} réglages avancés masqués. Activez le « mode avancé » dans les paramètres de Timonier pour les afficher."),
+                    "{0} advanced setting hidden. Turn on “advanced mode” in Timonier settings to show it.",
+                    "{0} advanced settings hidden. Turn on “advanced mode” in Timonier settings to show them."),
                 Style = (Style)FindResource("Pp.Caption"),
                 Margin = new Thickness(2, 12, 0, 0),
             });
         }
         if (_items.Count == 0 && hiddenCount == 0)
-            _root.Children.Add(new TextBlock { Text = L("Aucun réglage dans cette section."), Style = (Style)FindResource("Pp.Caption") });
+            _root.Children.Add(new TextBlock { Text = L("No settings in this section."), Style = (Style)FindResource("Pp.Caption") });
 
         Loaded += async (_, _) =>
         {
@@ -142,8 +142,8 @@ public sealed class TweakListView : UserControl
         var pending = PendingRecommendations();
         _recommendBar.Visibility = pending.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         _recommendText.Text = LP(pending.Count,
-            "{0} réglage diffère de la recommandation pour ce PC.",
-            "{0} réglages diffèrent des recommandations pour ce PC.");
+            "{0} setting differs from the recommendation for this PC.",
+            "{0} settings differ from the recommendations for this PC.");
     }
 
     private async Task ApplyRecommendationsAsync()
@@ -152,11 +152,11 @@ public sealed class TweakListView : UserControl
         if (pending.Count == 0) return;
         var lines = string.Join("\n", pending.Select(p => $"• {p.Vm.Title} → {p.Vm.Definition.GetOption(p.Option)?.Label}"));
         var needsAdmin = pending.Any(p => p.Vm.Definition.RequiresAdmin);
-        if (!await AppHost.Dialogs.ConfirmAsync(L("Appliquer les recommandations"),
+        if (!await AppHost.Dialogs.ConfirmAsync(L("Apply recommendations"),
                 needsAdmin
-                    ? L("Les réglages suivants vont être modifiés :\n\n{0}\n\nUne autorisation administrateur sera demandée une seule fois.\nChaque modification reste annulable depuis le Journal.", lines)
-                    : L("Les réglages suivants vont être modifiés :\n\n{0}\n\nChaque modification reste annulable depuis le Journal.", lines),
-                L("Appliquer")))
+                    ? L("The following settings will be changed:\n\n{0}\n\nAdministrator permission will be requested only once.\nEach change can still be undone from History.", lines)
+                    : L("The following settings will be changed:\n\n{0}\n\nEach change can still be undone from History.", lines),
+                L("Apply")))
             return;
 
         foreach (var (vm, _) in pending) vm.IsBusy = true;
@@ -165,12 +165,12 @@ public sealed class TweakListView : UserControl
         var ok = results.Count(r => r.Outcome.Success);
         var failed = results.Where(r => !r.Outcome.Success).ToList();
         AppHost.Toasts.Show(failed.Count == 0
-                ? LP(ok, "{0} réglage appliqué.", "{0} réglages appliqués.")
-                : LP(ok, "{0} appliqué, {1} en échec : {2}", "{0} appliqués, {1} en échec : {2}",
+                ? LP(ok, "{0} setting applied.", "{0} settings applied.")
+                : LP(ok, "{0} applied, {1} failed: {2}", "{0} applied, {1} failed: {2}",
                     failed.Count, string.Join(" ; ", failed.Select(f => L("{0} ({1})", f.Tweak.Title, f.Outcome.Message)))),
             failed.Count == 0 ? ToastKind.Success : ToastKind.Warning);
         var effects = results.Where(r => r.Outcome.Success).Aggregate(ApplyEffect.None, (acc, r) => acc | r.Tweak.Effect);
-        if (effects != ApplyEffect.None) AppHost.Toasts.ShowOutcome(new ApplyOutcome(true, L("Certains changements demandent une action"), effects));
+        if (effects != ApplyEffect.None) AppHost.Toasts.ShowOutcome(new ApplyOutcome(true, L("Some changes require action"), effects));
         await RefreshAllAsync();
     }
 

@@ -68,13 +68,13 @@ internal static class HostsFile
             catch (ArgumentException) { /* laissé tel quel : refusé ci-dessous avec un message clair */ }
         }
         var host = Validate.HostName(raw);
-        if (!host.Contains('.')) throw new ValidationException(L("Indiquez un nom de domaine complet (ex. exemple.com)."));
+        if (!host.Contains('.')) throw new ValidationException(L("Enter a full domain name (e.g. example.com)."));
         if (IPAddress.TryParse(host, out _) || host.Split('.')[^1].All(char.IsAsciiDigit))
-            throw new ValidationException(L("Indiquez un nom de domaine, pas une adresse IP."));
+            throw new ValidationException(L("Enter a domain name, not an IP address."));
         if (host is "localhost" or "localhost.localdomain" || host.EndsWith(".local", StringComparison.Ordinal))
-            throw new ValidationException(L("Ce nom est réservé au réseau local."));
+            throw new ValidationException(L("This name is reserved for the local network."));
         if (ProtectedSuffixes.Any(s => host == s || host.EndsWith("." + s, StringComparison.Ordinal)))
-            throw new ValidationException(L("Ce domaine sert aux mises à jour ou à la protection de Windows : Timonier refuse de le bloquer."));
+            throw new ValidationException(L("This domain is used for Windows updates or protection: Timonier won't block it."));
         return host;
     }
 
@@ -97,7 +97,7 @@ internal static class HostsFile
     {
         using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
         if (fs.Length > MaxFileBytes)
-            throw new IOException(L("le fichier hosts dépasse {0} Mo : Timonier ne l'analyse pas et ne le modifie pas.", MaxFileBytes / (1024 * 1024)));
+            throw new IOException(L("the hosts file is larger than {0} MB: Timonier doesn't analyze or modify it.", MaxFileBytes / (1024 * 1024)));
         using var ms = new MemoryStream();
         fs.CopyTo(ms);
         return ms.ToArray();
@@ -132,17 +132,17 @@ internal static class HostsFile
     /// </summary>
     public static void WriteManaged(IReadOnlyList<string> hosts)
     {
-        if (hosts.Count > MaxManagedEntries) throw new ValidationException(L("Limite de {0} sites bloqués atteinte.", MaxManagedEntries));
+        if (hosts.Count > MaxManagedEntries) throw new ValidationException(L("Limit of {0} blocked sites reached.", MaxManagedEntries));
         foreach (var h in hosts) ValidateBlockHost(h); // défense en profondeur : rien d'autre ne peut entrer dans le fichier
 
         var path = FilePath;
         var exists = File.Exists(path);
         if (exists && File.GetAttributes(path).HasFlag(FileAttributes.ReadOnly))
-            throw new InvalidOperationException(L("Le fichier hosts est protégé en écriture (attribut « Lecture seule », souvent posé par un logiciel de sécurité) : Timonier ne retire pas cette protection. Retirez-la vous-même si vous souhaitez gérer les blocages ici."));
+            throw new InvalidOperationException(L("The hosts file is write-protected (“Read-only” attribute, often set by security software): Timonier doesn't remove this protection. Remove it yourself if you want to manage blocks here."));
         var bytes = exists ? ReadAllBytesShared(path) : [];
         // Fichier enregistré en UTF-16 (Bloc-notes « Unicode ») : des lignes ajoutées octet par octet le corrompraient.
         if (bytes.Length >= 2 && (bytes[0], bytes[1]) is (0xFF, 0xFE) or (0xFE, 0xFF))
-            throw new InvalidOperationException(L("Le fichier hosts est enregistré en UTF-16, un format que Timonier ne peut pas modifier sans risque : modification annulée. Réenregistrez-le en ANSI ou UTF-8 puis réessayez."));
+            throw new InvalidOperationException(L("The hosts file is saved in UTF-16, a format Timonier can't safely modify: change canceled. Save it again as ANSI or UTF-8, then try again."));
         var text = Encoding.Latin1.GetString(bytes);
         var newline = text.Contains("\r\n", StringComparison.Ordinal) || !exists ? "\r\n" : "\n";
 
@@ -153,7 +153,7 @@ internal static class HostsFile
 
         var begin = lines.FindIndex(l => IsBegin(l.TrimEnd('\r').Trim()));
         var end = begin >= 0 ? lines.FindIndex(begin + 1, l => IsEnd(l.TrimEnd('\r').Trim())) : -1;
-        if (begin >= 0 && end < 0) throw new InvalidOperationException(L("Section Timonier du fichier hosts incomplète (marqueur de fin absent) : modification annulée par sécurité."));
+        if (begin >= 0 && end < 0) throw new InvalidOperationException(L("Timonier section of the hosts file is incomplete (end marker missing): change canceled for safety."));
 
         var section = new List<string>();
         if (hosts.Count > 0)

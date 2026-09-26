@@ -74,10 +74,10 @@ public static class PrivacyTweaks
         @"\Microsoft\Windows\Feedback\Siuf\DmClientOnScenarioDownload",
     ];
 
-    private static readonly Requirement Build1903 = Requires.When(p => p.Build >= 18362, L("Nécessite Windows 10 version 1903 ou plus récent."));
-    private static readonly Requirement Build21H2 = Requires.When(p => p.Build >= 19044, L("Nécessite Windows 10 21H2 ou plus récent."));
+    private static readonly Requirement Build1903 = Requires.When(p => p.Build >= 18362, L("Requires Windows 10 version 1903 or later."));
+    private static readonly Requirement Build21H2 = Requires.When(p => p.Build >= 19044, L("Requires Windows 10 21H2 or later."));
     private static readonly Requirement LegacyCopilot = Requires.When(p => p.Build < 26100,
-        L("Sans effet depuis Windows 11 24H2 : Copilot y est une application ordinaire, à désinstaller depuis la page Applications."));
+        L("No effect since Windows 11 24H2: Copilot is a regular app there, which you can uninstall from the Apps page."));
 
     public static IEnumerable<TweakDefinition> All() =>
     [
@@ -96,60 +96,60 @@ public static class PrivacyTweaks
     {
         var g = PrivacyGroups.Telemetry;
 
-        yield return Tweak.Choice("privacy.telemetry.level", L("Niveau des données de diagnostic"),
-                L("Quantité de données de diagnostic envoyées à Microsoft. « Au choix de l'utilisateur » laisse décider l'option « Données facultatives » des Paramètres ; « Données requises uniquement » impose le minimum accepté par les éditions Famille et Professionnel (état de l'appareil, sécurité, bon fonctionnement des mises à jour) et verrouille cette option."))
+        yield return Tweak.Choice("privacy.telemetry.level", L("Diagnostic data level"),
+                L("Amount of diagnostic data sent to Microsoft. “User's choice” lets the “Optional diagnostic data” option in Settings decide; “Required data only” enforces the minimum accepted by the Home and Pro editions (device state, security, updates working properly) and locks that option."))
             .In(Category, g)
-            .Keywords(L("telemetrie, telemetry, diagnostic, allowtelemetry, donnees requises, donnees facultatives, optional diagnostic data"))
+            .Keywords(L("telemetry, diagnostic data, allowtelemetry, required data, optional data, optional diagnostic data"))
             .Tags("privacy-max")
-            .Option("user", L("Au choix de l'utilisateur (par défaut)"), Reg.LmDel(DataCollectionPolicy, "AllowTelemetry"))
-            .Option("required", L("Données requises uniquement"), Reg.LmDword(DataCollectionPolicy, "AllowTelemetry", 1))
-            .Option("optional", L("Données facultatives incluses"), Reg.LmDword(DataCollectionPolicy, "AllowTelemetry", 3))
+            .Option("user", L("User's choice (default)"), Reg.LmDel(DataCollectionPolicy, "AllowTelemetry"))
+            .Option("required", L("Required data only"), Reg.LmDword(DataCollectionPolicy, "AllowTelemetry", 1))
+            .Option("optional", L("Optional data included"), Reg.LmDword(DataCollectionPolicy, "AllowTelemetry", 3))
             // Pas de WindowsDefault : une valeur 0 (niveau désactivé, réglage suivant) doit apparaître comme « personnalisée ».
             .RecommendWhen(p => p.SupportsTelemetryOff || p.IsManaged ? null : "required")
             .Build();
 
-        yield return Tweak.Toggle("privacy.telemetry.off", L("Données de diagnostic désactivées (niveau 0)"),
-                L("Windows cesse d'envoyer des données de diagnostic à Microsoft (ancien niveau « Sécurité »). Accepté uniquement par les éditions Entreprise, Éducation, IoT et Server ; les autres éditions le traitent comme « Données requises ». Désactiver ce réglage supprime la stratégie : le niveau redevient celui choisi dans les Paramètres."))
+        yield return Tweak.Toggle("privacy.telemetry.off", L("Diagnostic data off (level 0)"),
+                L("Windows stops sending diagnostic data to Microsoft (formerly the “Security” level). Accepted only by the Enterprise, Education, IoT and Server editions; other editions treat it as “Required data”. Turning this setting off removes the policy: the level goes back to the one chosen in Settings."))
             .In(Category, g)
-            .Keywords(L("telemetrie, securite, niveau 0, zero, diagnostic off, allowtelemetry"))
+            .Keywords(L("telemetry, security, level 0, zero, diagnostic off, allowtelemetry"))
             .Tags("privacy-max")
             .RequiresAndRecommends(Requires.EnterpriseOrEducation, TweakDefinition.On, p => !p.IsManaged)
             .Risk(RiskLevel.Moderate)
-            .Warning(L("Les services qui s'appuient sur les données de diagnostic (programme Windows Insider, rapports Windows Update for Business, Windows Autopatch) ne fonctionneront plus."))
+            .Warning(L("Services that rely on diagnostic data (Windows Insider Program, Windows Update for Business reports, Windows Autopatch) will stop working."))
             .WhenOn(Reg.LmDword(DataCollectionPolicy, "AllowTelemetry", 0))
             .WhenOff(Reg.LmDel(DataCollectionPolicy, "AllowTelemetry"))
             .WindowsDefault(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.telemetry.diagtrack", L("Service de télémétrie (DiagTrack)"),
-                L("Service « Expériences des utilisateurs connectés et télémétrie » qui collecte et envoie les données de diagnostic. Désactivé, plus rien n'est transmis par ce service, quel que soit le niveau choisi (le rapport d'erreurs a son propre réglage)."))
+        yield return Tweak.Toggle("privacy.telemetry.diagtrack", L("Telemetry service (DiagTrack)"),
+                L("The “Connected User Experiences and Telemetry” service, which collects and sends diagnostic data. When off, this service no longer transmits anything, whatever level is chosen (error reporting has its own setting)."))
             .In(Category, g)
-            .Keywords(L("diagtrack, utc, connected user experiences, service telemetrie, experiences utilisateurs connectes"))
+            .Keywords(L("diagtrack, utc, connected user experiences, telemetry service"))
             .Tags("privacy-max")
             .Risk(RiskLevel.Moderate)
-            .Warning(L("Windows peut réactiver ce service lors d'une mise à jour majeure. Le programme Windows Insider et certains outils de gestion d'entreprise en ont besoin."))
+            .Warning(L("Windows may turn this service back on during a major update. The Windows Insider Program and some enterprise management tools need it."))
             .WhenOn(Sys.Service("DiagTrack", ServiceStartKind.Automatic))
             .WhenOff(Sys.Service("DiagTrack", ServiceStartKind.Disabled))
             .WindowsDefault(TweakDefinition.On)
             .RecommendWhen(p => p.IsManaged ? null : TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.telemetry.dmwappush", L("Service de routage des messages push WAP (dmwappushservice)"),
-                L("Achemine les messages de gestion à distance des appareils (MDM, Intune). Sur un PC personnel non géré, il ne démarre pratiquement jamais : le désactiver est une précaution supplémentaire plus qu'un gain réel."))
+        yield return Tweak.Toggle("privacy.telemetry.dmwappush", L("WAP Push Message Routing Service (dmwappushservice)"),
+                L("Routes remote device management messages (MDM, Intune). On an unmanaged personal PC, it almost never starts: turning it off is more an extra precaution than a real gain."))
             .In(Category, g)
-            .Keywords(L("dmwappushservice, wap push, mdm, intune, gestion appareil"))
+            .Keywords(L("dmwappushservice, wap push, mdm, intune, device management"))
             .Tags("privacy-max")
             .Risk(RiskLevel.Moderate)
-            .Warning(L("Nécessaire pour inscrire ou gérer ce PC avec un compte professionnel ou scolaire (Intune/MDM)."))
+            .Warning(L("Required to enroll or manage this PC with a work or school account (Intune/MDM)."))
             .WhenOn(Sys.Service("dmwappushservice", ServiceStartKind.Manual))
             .WhenOff(Sys.Service("dmwappushservice", ServiceStartKind.Disabled))
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Toggle("privacy.telemetry.tailored", L("Expériences personnalisées"),
-                L("Autorise Microsoft à exploiter vos données de diagnostic pour personnaliser les conseils, publicités et recommandations affichés dans Windows. Désactivé, vous voyez toujours des suggestions, mais moins ciblées."))
+        yield return Tweak.Toggle("privacy.telemetry.tailored", L("Tailored experiences"),
+                L("Allows Microsoft to use your diagnostic data to personalize the tips, ads and recommendations shown in Windows. When off, you still see suggestions, but less targeted ones."))
             .In(Category, g)
-            .Keywords(L("tailored experiences, experiences personnalisees, personnalisation, recommandations ciblees"))
+            .Keywords(L("tailored experiences, personalization, targeted recommendations"))
             .Tags("privacy-max", "family")
             .WhenOn(Reg.CuDword(PrivacyKey, "TailoredExperiencesWithDiagnosticDataEnabled", 1),
                     Reg.CuDel(CloudContentUserPolicy, "DisableTailoredExperiencesWithDiagnosticData"))
@@ -162,10 +162,10 @@ public static class PrivacyTweaks
             .Recommend(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.telemetry.feedback", L("Demandes de commentaires"),
-                L("Windows vous demande de temps en temps votre avis par une notification (« Commentaires »). Désactivé, la fréquence passe à « Jamais » et une stratégie bloque ces sollicitations."))
+        yield return Tweak.Toggle("privacy.telemetry.feedback", L("Feedback requests"),
+                L("Windows occasionally asks for your opinion in a notification (“Feedback”). When off, the frequency is set to “Never” and a policy blocks these requests."))
             .In(Category, g)
-            .Keywords(L("feedback, commentaires, avis, siuf, frequence commentaires, hub commentaires"))
+            .Keywords(L("feedback, opinion, siuf, feedback frequency, feedback hub"))
             .Tags("privacy-max", "family")
             .WhenOn(Reg.CuDel(SiufRules, "NumberOfSIUFInPeriod"), Reg.CuDel(SiufRules, "PeriodInNanoSeconds"),
                     Reg.LmDel(DataCollectionPolicy, "DoNotShowFeedbackNotifications"))
@@ -179,10 +179,10 @@ public static class PrivacyTweaks
             .Recommend(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.telemetry.limits", L("Limitation des vidages mémoire et journaux envoyés"),
-                L("Si l'envoi des données facultatives est autorisé, Windows peut joindre des vidages mémoire complets (qui peuvent contenir des documents ouverts) et des journaux de diagnostic. Activé, il se limite à de petits vidages et n'envoie plus ces journaux."))
+        yield return Tweak.Toggle("privacy.telemetry.limits", L("Limit memory dumps and logs sent"),
+                L("If sending optional data is allowed, Windows can attach full memory dumps (which may contain open documents) and diagnostic logs. When on, it's limited to small dumps and no longer sends these logs."))
             .In(Category, g)
-            .Keywords(L("dump, vidage memoire, journaux diagnostic, limitdumpcollection, limitdiagnosticlogcollection"))
+            .Keywords(L("dump, memory dump, diagnostic logs, limitdumpcollection, limitdiagnosticlogcollection"))
             .Tags("privacy-max")
             .RequiresAndRecommends(Build1903, TweakDefinition.On)
             .WhenOn(Reg.LmDword(DataCollectionPolicy, "LimitDumpCollection", 1), Reg.LmDword(DataCollectionPolicy, "LimitDiagnosticLogCollection", 1))
@@ -190,22 +190,22 @@ public static class PrivacyTweaks
             .WindowsDefault(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.telemetry.wer", L("Rapport d'erreurs Windows"),
-                L("Quand une application ou Windows plante, un rapport (parfois avec une copie de la mémoire du programme) est envoyé à Microsoft pour rechercher une solution et informer l'éditeur."))
+        yield return Tweak.Toggle("privacy.telemetry.wer", L("Windows Error Reporting"),
+                L("When an app or Windows crashes, a report (sometimes with a copy of the program's memory) is sent to Microsoft to look for a solution and inform the publisher."))
             .In(Category, g)
-            .Keywords(L("wer, error reporting, rapport erreur, plantage, crash, werfault"))
+            .Keywords(L("wer, error reporting, error report, crash, werfault"))
             .Tags("privacy-max")
             .Risk(RiskLevel.Moderate)
-            .Warning(L("Plus aucun rapport de plantage n'est envoyé : les éditeurs ne reçoivent plus d'informations pour corriger les bugs et Windows ne propose plus de solutions."))
+            .Warning(L("No more crash reports are sent: publishers no longer receive information to fix bugs and Windows no longer offers solutions."))
             .WhenOn(Reg.LmDel(WerPolicy, "Disabled"))
             .WhenOff(Reg.LmDword(WerPolicy, "Disabled", 1))
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Toggle("privacy.telemetry.ceip", L("Programme d'amélioration de l'expérience utilisateur"),
-                L("Ancien programme de collecte de statistiques d'utilisation (CEIP/SQM). Largement remplacé par les données de diagnostic, il reste consulté par certains composants de Windows."))
+        yield return Tweak.Toggle("privacy.telemetry.ceip", L("Customer Experience Improvement Program"),
+                L("Legacy program that collects usage statistics (CEIP/SQM). Largely replaced by diagnostic data, it's still checked by some Windows components."))
             .In(Category, g)
-            .Keywords(L("ceip, sqm, customer experience improvement program, amelioration experience"))
+            .Keywords(L("ceip, sqm, customer experience improvement program, experience improvement"))
             .Tags("privacy-max")
             .WhenOn(Reg.LmDel(SqmPolicy, "CEIPEnable"))
             .WhenOff(Reg.LmDword(SqmPolicy, "CEIPEnable", 0))
@@ -213,10 +213,10 @@ public static class PrivacyTweaks
             .Recommend(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.telemetry.appcompat", L("Collecte de compatibilité des applications"),
-                L("Inventaire des programmes installés, télémétrie d'utilisation des applications et Enregistreur d'actions (psr.exe), utilisés pour évaluer la compatibilité. Désactivé, l'Enregistreur d'actions n'est plus utilisable ; le moteur de compatibilité lui-même reste actif."))
+        yield return Tweak.Toggle("privacy.telemetry.appcompat", L("Application compatibility data collection"),
+                L("Inventory of installed programs, application telemetry and Steps Recorder (psr.exe), used to assess compatibility. When off, Steps Recorder can no longer be used; the compatibility engine itself stays active."))
             .In(Category, g)
-            .Keywords(L("appcompat, inventaire, inventory, application telemetry, enregistreur actions, steps recorder, psr"))
+            .Keywords(L("appcompat, inventory, application telemetry, steps recorder, psr"))
             .Tags("privacy-max")
             .WhenOn(Reg.LmDel(AppCompatPolicy, "DisableInventory"), Reg.LmDel(AppCompatPolicy, "AITEnable"), Reg.LmDel(AppCompatPolicy, "DisableUAR"))
             .WhenOff(Reg.LmDword(AppCompatPolicy, "DisableInventory", 1), Reg.LmDword(AppCompatPolicy, "AITEnable", 0), Reg.LmDword(AppCompatPolicy, "DisableUAR", 1))
@@ -227,13 +227,13 @@ public static class PrivacyTweaks
         var tasks = PrivacyDetect.ExistingTasks(TelemetryTaskCandidates);
         if (tasks.Length > 0)
         {
-            yield return Tweak.Toggle("privacy.telemetry.tasks", L("Tâches planifiées de télémétrie"),
-                    LP(tasks.Length, "Évaluateur de compatibilité, programme d'amélioration (Consolidator, UsbCeip), diagnostics disque, recensement de l'appareil (DeviceCensus) et commentaires (DmClient). {0} tâche concernée sur ce PC ; celles absentes de votre version de Windows sont ignorées.",
-                        "Évaluateur de compatibilité, programme d'amélioration (Consolidator, UsbCeip), diagnostics disque, recensement de l'appareil (DeviceCensus) et commentaires (DmClient). {0} tâches concernées sur ce PC ; celles absentes de votre version de Windows sont ignorées."))
+            yield return Tweak.Toggle("privacy.telemetry.tasks", L("Telemetry scheduled tasks"),
+                    LP(tasks.Length, "Compatibility Appraiser, improvement program (Consolidator, UsbCeip), disk diagnostics, device census (DeviceCensus) and feedback (DmClient). {0} task affected on this PC; those missing from your Windows version are skipped.",
+                        "Compatibility Appraiser, improvement program (Consolidator, UsbCeip), disk diagnostics, device census (DeviceCensus) and feedback (DmClient). {0} tasks affected on this PC; those missing from your Windows version are skipped."))
                 .In(Category, g)
-                .Keywords(L("tache planifiee, scheduled task, compatibility appraiser, consolidator, devicecensus, dmclient, ceip"))
+                .Keywords(L("scheduled task, compatibility appraiser, consolidator, devicecensus, dmclient, ceip"))
                 .Tags("privacy-max")
-                .Warning(L("Windows peut réactiver ces tâches lors d'une mise à jour majeure. Windows Update effectue de toute façon ses propres vérifications de compatibilité avant une mise à niveau."))
+                .Warning(L("Windows may turn these tasks back on during a major update. Windows Update runs its own compatibility checks before an upgrade anyway."))
                 .WhenOn([.. tasks.Select(t => (Operation)Sys.EnableTask(t))])
                 .WhenOff([.. tasks.Select(t => (Operation)Sys.DisableTask(t))])
                 .Detect(() => PrivacyDetect.TasksState(tasks))
@@ -242,10 +242,10 @@ public static class PrivacyTweaks
                 .Build();
         }
 
-        yield return Tweak.Toggle("privacy.telemetry.devtools", L("Télémétrie de PowerShell 7 et du SDK .NET"),
-                L("Ces outils de développement envoient des statistiques d'utilisation anonymes. Désactivé, les variables POWERSHELL_TELEMETRY_OPTOUT et DOTNET_CLI_TELEMETRY_OPTOUT sont définies pour tout le PC (prises en compte par les programmes lancés ensuite). Sans effet si ces outils ne sont pas installés ; Windows PowerShell 5.1 n'est pas concerné."))
+        yield return Tweak.Toggle("privacy.telemetry.devtools", L("PowerShell 7 and .NET SDK telemetry"),
+                L("These development tools send anonymous usage statistics. When off, the POWERSHELL_TELEMETRY_OPTOUT and DOTNET_CLI_TELEMETRY_OPTOUT variables are set for the whole PC (picked up by programs started afterward). No effect if these tools aren't installed; Windows PowerShell 5.1 isn't affected."))
             .In(Category, g)
-            .Keywords(L("powershell, pwsh, dotnet, .net, sdk, developpeur, telemetry optout"))
+            .Keywords(L("powershell, pwsh, dotnet, .net, sdk, developer, telemetry optout"))
             .Tags("privacy-max", "dev")
             .WhenOn(Reg.LmDel(EnvironmentKey, "POWERSHELL_TELEMETRY_OPTOUT"), Reg.LmDel(EnvironmentKey, "DOTNET_CLI_TELEMETRY_OPTOUT"),
                     Sys.Broadcast("Environment"))
@@ -261,10 +261,10 @@ public static class PrivacyTweaks
     {
         var g = PrivacyGroups.Ads;
 
-        yield return Tweak.Toggle("privacy.ads.id", L("Identifiant de publicité"),
-                L("Identifiant unique qui permet aux applications et aux régies publicitaires de vous reconnaître d'une application à l'autre pour cibler les publicités. Désactivé, les applications ne peuvent plus l'utiliser ; s'il est réactivé, un nouvel identifiant est créé."))
+        yield return Tweak.Toggle("privacy.ads.id", L("Advertising ID"),
+                L("A unique ID that lets apps and ad networks recognize you from one app to another to target ads. When off, apps can no longer use it; if it's turned back on, a new ID is created."))
             .In(Category, g)
-            .Keywords(L("pub, publicite, ads, advertising id, tracking, ciblage, identifiant publicitaire"))
+            .Keywords(L("ads, advertising, advertising id, tracking, targeting, ad id"))
             .Tags("privacy-max", "family")
             .WhenOn(Reg.CuDword(AdvertisingInfo, "Enabled", 1), Reg.LmDel(AdvertisingPolicy, "DisabledByGroupPolicy"))
             .WhenOff(Reg.CuDword(AdvertisingInfo, "Enabled", 0), Reg.LmDword(AdvertisingPolicy, "DisabledByGroupPolicy", 1))
@@ -275,10 +275,10 @@ public static class PrivacyTweaks
             .Recommend(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.ads.start-suggestions", L("Suggestions dans le menu Démarrer"),
-                L("Applications suggérées, souvent sponsorisées, affichées de temps en temps dans le menu Démarrer de Windows 10."))
+        yield return Tweak.Toggle("privacy.ads.start-suggestions", L("Suggestions in the Start menu"),
+                L("Suggested apps, often sponsored, shown from time to time in the Windows 10 Start menu."))
             .In(Category, g)
-            .Keywords(L("suggestion, menu demarrer, applications suggerees, sponsorise, start suggestions"))
+            .Keywords(L("suggestion, start menu, suggested apps, sponsored, start suggestions"))
             .Tags("privacy-max", "family")
             .RequiresAndRecommends(Requires.Windows10Only, TweakDefinition.Off)
             .WhenOn(Reg.CuDword(ContentDelivery, "SubscribedContent-338388Enabled", 1), Reg.CuDword(ContentDelivery, "SystemPaneSuggestionsEnabled", 1))
@@ -286,10 +286,10 @@ public static class PrivacyTweaks
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Toggle("privacy.ads.tips", L("Astuces et suggestions de Windows"),
-                L("Notifications de conseils et de suggestions pendant l'utilisation de Windows (découverte de fonctions, offres Microsoft)."))
+        yield return Tweak.Toggle("privacy.ads.tips", L("Windows tips and suggestions"),
+                L("Notifications with tips and suggestions while you use Windows (feature discovery, Microsoft offers)."))
             .In(Category, g)
-            .Keywords(L("astuce, conseil, tips, suggestion, notification, soft landing"))
+            .Keywords(L("tip, advice, tips, suggestion, notification, soft landing"))
             .Tags("privacy-max", "family")
             .WhenOn(Reg.CuDword(ContentDelivery, "SubscribedContent-338389Enabled", 1), Reg.CuDword(ContentDelivery, "SoftLandingEnabled", 1))
             .WhenOff(Reg.CuDword(ContentDelivery, "SubscribedContent-338389Enabled", 0), Reg.CuDword(ContentDelivery, "SoftLandingEnabled", 0))
@@ -297,10 +297,10 @@ public static class PrivacyTweaks
             .Recommend(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.ads.settings-content", L("Contenu suggéré dans les Paramètres"),
-                L("Suggestions et offres (Microsoft 365, OneDrive, Game Pass…) affichées dans l'application Paramètres."))
+        yield return Tweak.Toggle("privacy.ads.settings-content", L("Suggested content in Settings"),
+                L("Suggestions and offers (Microsoft 365, OneDrive, Game Pass…) shown in the Settings app."))
             .In(Category, g)
-            .Keywords(L("parametres, settings, contenu suggere, suggested content, offre"))
+            .Keywords(L("settings, suggested content, offer, ads"))
             .Tags("privacy-max", "family")
             .WhenOn(Reg.CuDword(ContentDelivery, "SubscribedContent-338393Enabled", 1), Reg.CuDword(ContentDelivery, "SubscribedContent-353694Enabled", 1),
                     Reg.CuDword(ContentDelivery, "SubscribedContent-353696Enabled", 1))
@@ -310,10 +310,10 @@ public static class PrivacyTweaks
             .Recommend(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.ads.settings-notifications", L("Notifications dans l'application Paramètres"),
-                L("Rappels liés à votre compte Microsoft (sauvegarde, abonnement, sécurité du compte) affichés dans les Paramètres."))
+        yield return Tweak.Toggle("privacy.ads.settings-notifications", L("Notifications in the Settings app"),
+                L("Reminders about your Microsoft account (backup, subscription, account security) shown in Settings."))
             .In(Category, g)
-            .Keywords(L("notification, parametres, compte microsoft, account notifications"))
+            .Keywords(L("notification, settings, microsoft account, account notifications"))
             .Tags("privacy-max", "family")
             .RequiresAndRecommends(Requires.Windows11_22H2, TweakDefinition.Off)
             .WhenOn(Reg.CuDword(AccountNotifications, "EnableAccountNotifications", 1))
@@ -321,10 +321,10 @@ public static class PrivacyTweaks
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Toggle("privacy.ads.lockscreen", L("Anecdotes et conseils sur l'écran de verrouillage"),
-                L("Textes (anecdotes, astuces, liens vers des offres) superposés à l'image de l'écran de verrouillage."))
+        yield return Tweak.Toggle("privacy.ads.lockscreen", L("Fun facts and tips on the lock screen"),
+                L("Text (fun facts, tips, links to offers) overlaid on the lock screen image."))
             .In(Category, g)
-            .Keywords(L("ecran verrouillage, lock screen, anecdote, fun facts, astuce"))
+            .Keywords(L("lock screen, fun facts, tips, trivia"))
             .Tags("privacy-max", "family")
             .WhenOn(Reg.CuDword(ContentDelivery, "RotatingLockScreenOverlayEnabled", 1), Reg.CuDword(ContentDelivery, "SubscribedContent-338387Enabled", 1))
             .WhenOff(Reg.CuDword(ContentDelivery, "RotatingLockScreenOverlayEnabled", 0), Reg.CuDword(ContentDelivery, "SubscribedContent-338387Enabled", 0))
@@ -332,10 +332,10 @@ public static class PrivacyTweaks
             .Recommend(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.ads.welcome", L("Présentation des nouveautés après les mises à jour"),
-                L("Écrans d'accueil qui présentent les nouveautés et des suggestions Microsoft après une mise à jour ou à la connexion."))
+        yield return Tweak.Toggle("privacy.ads.welcome", L("What's new after updates"),
+                L("Welcome screens that show what's new and Microsoft suggestions after an update or when you sign in."))
             .In(Category, g)
-            .Keywords(L("welcome experience, accueil, nouveautes, apres mise jour"))
+            .Keywords(L("welcome experience, welcome, what's new, after update"))
             .Tags("privacy-max", "family")
             .WhenOn(Reg.CuDword(ContentDelivery, "SubscribedContent-310093Enabled", 1))
             .WhenOff(Reg.CuDword(ContentDelivery, "SubscribedContent-310093Enabled", 0))
@@ -343,10 +343,10 @@ public static class PrivacyTweaks
             .Recommend(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.ads.silent-install", L("Installation automatique d'applications suggérées"),
-                L("Windows installe ou épingle de lui-même des applications promues (jeux, applications partenaires), notamment à la création d'un compte ou après une mise à jour majeure. Désactivé, ces installations silencieuses sont bloquées ; les applications déjà présentes restent installées."))
+        yield return Tweak.Toggle("privacy.ads.silent-install", L("Automatic installation of suggested apps"),
+                L("Windows installs or pins promoted apps (games, partner apps) on its own, especially when an account is created or after a major update. When off, these silent installations are blocked; apps already present stay installed."))
             .In(Category, g)
-            .Keywords(L("bloatware, candy crush, installation silencieuse, applications promues, silent install, preinstalle"))
+            .Keywords(L("bloatware, candy crush, silent install, promoted apps, preinstalled"))
             .Tags("privacy-max", "family")
             .WhenOn(Reg.CuDword(ContentDelivery, "SilentInstalledAppsEnabled", 1), Reg.CuDword(ContentDelivery, "OemPreInstalledAppsEnabled", 1),
                     Reg.CuDword(ContentDelivery, "PreInstalledAppsEnabled", 1), Reg.CuDword(ContentDelivery, "PreInstalledAppsEverEnabled", 1))
@@ -356,22 +356,22 @@ public static class PrivacyTweaks
             .Recommend(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.ads.content-delivery", L("Diffusion de contenu Microsoft (interrupteur général)"),
-                L("Autorise le gestionnaire de contenu de Windows (ContentDeliveryManager) à télécharger suggestions, promotions et images. Désactivé, toute cette diffusion s'arrête d'un coup, y compris les contenus utiles."))
+        yield return Tweak.Toggle("privacy.ads.content-delivery", L("Microsoft content delivery (master switch)"),
+                L("Allows the Windows content manager (ContentDeliveryManager) to download suggestions, promotions and images. When off, all this delivery stops at once, including useful content."))
             .In(Category, g)
-            .Keywords(L("contentdeliverymanager, content delivery, diffusion contenu, promotion"))
+            .Keywords(L("contentdeliverymanager, content delivery, promotion"))
             .Tags("privacy-max")
             .Risk(RiskLevel.Moderate)
-            .Warning(L("Les images « Windows à la une » de l'écran de verrouillage risquent de ne plus se renouveler."))
+            .Warning(L("The “Windows spotlight” lock screen images may stop refreshing."))
             .WhenOn(Reg.CuDword(ContentDelivery, "ContentDeliveryAllowed", 1))
             .WhenOff(Reg.CuDword(ContentDelivery, "ContentDeliveryAllowed", 0))
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Toggle("privacy.ads.scoobe", L("Rappels « Terminer la configuration de l'appareil »"),
-                L("Écran plein qui revient après certaines mises à jour pour proposer OneDrive, Microsoft 365, Lien avec Windows ou un compte Microsoft."))
+        yield return Tweak.Toggle("privacy.ads.scoobe", L("“Finish setting up your device” reminders"),
+                L("Full-screen page that comes back after some updates to offer OneDrive, Microsoft 365, Phone Link or a Microsoft account."))
             .In(Category, g)
-            .Keywords(L("scoobe, terminer configuration, finish setup, tirer le meilleur parti, rappel"))
+            .Keywords(L("scoobe, finish setup, get the most out of windows, reminder"))
             .Tags("privacy-max", "family")
             .WhenOn(Reg.CuDword(ProfileEngagement, "ScoobeSystemSettingEnabled", 1))
             .WhenOff(Reg.CuDword(ProfileEngagement, "ScoobeSystemSettingEnabled", 0))
@@ -379,10 +379,10 @@ public static class PrivacyTweaks
             .Recommend(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.ads.start-iris", L("Recommandations d'astuces et d'applications dans Démarrer"),
-                L("Conseils, raccourcis et nouvelles applications (certaines promues) proposés dans la section « Recommandé » du menu Démarrer de Windows 11."))
+        yield return Tweak.Toggle("privacy.ads.start-iris", L("Tips and app recommendations in Start"),
+                L("Tips, shortcuts and new apps (some promoted) offered in the “Recommended” section of the Windows 11 Start menu."))
             .In(Category, g)
-            .Keywords(L("menu demarrer, recommande, iris, recommandations, start recommendations"))
+            .Keywords(L("start menu, recommended, iris, recommendations, start recommendations"))
             .Tags("privacy-max", "family")
             .RequiresAndRecommends(Requires.Windows11_22H2, TweakDefinition.Off)
             .WhenOn(Reg.CuDword(ExplorerAdvanced, "Start_IrisRecommendations", 1))
@@ -390,10 +390,10 @@ public static class PrivacyTweaks
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Toggle("privacy.ads.start-account", L("Notifications de compte dans Démarrer"),
-                L("Rappels liés au compte Microsoft (sauvegarde, stockage OneDrive, sécurité du compte) signalés sur votre photo de profil dans le menu Démarrer."))
+        yield return Tweak.Toggle("privacy.ads.start-account", L("Account notifications in Start"),
+                L("Reminders about your Microsoft account (backup, OneDrive storage, account security) flagged on your profile picture in the Start menu."))
             .In(Category, g)
-            .Keywords(L("menu demarrer, compte, account notifications, badge profil"))
+            .Keywords(L("start menu, account, account notifications, profile badge"))
             .Tags("privacy-max", "family")
             .RequiresAndRecommends(Requires.Windows11_22H2, TweakDefinition.Off)
             .WhenOn(Reg.CuDword(ExplorerAdvanced, "Start_AccountNotifications", 1))
@@ -401,10 +401,10 @@ public static class PrivacyTweaks
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Toggle("privacy.ads.consumer-features", L("Expériences Microsoft grand public (stratégie)"),
-                L("Stratégie officielle qui bloque pour tout le PC les recommandations personnalisées, les installations d'applications promues et les notifications liées au compte Microsoft. Windows ne la respecte que sur les éditions Entreprise et Éducation ; sur les autres, utilisez les réglages de cette section."))
+        yield return Tweak.Toggle("privacy.ads.consumer-features", L("Microsoft consumer experiences (policy)"),
+                L("Official policy that blocks personalized recommendations, promoted app installations and Microsoft account notifications for the whole PC. Windows only honors it on the Enterprise and Education editions; on other editions, use the settings in this section."))
             .In(Category, g)
-            .Keywords(L("consumer features, experiences grand public, cloud content, applications promues"))
+            .Keywords(L("consumer features, consumer experiences, cloud content, promoted apps"))
             .Tags("privacy-max", "family")
             .RequiresAndRecommends(Requires.EnterpriseOrEducation, TweakDefinition.Off)
             .Effect(ApplyEffect.SignOut)
@@ -413,10 +413,10 @@ public static class PrivacyTweaks
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Toggle("privacy.ads.spotlight", L("Fonctionnalités « Windows à la une » (stratégie)"),
-                L("Désactive en bloc Windows à la une (images et suggestions de l'écran de verrouillage, conseils, contenus promus) ainsi que les suggestions d'éditeurs tiers. Respecté uniquement par les éditions Entreprise et Éducation."))
+        yield return Tweak.Toggle("privacy.ads.spotlight", L("“Windows spotlight” features (policy)"),
+                L("Turns off Windows spotlight all at once (lock screen images and suggestions, tips, promoted content) as well as third-party suggestions. Honored only by the Enterprise and Education editions."))
             .In(Category, g)
-            .Keywords(L("spotlight, windows a la une, ecran verrouillage, third party suggestions"))
+            .Keywords(L("spotlight, windows spotlight, lock screen, third party suggestions"))
             .Tags("privacy-max")
             .Requires(Requires.EnterpriseOrEducation)
             .Effect(ApplyEffect.SignOut)
@@ -432,10 +432,10 @@ public static class PrivacyTweaks
     {
         var g = PrivacyGroups.Search;
 
-        yield return Tweak.Toggle("privacy.search.web", L("Résultats web (Bing) dans la recherche"),
-                L("Ce que vous tapez dans la recherche du menu Démarrer ou de la barre des tâches est aussi envoyé à Bing pour afficher des résultats web. Désactivé, la recherche reste locale (applications, fichiers, paramètres). Effet secondaire : l'Explorateur n'affiche plus vos recherches récentes."))
+        yield return Tweak.Toggle("privacy.search.web", L("Web results (Bing) in search"),
+                L("What you type in Start menu or taskbar search is also sent to Bing to show web results. When off, search stays local (apps, files, settings). Side effect: File Explorer no longer shows your recent searches."))
             .In(Category, g)
-            .Keywords(L("bing, recherche web, web search, resultats internet, disablesearchboxsuggestions"))
+            .Keywords(L("bing, web search, internet results, disablesearchboxsuggestions"))
             .Tags("privacy-max", "family")
             .Effect(ApplyEffect.RestartExplorer)
             .WhenOn(Reg.CuDel(ExplorerUserPolicy, "DisableSearchBoxSuggestions"), Reg.CuDel(SearchKey, "BingSearchEnabled"))
@@ -448,10 +448,10 @@ public static class PrivacyTweaks
             .Recommend(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.search.cloud", L("Recherche dans vos contenus cloud"),
-                L("Inclut dans la recherche Windows des résultats issus de OneDrive, Outlook et des autres services liés à votre compte Microsoft ou professionnel : vos recherches sont alors aussi transmises à ces services."))
+        yield return Tweak.Toggle("privacy.search.cloud", L("Search your cloud content"),
+                L("Includes results from OneDrive, Outlook and other services linked to your Microsoft or work account in Windows search: your searches are then also sent to these services."))
             .In(Category, g)
-            .Keywords(L("cloud search, recherche cloud, onedrive, outlook, compte microsoft, compte professionnel"))
+            .Keywords(L("cloud search, onedrive, outlook, microsoft account, work account"))
             .Tags("privacy-max")
             .WhenOn(Reg.CuDword(SearchSettings, "IsMSACloudSearchEnabled", 1), Reg.CuDword(SearchSettings, "IsAADCloudSearchEnabled", 1))
             .WhenOff(Reg.CuDword(SearchSettings, "IsMSACloudSearchEnabled", 0), Reg.CuDword(SearchSettings, "IsAADCloudSearchEnabled", 0))
@@ -459,20 +459,20 @@ public static class PrivacyTweaks
             .Recommend(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.search.history", L("Historique des recherches sur cet appareil"),
-                L("Mémorise vos recherches pour vous les proposer à nouveau. Ces données restent sur le PC."))
+        yield return Tweak.Toggle("privacy.search.history", L("Search history on this device"),
+                L("Remembers your searches to suggest them again. This data stays on the PC."))
             .In(Category, g)
-            .Keywords(L("historique recherche, search history, recherches recentes"))
+            .Keywords(L("search history, recent searches"))
             .Tags("privacy-max")
             .WhenOn(Reg.CuDword(SearchSettings, "IsDeviceSearchHistoryEnabled", 1))
             .WhenOff(Reg.CuDword(SearchSettings, "IsDeviceSearchHistoryEnabled", 0))
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Toggle("privacy.search.highlights", L("Points forts de la recherche"),
-                L("Illustrations, événements du jour et contenus tendance fournis par Bing dans la zone et le panneau de recherche."))
+        yield return Tweak.Toggle("privacy.search.highlights", L("Search highlights"),
+                L("Illustrations, events of the day and trending content provided by Bing in the search box and search pane."))
             .In(Category, g)
-            .Keywords(L("search highlights, points forts, tendances, bing, illustration recherche"))
+            .Keywords(L("search highlights, highlights, trending, bing, search illustration"))
             .Tags("privacy-max", "family")
             .RequiresAndRecommends(Build21H2, TweakDefinition.Off)
             .Effect(ApplyEffect.RestartExplorer)
@@ -484,21 +484,21 @@ public static class PrivacyTweaks
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Choice("privacy.search.safesearch", L("Recherche sécurisée (SafeSearch)"),
-                L("Filtrage des contenus pour adultes dans les résultats web de la recherche Windows. Sans objet si les résultats web sont désactivés."))
+        yield return Tweak.Choice("privacy.search.safesearch", L("SafeSearch"),
+                L("Filters adult content in Windows search web results. Not relevant if web results are turned off."))
             .In(Category, g)
-            .Keywords(L("safesearch, recherche securisee, contenu adulte, filtrage, controle parental"))
+            .Keywords(L("safesearch, safe search, adult content, filtering, parental controls"))
             .Tags("family")
-            .Option("strict", L("Stricte"), Reg.CuDword(SearchSettings, "SafeSearchMode", 2))
-            .Option("moderate", L("Modérée (par défaut)"), Reg.CuDword(SearchSettings, "SafeSearchMode", 1))
-            .Option("off", L("Désactivée"), Reg.CuDword(SearchSettings, "SafeSearchMode", 0))
+            .Option("strict", L("Strict"), Reg.CuDword(SearchSettings, "SafeSearchMode", 2))
+            .Option("moderate", L("Moderate (default)"), Reg.CuDword(SearchSettings, "SafeSearchMode", 1))
+            .Option("off", L("Disabled"), Reg.CuDword(SearchSettings, "SafeSearchMode", 0))
             .WindowsDefault("moderate")
             .Build();
 
-        yield return Tweak.Toggle("privacy.ai.copilot", L("Copilot intégré (ancienne version)"),
-                L("Stratégie « Désactiver Windows Copilot » : masque et bloque le volet Copilot intégré à Windows 11 23H2 et à Windows 10 (bouton de la barre des tâches compris)."))
+        yield return Tweak.Toggle("privacy.ai.copilot", L("Built-in Copilot (legacy version)"),
+                L("“Turn off Windows Copilot” policy: hides and blocks the Copilot pane built into Windows 11 23H2 and Windows 10 (including the taskbar button)."))
             .In(Category, g)
-            .Keywords(L("copilot, ia, ai, assistant, turnoffwindowscopilot"))
+            .Keywords(L("copilot, ai, assistant, turnoffwindowscopilot"))
             .Tags("privacy-max", "family")
             .RequiresAndRecommends(LegacyCopilot, TweakDefinition.Off)
             .Effect(ApplyEffect.RestartExplorer)
@@ -507,13 +507,13 @@ public static class PrivacyTweaks
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Toggle("privacy.ai.recall", L("Captures d'écran de Recall (Retrouver)"),
-                L("Sur les PC Copilot+, Recall enregistre régulièrement des captures de votre écran pour vous permettre de retrouver ce que vous avez vu. La stratégie interdit l'enregistrement de ces captures ; elle est sans effet sur les autres PC."))
+        yield return Tweak.Toggle("privacy.ai.recall", L("Recall snapshots"),
+                L("On Copilot+ PCs, Recall regularly saves snapshots of your screen so you can find what you've seen. The policy prevents these snapshots from being saved; it has no effect on other PCs."))
             .In(Category, g)
-            .Keywords(L("recall, retrouver, capture ecran, instantane, snapshot, copilot+, disableaidataanalysis"))
+            .Keywords(L("recall, screenshot, snapshot, copilot+, disableaidataanalysis"))
             .Tags("privacy-max", "family")
             .RequiresAndRecommends(Requires.Windows11_24H2, TweakDefinition.Off)
-            .Warning(L("Les captures déjà enregistrées par Recall sont supprimées quand l'enregistrement est désactivé."))
+            .Warning(L("Snapshots already saved by Recall are deleted when saving is turned off."))
             .WhenOn(Reg.LmDel(WindowsAiPolicy, "DisableAIDataAnalysis"), Reg.CuDel(WindowsAiUserPolicy, "DisableAIDataAnalysis"))
             .WhenOff(Reg.LmDword(WindowsAiPolicy, "DisableAIDataAnalysis", 1), Reg.CuDword(WindowsAiUserPolicy, "DisableAIDataAnalysis", 1))
             .Detect(() => PrivacyDetect.OffWhenAny(
@@ -522,24 +522,24 @@ public static class PrivacyTweaks
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Toggle("privacy.ai.recall-component", L("Composant Recall"),
-                L("Stratégie « Autoriser l'activation de Recall ». « Retiré » : le composant facultatif Recall est désactivé et supprimé de Windows après redémarrage. « Disponible » (par défaut) : il reste désactivé tant que vous ne l'activez pas vous-même."))
+        yield return Tweak.Toggle("privacy.ai.recall-component", L("Recall component"),
+                L("“Allow Recall to be enabled” policy. “Removed”: the optional Recall component is disabled and removed from Windows after a restart. “Available” (default): it stays off until you turn it on yourself."))
             .In(Category, g)
-            .Keywords(L("recall, retrouver, composant facultatif, allowrecallenablement, copilot+"))
-            .Labels(L("Disponible"), L("Retiré"))
+            .Keywords(L("recall, optional component, optional feature, allowrecallenablement, copilot+"))
+            .Labels(L("Available"), L("Removed"))
             .Requires(Requires.Windows11_24H2)
             .Risk(RiskLevel.Moderate)
             .Effect(ApplyEffect.Reboot)
-            .Warning(L("Les captures Recall existantes sont supprimées. Pour le récupérer, remettez ce réglage sur « Disponible » puis redémarrez le PC."))
+            .Warning(L("Existing Recall snapshots are deleted. To get it back, set this setting to “Available” again, then restart the PC."))
             .WhenOn(Reg.LmDel(WindowsAiPolicy, "AllowRecallEnablement"))
             .WhenOff(Reg.LmDword(WindowsAiPolicy, "AllowRecallEnablement", 0))
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Toggle("privacy.ai.clicktodo", L("Click to Do (Actions par clic)"),
-                L("Analyse une capture de l'écran, sur l'appareil, pour proposer des actions sur le texte ou les images affichés. Présent surtout sur les PC Copilot+."))
+        yield return Tweak.Toggle("privacy.ai.clicktodo", L("Click to Do"),
+                L("Analyzes a screenshot, on the device, to suggest actions on the text or images displayed. Mostly available on Copilot+ PCs."))
             .In(Category, g)
-            .Keywords(L("click to do, actions par clic, ia, capture, disableclicktodo"))
+            .Keywords(L("click to do, ai, screenshot, disableclicktodo"))
             .Tags("privacy-max")
             .Requires(Requires.Windows11_24H2)
             .WhenOn(Reg.LmDel(WindowsAiPolicy, "DisableClickToDo"), Reg.CuDel(WindowsAiUserPolicy, "DisableClickToDo"))
@@ -551,9 +551,9 @@ public static class PrivacyTweaks
             .Build();
 
         yield return Tweak.Toggle("privacy.search.cortana", "Cortana",
-                L("Assistant vocal de Windows 10. La stratégie le désactive pour tous les utilisateurs du PC."))
+                L("Windows 10 voice assistant. The policy turns it off for all users of the PC."))
             .In(Category, g)
-            .Keywords(L("cortana, assistant vocal, allowcortana"))
+            .Keywords(L("cortana, voice assistant, allowcortana"))
             .Tags("privacy-max", "family")
             .RequiresAndRecommends(Requires.Windows10Only, TweakDefinition.Off)
             .Effect(ApplyEffect.SignOut)
@@ -569,10 +569,10 @@ public static class PrivacyTweaks
     {
         var g = PrivacyGroups.Activity;
 
-        yield return Tweak.Toggle("privacy.activity.history", L("Historique des activités"),
-                L("Windows enregistre les applications, fichiers et pages que vous ouvrez (reprise d'activité) et peut les envoyer à votre compte Microsoft. La stratégie coupe l'enregistrement et l'envoi pour tous les comptes du PC."))
+        yield return Tweak.Toggle("privacy.activity.history", L("Activity history"),
+                L("Windows records the apps, files and pages you open (to pick up where you left off) and can send them to your Microsoft account. The policy stops recording and sending for all accounts on the PC."))
             .In(Category, g)
-            .Keywords(L("historique activite, activity history, timeline, chronologie, publishuseractivities"))
+            .Keywords(L("activity history, timeline, publishuseractivities"))
             .Tags("privacy-max", "family")
             .WhenOn(Reg.LmDel(SystemPolicy, "EnableActivityFeed"), Reg.LmDel(SystemPolicy, "PublishUserActivities"), Reg.LmDel(SystemPolicy, "UploadUserActivities"))
             .WhenOff(Reg.LmDword(SystemPolicy, "EnableActivityFeed", 0), Reg.LmDword(SystemPolicy, "PublishUserActivities", 0), Reg.LmDword(SystemPolicy, "UploadUserActivities", 0))
@@ -584,42 +584,42 @@ public static class PrivacyTweaks
             .Recommend(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.activity.clipboard-sync", L("Synchronisation du presse-papiers entre appareils"),
-                L("Option « Partager entre vos appareils » : le contenu copié transite par le cloud Microsoft vers vos autres appareils. Bloqué, l'option n'est plus proposée."))
+        yield return Tweak.Toggle("privacy.activity.clipboard-sync", L("Clipboard sync across devices"),
+                L("“Share across devices” option: copied content goes through the Microsoft cloud to your other devices. When blocked, the option is no longer offered."))
             .In(Category, g)
-            .Keywords(L("presse papier, clipboard, synchronisation, cloud clipboard, cross device"))
+            .Keywords(L("clipboard, sync, cloud clipboard, cross device"))
             .Tags("privacy-max", "family")
-            .Labels(L("Autorisé"), L("Bloqué"))
+            .Labels(L("Allowed"), L("Blocked"))
             .WhenOn(Reg.LmDel(SystemPolicy, "AllowCrossDeviceClipboard"))
             .WhenOff(Reg.LmDword(SystemPolicy, "AllowCrossDeviceClipboard", 0))
             .WindowsDefault(TweakDefinition.On)
             .Recommend(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.activity.clipboard-history", L("Historique du presse-papiers"),
-                L("Conserve les derniers éléments copiés (Windows + V), y compris d'éventuels mots de passe. L'historique reste sur le PC et se vide au redémarrage, sauf les éléments épinglés."))
+        yield return Tweak.Toggle("privacy.activity.clipboard-history", L("Clipboard history"),
+                L("Keeps the last items you copied (Windows + V), including any passwords. The history stays on the PC and is cleared when it restarts, except pinned items."))
             .In(Category, g)
-            .Keywords(L("presse papier, clipboard history, windows v, historique copier"))
+            .Keywords(L("clipboard, clipboard history, windows v, copy history"))
             .Tags("privacy-max")
             .WhenOn(Reg.CuDword(ClipboardKey, "EnableClipboardHistory", 1))
             .WhenOff(Reg.CuDword(ClipboardKey, "EnableClipboardHistory", 0))
             .WindowsDefault(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.activity.track-progs", L("Suivi du lancement des applications"),
-                L("Windows mémorise les applications que vous lancez pour améliorer le menu Démarrer et la recherche (liste « Les plus utilisées »). Ces données restent sur le PC."))
+        yield return Tweak.Toggle("privacy.activity.track-progs", L("App launch tracking"),
+                L("Windows remembers the apps you launch to improve the Start menu and search (“Most used” list). This data stays on the PC."))
             .In(Category, g)
-            .Keywords(L("start_trackprogs, applications plus utilisees, suivi applications, track app launches"))
+            .Keywords(L("start_trackprogs, most used apps, app tracking, track app launches"))
             .Tags("privacy-max")
             .WhenOn(Reg.CuDword(ExplorerAdvanced, "Start_TrackProgs", 1))
             .WhenOff(Reg.CuDword(ExplorerAdvanced, "Start_TrackProgs", 0))
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Toggle("privacy.activity.track-docs", L("Éléments récents dans Démarrer et les listes de raccourcis"),
-                L("Affiche les fichiers ouverts récemment dans le menu Démarrer, les listes de raccourcis (clic droit sur une icône de la barre des tâches) et l'Explorateur."))
+        yield return Tweak.Toggle("privacy.activity.track-docs", L("Recent items in Start and jump lists"),
+                L("Shows recently opened files in the Start menu, jump lists (right-click a taskbar icon) and File Explorer."))
             .In(Category, g)
-            .Keywords(L("start_trackdocs, elements recents, jump list, liste raccourcis, fichiers recents"))
+            .Keywords(L("start_trackdocs, recent items, jump list, recent files"))
             .Tags("privacy-max")
             .Effect(ApplyEffect.RestartExplorer)
             .WhenOn(Reg.CuDword(ExplorerAdvanced, "Start_TrackDocs", 1))
@@ -627,30 +627,30 @@ public static class PrivacyTweaks
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Toggle("privacy.activity.explorer-recent", L("Fichiers récents dans l'Explorateur"),
-                L("Section « Récent » de l'Accueil de l'Explorateur (Accès rapide sous Windows 10). Pris en compte dans les nouvelles fenêtres de l'Explorateur."))
+        yield return Tweak.Toggle("privacy.activity.explorer-recent", L("Recent files in File Explorer"),
+                L("“Recent” section of File Explorer Home (Quick access on Windows 10). Applies to new File Explorer windows."))
             .In(Category, g)
-            .Keywords(L("fichiers recents, showrecent, acces rapide, quick access, accueil explorateur"))
+            .Keywords(L("recent files, showrecent, quick access, file explorer home"))
             .Tags("privacy-max")
             .WhenOn(Reg.CuDword(ExplorerKey, "ShowRecent", 1))
             .WhenOff(Reg.CuDword(ExplorerKey, "ShowRecent", 0))
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Toggle("privacy.activity.explorer-frequent", L("Dossiers fréquents dans l'Explorateur"),
-                L("Dossiers que vous ouvrez souvent, ajoutés automatiquement à l'Accès rapide. Pris en compte dans les nouvelles fenêtres."))
+        yield return Tweak.Toggle("privacy.activity.explorer-frequent", L("Frequent folders in File Explorer"),
+                L("Folders you open often, automatically added to Quick access. Applies to new windows."))
             .In(Category, g)
-            .Keywords(L("dossiers frequents, showfrequent, acces rapide, quick access"))
+            .Keywords(L("frequent folders, showfrequent, quick access"))
             .Tags("privacy-max")
             .WhenOn(Reg.CuDword(ExplorerKey, "ShowFrequent", 1))
             .WhenOff(Reg.CuDword(ExplorerKey, "ShowFrequent", 0))
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Toggle("privacy.activity.explorer-cloud", L("Fichiers d'Office.com dans l'Explorateur"),
-                L("Affiche dans l'Accueil de l'Explorateur les documents récents de votre compte Microsoft 365 et OneDrive, récupérés en ligne."))
+        yield return Tweak.Toggle("privacy.activity.explorer-cloud", L("Office.com files in File Explorer"),
+                L("Shows recent documents from your Microsoft 365 and OneDrive account, fetched online, in File Explorer Home."))
             .In(Category, g)
-            .Keywords(L("office.com, microsoft 365, onedrive, fichiers cloud, showcloudfilesinquickaccess"))
+            .Keywords(L("office.com, microsoft 365, onedrive, cloud files, showcloudfilesinquickaccess"))
             .Tags("privacy-max")
             .Requires(Requires.Windows11_22H2)
             .WhenOn(Reg.CuDword(ExplorerKey, "ShowCloudFilesInQuickAccess", 1))
@@ -658,10 +658,10 @@ public static class PrivacyTweaks
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Toggle("privacy.activity.online-tips", L("Conseils en ligne dans les Paramètres"),
-                L("Autorise l'application Paramètres à télécharger des conseils et des contenus d'aide depuis les serveurs de Microsoft."))
+        yield return Tweak.Toggle("privacy.activity.online-tips", L("Online tips in Settings"),
+                L("Allows the Settings app to download tips and help content from Microsoft servers."))
             .In(Category, g)
-            .Keywords(L("conseils en ligne, online tips, aide en ligne, allowonlinetips"))
+            .Keywords(L("online tips, online help, allowonlinetips"))
             .Tags("privacy-max")
             .WhenOn(Reg.LmDel(ExplorerMachinePolicy, "AllowOnlineTips"))
             .WhenOff(Reg.LmDword(ExplorerMachinePolicy, "AllowOnlineTips", 0))
@@ -676,10 +676,10 @@ public static class PrivacyTweaks
     {
         var g = PrivacyGroups.Input;
 
-        yield return Tweak.Toggle("privacy.input.personalization", L("Dictionnaire personnel de saisie et d'écriture manuscrite"),
-                L("Windows apprend de ce que vous tapez et écrivez à la main (ainsi que de vos contacts) pour améliorer les suggestions et la reconnaissance. Désactivé, Windows cesse cet apprentissage."))
+        yield return Tweak.Toggle("privacy.input.personalization", L("Personal inking and typing dictionary"),
+                L("Windows learns from what you type and handwrite (as well as from your contacts) to improve suggestions and recognition. When off, Windows stops this learning."))
             .In(Category, g)
-            .Keywords(L("saisie, clavier, ecriture manuscrite, inking typing, dictionnaire personnel, input personalization"))
+            .Keywords(L("typing, keyboard, handwriting, inking typing, personal dictionary, input personalization"))
             .Tags("privacy-max")
             .WhenOn(Reg.CuDword(PersonalizationSettings, "AcceptedPrivacyPolicy", 1), Reg.CuDword(InputPersonalization, "RestrictImplicitInkCollection", 0),
                     Reg.CuDword(InputPersonalization, "RestrictImplicitTextCollection", 0), Reg.CuDword(TrainedDataStore, "HarvestContacts", 1))
@@ -689,10 +689,10 @@ public static class PrivacyTweaks
             .Recommend(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.input.tipc", L("Amélioration de la saisie et de l'écriture manuscrite"),
-                L("Envoie à Microsoft des données de saisie et d'écriture manuscrite pour améliorer la reconnaissance et les suggestions. Ne s'applique que si l'envoi des données de diagnostic facultatives est activé."))
+        yield return Tweak.Toggle("privacy.input.tipc", L("Improve inking and typing"),
+                L("Sends typing and handwriting data to Microsoft to improve recognition and suggestions. Only applies if sending optional diagnostic data is turned on."))
             .In(Category, g)
-            .Keywords(L("tipc, improve inking typing, saisie, ecriture manuscrite, donnees facultatives"))
+            .Keywords(L("tipc, improve inking typing, typing, handwriting, optional data"))
             .Tags("privacy-max")
             .WhenOn(Reg.CuDword(InputTipc, "Enabled", 1))
             .WhenOff(Reg.CuDword(InputTipc, "Enabled", 0))
@@ -700,10 +700,10 @@ public static class PrivacyTweaks
             .Recommend(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.input.speech", L("Reconnaissance vocale en ligne"),
-                L("Utilise les serveurs de Microsoft pour la dictée et les commandes vocales : plus précis, mais votre voix est envoyée en ligne. Désactivé, les fonctions vocales locales (Accès vocal, reconnaissance vocale Windows) restent utilisables."))
+        yield return Tweak.Toggle("privacy.input.speech", L("Online speech recognition"),
+                L("Uses Microsoft servers for dictation and voice commands: more accurate, but your voice is sent online. When off, local voice features (Voice access, Windows Speech Recognition) remain available."))
             .In(Category, g)
-            .Keywords(L("voix, vocal, speech, dictee, reconnaissance vocale, online speech"))
+            .Keywords(L("voice, speech, dictation, speech recognition, online speech"))
             .Tags("privacy-max")
             .WhenOn(Reg.CuDword(OnlineSpeech, "HasAccepted", 1))
             .WhenOff(Reg.CuDword(OnlineSpeech, "HasAccepted", 0))
@@ -711,21 +711,21 @@ public static class PrivacyTweaks
             .Recommend(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.input.voice-activation", L("Activation vocale des applications"),
-                L("Autorise les assistants vocaux à écouter en permanence leur mot-clé pour se déclencher, y compris sur l'écran de verrouillage. La stratégie s'applique à tous les comptes du PC."))
+        yield return Tweak.Toggle("privacy.input.voice-activation", L("Voice activation for apps"),
+                L("Allows voice assistants to constantly listen for their keyword to activate, including on the lock screen. The policy applies to all accounts on the PC."))
             .In(Category, g)
-            .Keywords(L("activation vocale, voice activation, mot cle, assistant vocal, ecoute"))
+            .Keywords(L("voice activation, keyword, wake word, voice assistant, listening"))
             .Tags("privacy-max")
-            .Labels(L("Autorisé"), L("Bloqué"))
+            .Labels(L("Allowed"), L("Blocked"))
             .WhenOn(Reg.LmDel(AppPrivacyPolicy, "LetAppsActivateWithVoice"), Reg.LmDel(AppPrivacyPolicy, "LetAppsActivateWithVoiceAboveLock"))
             .WhenOff(Reg.LmDword(AppPrivacyPolicy, "LetAppsActivateWithVoice", 2), Reg.LmDword(AppPrivacyPolicy, "LetAppsActivateWithVoiceAboveLock", 2))
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Toggle("privacy.input.language-list", L("Accès des sites web à votre liste de langues"),
-                L("Les sites web peuvent lire la liste des langues configurées dans Windows pour afficher un contenu adapté à votre région."))
+        yield return Tweak.Toggle("privacy.input.language-list", L("Website access to your language list"),
+                L("Websites can read the list of languages configured in Windows to show content relevant to your region."))
             .In(Category, g)
-            .Keywords(L("langue, language list, httpacceptlanguageoptout, sites web, contenu local"))
+            .Keywords(L("language, language list, httpacceptlanguageoptout, websites, local content"))
             .Tags("privacy-max")
             .WhenOn(Reg.CuDel(InternationalProfile, "HttpAcceptLanguageOptOut"))
             .WhenOff(Reg.CuDword(InternationalProfile, "HttpAcceptLanguageOptOut", 1))
@@ -733,12 +733,12 @@ public static class PrivacyTweaks
             .Recommend(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.input.handwriting", L("Partage des données d'écriture manuscrite"),
-                L("Envoi à Microsoft d'échantillons d'écriture manuscrite et de rapports d'erreurs de reconnaissance pour améliorer le service. Concerne surtout les PC tactiles avec stylet."))
+        yield return Tweak.Toggle("privacy.input.handwriting", L("Handwriting data sharing"),
+                L("Sends handwriting samples and recognition error reports to Microsoft to improve the service. Mostly affects touch PCs with a pen."))
             .In(Category, g)
-            .Keywords(L("ecriture manuscrite, handwriting, stylet, pen, reconnaissance ecriture"))
+            .Keywords(L("handwriting, pen, stylus, handwriting recognition"))
             .Tags("privacy-max")
-            .Labels(L("Autorisé"), L("Bloqué"))
+            .Labels(L("Allowed"), L("Blocked"))
             .WhenOn(Reg.LmDel(TabletPcPolicy, "PreventHandwritingDataSharing"), Reg.LmDel(HandwritingErrorsPolicy, "PreventHandwritingErrorReports"))
             .WhenOff(Reg.LmDword(TabletPcPolicy, "PreventHandwritingDataSharing", 1), Reg.LmDword(HandwritingErrorsPolicy, "PreventHandwritingErrorReports", 1))
             .WindowsDefault(TweakDefinition.On)
@@ -752,25 +752,25 @@ public static class PrivacyTweaks
     {
         var g = PrivacyGroups.Location;
 
-        yield return Tweak.Toggle("privacy.location.search", L("Utilisation de la position par la recherche"),
-                L("Autorise la recherche Windows à utiliser la position de l'appareil pour proposer des résultats locaux. La stratégie s'applique à tous les comptes du PC."))
+        yield return Tweak.Toggle("privacy.location.search", L("Location use by search"),
+                L("Allows Windows search to use the device's location to suggest local results. The policy applies to all accounts on the PC."))
             .In(Category, g)
-            .Keywords(L("localisation, position, recherche, allowsearchtouselocation, resultats locaux"))
+            .Keywords(L("location, position, search, allowsearchtouselocation, local results"))
             .Tags("privacy-max")
-            .Labels(L("Autorisé"), L("Bloqué"))
+            .Labels(L("Allowed"), L("Blocked"))
             .WhenOn(Reg.LmDel(WindowsSearchPolicy, "AllowSearchToUseLocation"))
             .WhenOff(Reg.LmDword(WindowsSearchPolicy, "AllowSearchToUseLocation", 0))
             .WindowsDefault(TweakDefinition.On)
             .Recommend(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("privacy.location.findmydevice", L("Localiser mon appareil"),
-                L("Permet de retrouver ce PC sur une carte depuis account.microsoft.com en cas de perte ou de vol. Une fois la fonction activée par l'utilisateur, la position du PC est envoyée régulièrement à Microsoft. La stratégie l'interdit pour tout le PC."))
+        yield return Tweak.Toggle("privacy.location.findmydevice", L("Find my device"),
+                L("Lets you locate this PC on a map from account.microsoft.com if it's lost or stolen. Once the user turns the feature on, the PC's location is regularly sent to Microsoft. The policy prevents it for the whole PC."))
             .In(Category, g)
-            .Keywords(L("localiser appareil, find my device, vol, perte, position, antivol"))
-            .Labels(L("Autorisé"), L("Bloqué"))
+            .Keywords(L("find my device, locate device, theft, lost, location, anti-theft"))
+            .Labels(L("Allowed"), L("Blocked"))
             .Risk(RiskLevel.Moderate)
-            .Warning(L("Vous ne pourrez plus localiser ni verrouiller ce PC à distance s'il est perdu ou volé."))
+            .Warning(L("You'll no longer be able to locate or lock this PC remotely if it's lost or stolen."))
             .WhenOn(Reg.LmDel(FindMyDevicePolicy, "AllowFindMyDevice"))
             .WhenOff(Reg.LmDword(FindMyDevicePolicy, "AllowFindMyDevice", 0))
             .WindowsDefault(TweakDefinition.On)
@@ -781,84 +781,84 @@ public static class PrivacyTweaks
 
     private static IEnumerable<TweakDefinition> Permissions()
     {
-        yield return Permission("webcam", "webcam", L("Accès des applications à la caméra"),
-            L("Accès à la caméra pour votre compte. Sans effet si la caméra est bloquée pour tout le PC (page Périphériques)."),
+        yield return Permission("webcam", "webcam", L("App access to the camera"),
+            L("Camera access for your account. No effect if the camera is blocked for the whole PC (Devices page)."),
             [L("camera, webcam, video")], recommendDeny: false, Requires.Camera);
-        yield return Permission("microphone", "microphone", L("Accès des applications au microphone"),
-            L("Accès au micro pour votre compte. Sans effet si le micro est bloqué pour tout le PC (page Périphériques)."),
-            [L("micro, microphone, audio, enregistrement")], recommendDeny: false);
-        yield return Permission("location", "location", L("Accès des applications à votre position"),
-            L("Accès à la position de l'appareil pour votre compte. Sans effet si la localisation est désactivée pour tout le PC (page Périphériques)."),
-            [L("localisation, position, gps, location")], recommendDeny: false);
-        yield return Permission("userNotificationListener", "notifications", L("Accès des applications à vos notifications"),
-            L("Permet à des applications de lire toutes les notifications que vous recevez (utile pour certaines montres connectées)."),
+        yield return Permission("microphone", "microphone", L("App access to the microphone"),
+            L("Microphone access for your account. No effect if the microphone is blocked for the whole PC (Devices page)."),
+            [L("mic, microphone, audio, recording")], recommendDeny: false);
+        yield return Permission("location", "location", L("App access to your location"),
+            L("Access to the device's location for your account. No effect if location is turned off for the whole PC (Devices page)."),
+            [L("location, position, gps, geolocation")], recommendDeny: false);
+        yield return Permission("userNotificationListener", "notifications", L("App access to your notifications"),
+            L("Allows apps to read all the notifications you receive (useful for some smartwatches)."),
             [L("notification, notification listener")], recommendDeny: false);
-        yield return Permission("userAccountInformation", "account-info", L("Accès des applications aux informations de votre compte"),
-            L("Nom, photo et adresse de votre compte Windows, lisibles par les applications qui le demandent."),
-            [L("compte, account info, nom utilisateur, photo profil")], recommendDeny: true, null, "privacy-max", "family");
-        yield return Permission("contacts", "contacts", L("Accès des applications à vos contacts"),
-            L("Lecture des contacts enregistrés dans Windows (application Contacts, comptes de messagerie)."),
-            [L("contacts, carnet adresses, people")], recommendDeny: true, null, "privacy-max", "family");
-        yield return Permission("appointments", "calendar", L("Accès des applications à votre calendrier"),
-            L("Lecture et modification des rendez-vous enregistrés dans Windows."),
-            [L("calendrier, agenda, rendez vous, calendar, appointments")], recommendDeny: true, null, "privacy-max", "family");
-        yield return Permission("phoneCall", "phone-calls", L("Accès des applications aux appels téléphoniques"),
-            L("Passer des appels depuis le PC (par exemple via Lien avec Windows et un téléphone associé)."),
-            [L("appel, telephone, phone call, lien avec windows")], recommendDeny: false);
-        yield return Permission("phoneCallHistory", "call-history", L("Accès des applications à l'historique des appels"),
-            L("Lecture de l'historique des appels synchronisé sur le PC."),
-            [L("historique appels, call history, telephone")], recommendDeny: true, null, "privacy-max", "family");
-        yield return Permission("email", "email", L("Accès des applications à vos e-mails"),
-            L("Lecture et envoi des e-mails des comptes configurés dans Windows."),
-            [L("email, e mail, courriel, mail, messagerie electronique")], recommendDeny: true, null, "privacy-max", "family");
-        yield return Permission("userDataTasks", "tasks", L("Accès des applications à vos tâches"),
-            L("Lecture et modification des listes de tâches enregistrées dans Windows."),
-            [L("taches, to do, tasks, liste de taches")], recommendDeny: true, null, "privacy-max");
-        yield return Permission("chat", "messaging", L("Accès des applications à la messagerie (SMS et MMS)"),
-            L("Lecture et envoi de SMS ou de MMS depuis le PC."),
-            [L("sms, mms, messagerie, messages, chat")], recommendDeny: true, null, "privacy-max", "family");
-        yield return Permission("radios", "radios", L("Contrôle des radios par les applications"),
-            L("Permet aux applications d'activer ou de couper le Bluetooth ou le Wi-Fi."),
-            [L("radio, bluetooth, wifi, sans fil")], recommendDeny: false);
-        yield return Permission("bluetoothSync", "other-devices", L("Communication avec des appareils non appairés"),
-            L("Permet aux applications d'échanger automatiquement des informations avec des appareils sans fil proches qui ne sont pas appairés au PC (balises, objets connectés)."),
-            [L("appareils non appaires, balise, beacon, objet connecte, other devices")], recommendDeny: true, null, "privacy-max");
-        yield return Permission("appDiagnostics", "app-diagnostics", L("Accès des applications aux diagnostics des autres applications"),
-            L("Permet à une application de connaître les autres applications en cours d'exécution et leurs informations de diagnostic."),
-            [L("diagnostic application, app diagnostics, processus")], recommendDeny: true, null, "privacy-max", "family");
-        yield return Permission("documentsLibrary", "documents", L("Accès des applications au dossier Documents"),
-            L("Concerne les applications du Microsoft Store ; les programmes de bureau classiques ne sont pas soumis à ce contrôle."),
-            [L("documents, fichiers, bibliotheque")], recommendDeny: false);
-        yield return Permission("picturesLibrary", "pictures", L("Accès des applications au dossier Images"),
-            L("Concerne les applications du Microsoft Store ; les programmes de bureau classiques ne sont pas soumis à ce contrôle."),
-            [L("images, photos, pictures, bibliotheque")], recommendDeny: false);
-        yield return Permission("videosLibrary", "videos", L("Accès des applications au dossier Vidéos"),
-            L("Concerne les applications du Microsoft Store ; les programmes de bureau classiques ne sont pas soumis à ce contrôle."),
-            [L("videos, films, bibliotheque")], recommendDeny: false);
-        yield return Permission("musicLibrary", "music", L("Accès des applications à la bibliothèque Musique"),
-            L("Concerne les applications du Microsoft Store ; les programmes de bureau classiques ne sont pas soumis à ce contrôle."),
-            [L("musique, music, audio, bibliotheque")], recommendDeny: false, Requires.Windows11);
-        yield return Permission("broadFileSystemAccess", "file-system", L("Accès des applications à tout le système de fichiers"),
-            L("Accès à tous vos fichiers pour les rares applications du Microsoft Store qui le demandent."),
-            [L("systeme fichiers, file system, tous les fichiers")], recommendDeny: false, null, "privacy-max");
-        yield return Permission("graphicsCaptureProgrammatic", "screenshots", L("Captures d'écran par les applications"),
-            L("Permet aux applications de capturer l'écran ou d'autres fenêtres."),
-            [L("capture ecran, screenshot, enregistrement ecran")], recommendDeny: false, Requires.Windows11);
-        yield return Permission("graphicsCaptureWithoutBorder", "screenshot-borders", L("Captures d'écran sans bordure"),
-            L("Permet aux applications de désactiver la bordure qui signale qu'une fenêtre est en cours de capture."),
-            [L("bordure capture, capture ecran, screenshot border")], recommendDeny: false, Requires.Windows11);
-        yield return Permission("systemAIModels", "ai-models", L("Accès des applications aux modèles d'IA de Windows"),
-            L("Permet aux applications d'utiliser les modèles d'intelligence artificielle intégrés à Windows (génération de texte et d'images, sur l'appareil)."),
-            [L("ia, intelligence artificielle, generation texte, generation image, modeles ia")], recommendDeny: false, Requires.Windows11_24H2);
-        yield return Permission("activity", "motion", L("Accès des applications aux données de mouvement"),
-            L("Données d'activité issues des capteurs de mouvement (marche, course…), présentes sur certaines tablettes."),
-            [L("mouvement, motion, capteur, activite")], recommendDeny: false, null, "privacy-max");
-        yield return Permission("cellularData", "cellular", L("Accès des applications aux données cellulaires"),
-            L("Utilisation de la connexion mobile (4G/5G). Ne concerne que les PC équipés d'un modem cellulaire."),
-            [L("cellulaire, 4g, 5g, donnees mobiles, lte")], recommendDeny: false);
-        yield return Permission("gazeInput", "eye-tracker", L("Accès des applications au suivi oculaire"),
-            L("Utilisation d'un dispositif de suivi du regard. Ne concerne que les PC équipés d'un tel périphérique."),
-            [L("suivi oculaire, eye tracker, regard")], recommendDeny: false);
+        yield return Permission("userAccountInformation", "account-info", L("App access to your account info"),
+            L("Name, picture and address of your Windows account, readable by apps that request them."),
+            [L("account, account info, user name, profile picture")], recommendDeny: true, null, "privacy-max", "family");
+        yield return Permission("contacts", "contacts", L("App access to your contacts"),
+            L("Reading contacts saved in Windows (People app, email accounts)."),
+            [L("contacts, address book, people")], recommendDeny: true, null, "privacy-max", "family");
+        yield return Permission("appointments", "calendar", L("App access to your calendar"),
+            L("Reading and changing appointments saved in Windows."),
+            [L("calendar, schedule, appointments, agenda")], recommendDeny: true, null, "privacy-max", "family");
+        yield return Permission("phoneCall", "phone-calls", L("App access to phone calls"),
+            L("Making calls from the PC (for example through Phone Link and a linked phone)."),
+            [L("call, phone, phone call, phone link")], recommendDeny: false);
+        yield return Permission("phoneCallHistory", "call-history", L("App access to call history"),
+            L("Reading the call history synced to the PC."),
+            [L("call history, phone")], recommendDeny: true, null, "privacy-max", "family");
+        yield return Permission("email", "email", L("App access to your email"),
+            L("Reading and sending email from accounts configured in Windows."),
+            [L("email, e-mail, mail, messaging")], recommendDeny: true, null, "privacy-max", "family");
+        yield return Permission("userDataTasks", "tasks", L("App access to your tasks"),
+            L("Reading and changing task lists saved in Windows."),
+            [L("tasks, to do, task list")], recommendDeny: true, null, "privacy-max");
+        yield return Permission("chat", "messaging", L("App access to messaging (SMS and MMS)"),
+            L("Reading and sending SMS or MMS messages from the PC."),
+            [L("sms, mms, messaging, messages, text messages, chat")], recommendDeny: true, null, "privacy-max", "family");
+        yield return Permission("radios", "radios", L("Radio control by apps"),
+            L("Allows apps to turn Bluetooth or Wi-Fi on or off."),
+            [L("radio, bluetooth, wifi, wireless")], recommendDeny: false);
+        yield return Permission("bluetoothSync", "other-devices", L("Communication with unpaired devices"),
+            L("Allows apps to automatically exchange information with nearby wireless devices that aren't paired with the PC (beacons, smart devices)."),
+            [L("unpaired devices, beacon, smart device, iot, other devices")], recommendDeny: true, null, "privacy-max");
+        yield return Permission("appDiagnostics", "app-diagnostics", L("App access to diagnostics of other apps"),
+            L("Allows an app to see which other apps are running and their diagnostic information."),
+            [L("app diagnostics, diagnostics, processes")], recommendDeny: true, null, "privacy-max", "family");
+        yield return Permission("documentsLibrary", "documents", L("App access to the Documents folder"),
+            L("Applies to Microsoft Store apps; classic desktop programs aren't subject to this control."),
+            [L("documents, files, library")], recommendDeny: false);
+        yield return Permission("picturesLibrary", "pictures", L("App access to the Pictures folder"),
+            L("Applies to Microsoft Store apps; classic desktop programs aren't subject to this control."),
+            [L("pictures, images, photos, library")], recommendDeny: false);
+        yield return Permission("videosLibrary", "videos", L("App access to the Videos folder"),
+            L("Applies to Microsoft Store apps; classic desktop programs aren't subject to this control."),
+            [L("videos, movies, library")], recommendDeny: false);
+        yield return Permission("musicLibrary", "music", L("App access to the Music library"),
+            L("Applies to Microsoft Store apps; classic desktop programs aren't subject to this control."),
+            [L("music, audio, library")], recommendDeny: false, Requires.Windows11);
+        yield return Permission("broadFileSystemAccess", "file-system", L("App access to the entire file system"),
+            L("Access to all your files for the few Microsoft Store apps that request it."),
+            [L("file system, all files, broad file system access")], recommendDeny: false, null, "privacy-max");
+        yield return Permission("graphicsCaptureProgrammatic", "screenshots", L("Screenshots by apps"),
+            L("Allows apps to capture the screen or other windows."),
+            [L("screenshot, screen capture, screen recording")], recommendDeny: false, Requires.Windows11);
+        yield return Permission("graphicsCaptureWithoutBorder", "screenshot-borders", L("Borderless screenshots"),
+            L("Allows apps to turn off the border that shows a window is being captured."),
+            [L("capture border, screenshot, screenshot border")], recommendDeny: false, Requires.Windows11);
+        yield return Permission("systemAIModels", "ai-models", L("App access to Windows AI models"),
+            L("Allows apps to use the artificial intelligence models built into Windows (text and image generation, on the device)."),
+            [L("ai, artificial intelligence, text generation, image generation, ai models")], recommendDeny: false, Requires.Windows11_24H2);
+        yield return Permission("activity", "motion", L("App access to motion data"),
+            L("Activity data from motion sensors (walking, running…), found on some tablets."),
+            [L("motion, sensor, activity")], recommendDeny: false, null, "privacy-max");
+        yield return Permission("cellularData", "cellular", L("App access to cellular data"),
+            L("Use of the mobile connection (4G/5G). Only applies to PCs with a cellular modem."),
+            [L("cellular, 4g, 5g, mobile data, lte")], recommendDeny: false);
+        yield return Permission("gazeInput", "eye-tracker", L("App access to eye tracking"),
+            L("Use of an eye-tracking device. Only applies to PCs with such a device."),
+            [L("eye tracking, eye tracker, gaze")], recommendDeny: false);
     }
 
     /// <summary>
@@ -877,8 +877,8 @@ public static class PrivacyTweaks
         var key = ConsentStore + @"\" + capability;
         var builder = Tweak.Toggle("privacy.perm." + idSuffix, title, description)
             .In(Category, PrivacyGroups.Permissions)
-            .Keywords([.. keywords, capability, L("autorisation, permission, acces application")])
-            .Labels(L("Autorisé"), L("Bloqué"))
+            .Keywords([.. keywords, capability, L("authorization, permission, app access, app permissions")])
+            .Labels(L("Allowed"), L("Blocked"))
             .WhenOn(Reg.CuString(key, "Value", "Allow"))
             .WhenOff(Reg.CuString(key, "Value", "Deny"))
             .WindowsDefault(TweakDefinition.On);

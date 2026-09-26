@@ -88,7 +88,7 @@ internal static class FirewallRules
     {
         var existing = List();
         if (existing.Any(r => SamePath(r.Application, exePath)))
-            throw new InvalidOperationException(L("Cette application est déjà bloquée par Timonier."));
+            throw new InvalidOperationException(L("This app is already blocked by Timonier."));
 
         var exe = Path.GetFileName(exePath);
         var name = NamePrefix + exe;
@@ -106,7 +106,7 @@ internal static class FirewallRules
                 {
                     dynamic rule = ruleObj;
                     rule.Name = name;
-                    rule.Description = L("Créée par Timonier : bloque l'accès réseau de {0}", exePath);
+                    rule.Description = L("Created by Timonier: blocks network access for {0}", exePath);
                     rule.ApplicationName = exePath;
                     rule.Direction = direction;
                     rule.Action = ActionBlock;
@@ -125,11 +125,11 @@ internal static class FirewallRules
     /// <summary>Supprime les règles Timonier portant ce nom ; refuse si une autre règle porte le même nom.</summary>
     public static int Unblock(string name)
     {
-        var group = OwnerGroup(name) ?? throw new ValidationException(L("Seules les règles créées par Timonier peuvent être supprimées."));
+        var group = OwnerGroup(name) ?? throw new ValidationException(L("Only rules created by Timonier can be deleted."));
         var matching = ReadStore().Where(r => r.Name == name).ToList();
-        if (matching.Count == 0) throw new InvalidOperationException(L("Cette règle n'existe plus."));
+        if (matching.Count == 0) throw new InvalidOperationException(L("This rule no longer exists."));
         if (matching.Any(r => r.Group != group))
-            throw new InvalidOperationException(L("Une règle qui n'a pas été créée par Timonier porte ce nom : suppression refusée par sécurité."));
+            throw new InvalidOperationException(L("A rule that wasn't created by Timonier has this name: deletion refused for safety."));
 
         var policy = CreateCom("HNetCfg.FwPolicy2");
         try
@@ -145,7 +145,7 @@ internal static class FirewallRules
         finally { Marshal.FinalReleaseComObject(policy); }
 
         var left = ReadStore().Count(r => r.Name == name);
-        if (left > 0) throw new InvalidOperationException(LP(left, "{0} règle n'a pas pu être supprimée.", "{0} règles n'ont pas pu être supprimées."));
+        if (left > 0) throw new InvalidOperationException(LP(left, "{0} rule couldn't be deleted.", "{0} rules couldn't be deleted."));
         return matching.Count;
     }
 
@@ -164,11 +164,11 @@ internal static class FirewallRules
         var path = Validate.ExistingLocalFile(raw, ".exe");
         var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows).TrimEnd('\\') + "\\";
         if (path.StartsWith(windows, StringComparison.OrdinalIgnoreCase))
-            throw new ValidationException(L("Les programmes de Windows ne peuvent pas être bloqués ici : cela risquerait de casser Windows Update, le réseau ou Sécurité Windows."));
+            throw new ValidationException(L("Windows programs can't be blocked here: it could break Windows Update, networking or Windows Security."));
         if (DefenderFolders().Any(d => path.StartsWith(d, StringComparison.OrdinalIgnoreCase)))
-            throw new ValidationException(L("Les composants de Microsoft Defender ne peuvent pas être bloqués : l'antivirus ne pourrait plus mettre à jour ses définitions ni consulter la protection dans le cloud."));
+            throw new ValidationException(L("Microsoft Defender components can't be blocked: the antivirus could no longer update its definitions or use cloud-delivered protection."));
         if (string.Equals(path, Environment.ProcessPath, StringComparison.OrdinalIgnoreCase))
-            throw new ValidationException(L("Timonier ne peut pas se bloquer lui-même."));
+            throw new ValidationException(L("Timonier can't block itself."));
         return path;
     }
 
@@ -194,9 +194,9 @@ internal static class FirewallRules
     public static string ValidateRuleName(string raw)
     {
         if (OwnerGroup(raw) is null || raw.Length > NamePrefix.Length + 280 || DisplayName(raw).Length == 0)
-            throw new ValidationException(L("Seules les règles créées par Timonier peuvent être supprimées."));
+            throw new ValidationException(L("Only rules created by Timonier can be deleted."));
         if (raw.Any(c => char.IsControl(c) || c is '|' or '"'))
-            throw new ValidationException(L("Nom de règle invalide."));
+            throw new ValidationException(L("Invalid rule name."));
         return raw;
     }
 }
@@ -206,7 +206,7 @@ public sealed class FirewallBlockAction : IActionHandler
 {
     public const string ActionId = "security.firewall.block";
     public string Id => ActionId;
-    public string Title => L("Bloquer l'accès Internet d'une application");
+    public string Title => L("Block an app's internet access");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
@@ -214,7 +214,7 @@ public sealed class FirewallBlockAction : IActionHandler
         FirewallRules.ValidateExecutable(Validate.Required(p, "path", 1024));
         Validate.Bool(p, "inbound", true);
         foreach (var key in p.Keys)
-            if (key is not "path" and not "inbound") throw new ValidationException(L("Paramètre inattendu : {0}", key));
+            if (key is not "path" and not "inbound") throw new ValidationException(L("Unexpected parameter: {0}", key));
     }
 
     public Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
@@ -222,9 +222,9 @@ public sealed class FirewallBlockAction : IActionHandler
         ValidateParameters(p);
         var path = FirewallRules.ValidateExecutable(Validate.Required(p, "path", 1024));
         var inbound = Validate.Bool(p, "inbound", true);
-        ctx.Progress?.Report(L("Création des règles de pare-feu…"));
+        ctx.Progress?.Report(L("Creating firewall rules…"));
         var name = FirewallRules.Block(path, inbound);
-        return Task.FromResult(ActionResult.Ok(L("« {0} » ne peut plus accéder au réseau.", Path.GetFileName(path)),
+        return Task.FromResult(ActionResult.Ok(L("“{0}” can no longer access the network.", Path.GetFileName(path)),
             new Dictionary<string, string> { ["name"] = name }));
     }
 }
@@ -234,13 +234,13 @@ public sealed class FirewallUnblockAction : IActionHandler
 {
     public const string ActionId = "security.firewall.unblock";
     public string Id => ActionId;
-    public string Title => L("Débloquer une application dans le pare-feu");
+    public string Title => L("Unblock an app in the firewall");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
     {
         FirewallRules.ValidateRuleName(Validate.Required(p, "name", 400));
-        if (p.Count != 1) throw new ValidationException(L("Paramètres inattendus."));
+        if (p.Count != 1) throw new ValidationException(L("Unexpected parameters."));
     }
 
     public Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
@@ -248,7 +248,7 @@ public sealed class FirewallUnblockAction : IActionHandler
         ValidateParameters(p);
         var name = FirewallRules.ValidateRuleName(Validate.Required(p, "name", 400));
         var count = FirewallRules.Unblock(name);
-        return Task.FromResult(ActionResult.Ok(LP(count, "« {1} » peut de nouveau accéder au réseau ({0} règle supprimée).", "« {1} » peut de nouveau accéder au réseau ({0} règles supprimées).", FirewallRules.DisplayName(name))));
+        return Task.FromResult(ActionResult.Ok(LP(count, "“{1}” can access the network again ({0} rule deleted).", "“{1}” can access the network again ({0} rules deleted).", FirewallRules.DisplayName(name))));
     }
 }
 
@@ -257,12 +257,12 @@ public sealed class FirewallEnableAction : IActionHandler
 {
     public const string ActionId = "security.firewall.enable";
     public string Id => ActionId;
-    public string Title => L("Réactiver le pare-feu Windows");
+    public string Title => L("Turn Windows Firewall back on");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
     {
-        if (p.Count != 0) throw new ValidationException(L("Cette action n'accepte aucun paramètre."));
+        if (p.Count != 0) throw new ValidationException(L("This action doesn't accept any parameters."));
     }
 
     public async Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
@@ -271,8 +271,8 @@ public sealed class FirewallEnableAction : IActionHandler
         var r = await ProcessRunner.RunAsync(SystemTool.Netsh, ["advfirewall", "set", "allprofiles", "state", "on"],
             new RunOptions { Timeout = TimeSpan.FromSeconds(30) }, ctx.Cancellation);
         return r.Success
-            ? ActionResult.Ok(L("Pare-feu Windows réactivé pour les réseaux privés, publics et de domaine."))
-            : ActionResult.Fail(L("netsh n'a pas pu réactiver le pare-feu : {0}", r.CombinedOutput.Trim()));
+            ? ActionResult.Ok(L("Windows Firewall turned back on for private, public and domain networks."))
+            : ActionResult.Fail(L("netsh couldn't turn the firewall back on: {0}", r.CombinedOutput.Trim()));
     }
 }
 
@@ -288,27 +288,27 @@ public sealed class Smb1UninstallAction : IActionHandler
         "if ($r.RestartNeeded) { 'REBOOT' } else { 'OK' }";
 
     public string Id => ActionId;
-    public string Title => L("Désinstaller le protocole SMBv1");
+    public string Title => L("Uninstall the SMBv1 protocol");
     public bool RequiresAdmin => true;
     public bool RequiresElevatedConfirmation => true;
 
     public string DescribeForConfirmation(IReadOnlyDictionary<string, string> parameters) =>
-        L("Timonier va désinstaller la fonctionnalité Windows « Support de partage de fichiers SMB 1.0/CIFS ». Les appareils réseau très anciens qui n'utilisent que SMBv1 ne seront plus accessibles. Un redémarrage sera nécessaire.");
+        L("Timonier will uninstall the “SMB 1.0/CIFS File Sharing Support” Windows feature. Very old network devices that only use SMBv1 will no longer be accessible. A restart will be required.");
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
     {
-        if (p.Count != 0) throw new ValidationException(L("Cette action n'accepte aucun paramètre."));
+        if (p.Count != 0) throw new ValidationException(L("This action doesn't accept any parameters."));
     }
 
     public async Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
     {
         ValidateParameters(p);
-        ctx.Progress?.Report(L("Désinstallation de SMBv1…"));
+        ctx.Progress?.Report(L("Uninstalling SMBv1…"));
         var r = await PowerShellRunner.RunAsync(Script, timeout: TimeSpan.FromMinutes(10), ct: ctx.Cancellation);
-        if (!r.Success) return ActionResult.Fail(L("La désinstallation de SMBv1 a échoué : {0}", r.CombinedOutput.Trim()));
+        if (!r.Success) return ActionResult.Fail(L("Uninstalling SMBv1 failed: {0}", r.CombinedOutput.Trim()));
         var output = r.Output;
-        if (output.Contains("ABSENT", StringComparison.Ordinal)) return ActionResult.Ok(L("SMBv1 n'est pas installé : rien à faire."));
-        return new ActionResult(true, L("SMBv1 désinstallé."))
+        if (output.Contains("ABSENT", StringComparison.Ordinal)) return ActionResult.Ok(L("SMBv1 isn't installed: nothing to do."));
+        return new ActionResult(true, L("SMBv1 uninstalled."))
         {
             Effect = output.Contains("REBOOT", StringComparison.Ordinal) ? ApplyEffect.Reboot : ApplyEffect.None,
         };

@@ -24,7 +24,7 @@
 
                 <!-- Carte d'identité du PC -->
                 <Border x:Name="PcCard" Style="{StaticResource Pp.CardInteractive}" Margin="4,0,4,10" Padding="12,10" Cursor="Hand"
-                        MouseLeftButtonUp="PcCard_Click" ToolTip="{loc:L 'Vue d\'ensemble de ce PC'}">
+                        MouseLeftButtonUp="PcCard_Click" ToolTip="{loc:L 'Overview of this PC'}">
                     <StackPanel>
                         <TextBlock x:Name="PcName" FontWeight="SemiBold" Foreground="{DynamicResource Pp.TextPrimary}" TextTrimming="CharacterEllipsis" />
                         <TextBlock x:Name="PcModel" Style="{StaticResource Pp.Caption}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
@@ -33,7 +33,7 @@
                 </Border>
 
                 <TextBox x:Name="SearchBox" Style="{StaticResource Pp.SearchBox}" Margin="4,0,4,8" MaxLength="200"
-                         Tag="{loc:L 'Rechercher (Ctrl+K)…'}" AutomationProperties.Name="{loc:L 'Rechercher'}"
+                         Tag="{loc:L 'Search (Ctrl+K)…'}" AutomationProperties.Name="{loc:L 'Search'}"
                          TextChanged="SearchBox_TextChanged" PreviewKeyDown="SearchBox_PreviewKeyDown" GotKeyboardFocus="SearchBox_GotFocus" />
             </StackPanel>
 
@@ -41,19 +41,19 @@
             <StackPanel DockPanel.Dock="Bottom" Margin="4,6,4,0">
                 <Border x:Name="AdminBar" Style="{StaticResource Pp.InfoBar.Warning}" Visibility="Collapsed" Margin="0,0,0,6" Padding="10,8">
                     <DockPanel>
-                        <Button DockPanel.Dock="Right" Style="{StaticResource Pp.LinkButton}" Content="{loc:L 'Fermer'}" Click="CloseAdmin_Click"
-                                ToolTip="{loc:L 'Fermer immédiatement la session administrateur'}" VerticalAlignment="Center" />
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Pp.LinkButton}" Content="{loc:L 'Close'}" Click="CloseAdmin_Click"
+                                ToolTip="{loc:L 'Close the admin session now'}" VerticalAlignment="Center" />
                         <TextBlock Style="{StaticResource Pp.Icon}" Text="&#xE7EF;" FontSize="14" Margin="0,0,8,0" DockPanel.Dock="Left" />
                         <TextBlock x:Name="AdminText" Style="{StaticResource Pp.Caption}" Foreground="{DynamicResource Pp.TextPrimary}"
-                                   Text="{loc:L 'Session administrateur active'}" VerticalAlignment="Center" />
+                                   Text="{loc:L 'Admin session active'}" VerticalAlignment="Center" />
                     </DockPanel>
                 </Border>
                 <Border x:Name="RebootBar" Style="{StaticResource Pp.InfoBar}" Visibility="Collapsed" Margin="0,0,0,6" Padding="10,8">
                     <DockPanel>
-                        <Button DockPanel.Dock="Right" Style="{StaticResource Pp.LinkButton}" Content="{loc:L 'Redémarrer'}" Click="Reboot_Click" VerticalAlignment="Center" />
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Pp.LinkButton}" Content="{loc:L 'Restart'}" Click="Reboot_Click" VerticalAlignment="Center" />
                         <TextBlock Style="{StaticResource Pp.Icon}" Text="&#xE777;" FontSize="14" Margin="0,0,8,0" DockPanel.Dock="Left" />
                         <TextBlock Style="{StaticResource Pp.Caption}" Foreground="{DynamicResource Pp.TextPrimary}"
-                                   Text="{loc:L 'Redémarrage requis pour finaliser'}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                   Text="{loc:L 'Restart required to finish'}" VerticalAlignment="Center" TextWrapping="Wrap" />
                     </DockPanel>
                 </Border>
             </StackPanel>
@@ -80,7 +80,7 @@
                 <DockPanel>
                     <TextBlock x:Name="SearchHint" DockPanel.Dock="Bottom" Style="{StaticResource Pp.Caption}" Margin="14,6,14,2"
                                Foreground="{DynamicResource Pp.TextTertiary}"
-                               Text="{loc:L '↑↓ pour naviguer · Entrée pour ouvrir · Échap pour fermer'}" />
+                               Text="{loc:L '↑↓ to navigate · Enter to open · Esc to close'}" />
                     <ListBox x:Name="SearchResults" BorderThickness="0" Background="Transparent" Focusable="False"
                              ItemContainerStyle="{StaticResource Pp.ResultItem}" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                              MouseLeftButtonUp="SearchResults_Click" />
@@ -120,13 +120,13 @@
         <Grid x:Name="LockLayer" Grid.ColumnSpan="2" Visibility="Collapsed" Background="{DynamicResource Pp.WindowBackground}">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="320">
                 <TextBlock Style="{StaticResource Pp.Icon}" Text="&#xE72E;" FontSize="40" HorizontalAlignment="Center" Margin="0,0,0,16" />
-                <TextBlock Text="{loc:L 'Timonier est protégé'}" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center"
+                <TextBlock Text="{loc:L 'Timonier is protected'}" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center"
                            Foreground="{DynamicResource Pp.TextPrimary}" />
-                <TextBlock Text="{loc:L 'Saisissez le code défini dans les paramètres.'}" Style="{StaticResource Pp.Caption}" HorizontalAlignment="Center"
+                <TextBlock Text="{loc:L 'Enter the code you set in settings.'}" Style="{StaticResource Pp.Caption}" HorizontalAlignment="Center"
                            Margin="0,4,0,16" />
                 <PasswordBox x:Name="LockPin" Height="34" FontSize="16" KeyDown="LockPin_KeyDown" />
                 <TextBlock x:Name="LockError" Style="{StaticResource Pp.Caption}" Foreground="{DynamicResource Pp.Danger}" Margin="0,6,0,0" />
-                <Button Content="{loc:L 'Déverrouiller'}" Style="{StaticResource Pp.AccentButton}" Margin="0,12,0,0" Click="Unlock_Click" />
+                <Button Content="{loc:L 'Unlock'}" Style="{StaticResource Pp.AccentButton}" Margin="0,12,0,0" Click="Unlock_Click" />
             </StackPanel>
         </Grid>
     </Grid>

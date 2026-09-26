@@ -91,33 +91,33 @@ public sealed class DashboardPage : UserControl, INavigationAware
         _stack.Children.Add(BuildHero());
 
         // En direct
-        var liveCaption = DashUi.Text(L("Actualisé toutes les 2 secondes, uniquement quand cette page est affichée."), "Pp.Caption");
-        AddSection("live", L("En direct"), liveCaption, null);
+        var liveCaption = DashUi.Text(L("Refreshed every 2 seconds, only while this page is shown."), "Pp.Caption");
+        AddSection("live", L("Live"), liveCaption, null);
         _stack.Children.Add(_liveHost);
         BuildLiveTiles(DashNative.GetSystemPowerStatus(out var power) && power.BatteryFlag is not (128 or 255));
 
         // Santé
-        _healthRefresh = DashUi.Button(L("Actualiser"), "", "Pp.SubtleButton");
+        _healthRefresh = DashUi.Button(L("Refresh"), "", "Pp.SubtleButton");
         _healthRefresh.Click += async (_, _) => await RefreshHealthAsync();
         _healthUpdated.SetResourceReference(StyleProperty, "Pp.Caption");
-        _healthUpdated.Text = L("Analyse en cours…");
-        AddSection("health", L("Santé du PC"), _healthUpdated, _healthRefresh);
+        _healthUpdated.Text = L("Analyzing…");
+        AddSection("health", L("PC health"), _healthUpdated, _healthRefresh);
         _stack.Children.Add(BuildHealthSummary());
         _stack.Children.Add(_healthList);
         ShowHealthSkeleton();
 
         // Recommandations
-        AddSection("reco", L("Recommandations pour ce PC"),
-            DashUi.Text(L("Réglages dont l'état actuel diffère de ce que Timonier conseille pour ce matériel. Rien n'est appliqué sans votre accord."), "Pp.Caption"),
+        AddSection("reco", L("Recommendations for this PC"),
+            DashUi.Text(L("Settings whose current state differs from what Timonier recommends for this hardware. Nothing is applied without your consent."), "Pp.Caption"),
             null);
         _stack.Children.Add(_recoHost);
-        ShowRecoWaiting(AppHost.Profile.HardwareLoaded ? L("Analyse des réglages…") : L("En attente de l'analyse du matériel…"), null);
+        ShowRecoWaiting(AppHost.Profile.HardwareLoaded ? L("Analyzing settings…") : L("Waiting for the hardware scan…"), null);
 
         // Actions rapides
-        _quickToggle = DashUi.Button(L("Afficher tout"), null, "Pp.LinkButton");
+        _quickToggle = DashUi.Button(L("Show all"), null, "Pp.LinkButton");
         _quickToggle.FontSize = 13;
         _quickToggle.Click += (_, _) => { _quickAll = !_quickAll; RenderQuickActions(); };
-        AddSection("quick", L("Actions rapides"), null, _quickToggle);
+        AddSection("quick", L("Quick actions"), null, _quickToggle);
         _stack.Children.Add(_quickHost);
         RenderQuickActions();
 
@@ -125,7 +125,7 @@ public sealed class DashboardPage : UserControl, INavigationAware
         _stack.Children.Add(_vendorSection);
 
         // Transparence
-        AddSection("transparency", L("Transparence"), null, null);
+        AddSection("transparency", L("Transparency"), null, null);
         _stack.Children.Add(_transparencyHost);
 
         RenderIdentity();
@@ -265,9 +265,9 @@ public sealed class DashboardPage : UserControl, INavigationAware
         _heroStatus.Padding = new Thickness(14, 7, 16, 7);
         _heroStatus.VerticalAlignment = VerticalAlignment.Center;
         _heroStatus.Cursor = System.Windows.Input.Cursors.Hand;
-        _heroStatus.ToolTip = L("Voir le détail de la santé du PC");
+        _heroStatus.ToolTip = L("View PC health details");
         _heroStatus.MouseLeftButtonUp += (_, _) => { _pendingSection = "health"; HandlePendingSection(); };
-        SetHeroStatus(HealthStatus.Unknown, L("Analyse en cours…"));
+        SetHeroStatus(HealthStatus.Unknown, L("Analyzing…"));
 
         var top = new DockPanel();
         DockPanel.SetDock(_heroStatus, Dock.Right);
@@ -310,10 +310,10 @@ public sealed class DashboardPage : UserControl, INavigationAware
         var name = AppHost.Profile.UserName;
         if (name.Length > 0) name = char.ToUpper(name[0], Loc.Culture) + name[1..];
         _greeting.Text = name.Length > 0
-            ? (day ? L("Bonjour, {0}", name) : L("Bonsoir, {0}", name))
-            : (day ? L("Bonjour") : L("Bonsoir"));
+            ? (day ? L("Hello, {0}", name) : L("Good evening, {0}", name))
+            : (day ? L("Hello") : L("Good evening"));
         var d = DateTime.Now.ToString("D", Loc.Culture);
-        _date.Text = L("{0} · voici l'essentiel de votre PC.", char.ToUpper(d[0], Loc.Culture) + d[1..]);
+        _date.Text = L("{0} · here's an overview of your PC.", char.ToUpper(d[0], Loc.Culture) + d[1..]);
     }
 
     private void SetHeroStatus(HealthStatus status, string text)
@@ -336,12 +336,12 @@ public sealed class DashboardPage : UserControl, INavigationAware
         _pcChips.Children.Clear();
         if (!p.HardwareLoaded)
         {
-            _pcModel.Text = L("Analyse du matériel…");
+            _pcModel.Text = L("Scanning hardware…");
             var loading = new StackPanel();
             loading.Children.Add(SpecGrid(p, hardware: false));
             var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 14, 0, 0) };
             row.Children.Add(new ProgressBar { IsIndeterminate = true, Width = 120, Height = 3, VerticalAlignment = VerticalAlignment.Center });
-            var t = DashUi.Text(L("Analyse du matériel… (processeur, mémoire, carte graphique, disques)"), "Pp.Caption");
+            var t = DashUi.Text(L("Scanning hardware… (processor, memory, graphics card, disks)"), "Pp.Caption");
             t.Margin = new Thickness(10, 0, 0, 0);
             row.Children.Add(t);
             loading.Children.Add(row);
@@ -355,10 +355,10 @@ public sealed class DashboardPage : UserControl, INavigationAware
             : $"{p.Manufacturer} · {model}";
         _pcChips.Children.Add(DashUi.Badge(p.FormFactorLabel));
         if (p.Tier != PerformanceTier.Unknown)
-            _pcChips.Children.Add(DashUi.Badge(L("Gamme {0}", p.TierLabel.ToLower(Loc.Culture)), "Pp.AccentText", "Pp.AccentSubtle"));
-        if (p.HasTouch) _pcChips.Children.Add(DashUi.Badge(L("Écran tactile")));
-        if (p.IsVirtualMachine) _pcChips.Children.Add(DashUi.Badge(L("Machine virtuelle"), "Pp.Info", "Pp.InfoBackground"));
-        if (p.IsManaged) _pcChips.Children.Add(DashUi.Badge(L("Géré par une organisation"), "Pp.Warning", "Pp.WarningBackground"));
+            _pcChips.Children.Add(DashUi.Badge(L("Tier: {0}", p.TierLabel.ToLower(Loc.Culture)), "Pp.AccentText", "Pp.AccentSubtle"));
+        if (p.HasTouch) _pcChips.Children.Add(DashUi.Badge(L("Touchscreen")));
+        if (p.IsVirtualMachine) _pcChips.Children.Add(DashUi.Badge(L("Virtual machine"), "Pp.Info", "Pp.InfoBackground"));
+        if (p.IsManaged) _pcChips.Children.Add(DashUi.Badge(L("Managed by an organization"), "Pp.Warning", "Pp.WarningBackground"));
         _specsHost.Content = SpecGrid(p, hardware: true);
     }
 
@@ -372,42 +372,42 @@ public sealed class DashboardPage : UserControl, INavigationAware
         };
         if (!hardware)
         {
-            items.Add(Spec("", L("Session"), p.UserName, p.IsUserAdmin ? L("Compte administrateur") : L("Compte standard")));
+            items.Add(Spec("", LC("current session", "Account"), p.UserName, p.IsUserAdmin ? L("Administrator account") : L("Standard account")));
             return DashUi.Columns(items, 4, 16);
         }
 
         var cpuName = CleanCpu(p.CpuName);
         var (cores, threads) = CpuCounts(p);
-        items.Add(Spec("", L("Processeur"), cpuName.Length > 0 ? cpuName : L("Inconnu"),
-            cores > 0 ? LP(cores, "{0} cœur", "{0} cœurs") + " · " + LP(threads, "{0} thread", "{0} threads")
-                : LP(threads, "{0} processeur logique", "{0} processeurs logiques")));
-        items.Add(Spec("", L("Mémoire vive"), p.RamGb > 0 ? L("{0:0.#} Go", p.RamGb) : L("Inconnue"),
-            p.Tier == PerformanceTier.Unknown ? "" : L("PC {0}", p.TierLabel.ToLower(Loc.Culture))));
+        items.Add(Spec("", L("Processor"), cpuName.Length > 0 ? cpuName : L("Unknown"),
+            cores > 0 ? LP(cores, "{0} core", "{0} cores") + " · " + LP(threads, "{0} thread", "{0} threads")
+                : LP(threads, "{0} logical processor", "{0} logical processors")));
+        items.Add(Spec("", L("RAM"), p.RamGb > 0 ? L("{0:0.#} GB", p.RamGb) : LC("feminine", "Unknown"),
+            p.Tier == PerformanceTier.Unknown ? "" : L("{0} PC", p.TierLabel.ToLower(Loc.Culture))));
 
         var gpus = p.Gpus.Where(g => !string.IsNullOrWhiteSpace(g.Name)).ToList();
-        items.Add(Spec("", gpus.Count > 1 ? L("Cartes graphiques") : L("Carte graphique"),
-            gpus.Count == 0 ? L("Inconnue") : string.Join(" + ", gpus.Select(g => CleanCpu(g.Name))),
-            gpus.Count == 0 ? "" : string.Join(" · ", gpus.Select(g => g.Integrated ? L("intégrée") : L("dédiée")).Distinct())));
+        items.Add(Spec("", gpus.Count > 1 ? L("Graphics cards") : L("Graphics card"),
+            gpus.Count == 0 ? LC("feminine", "Unknown") : string.Join(" + ", gpus.Select(g => CleanCpu(g.Name))),
+            gpus.Count == 0 ? "" : string.Join(" · ", gpus.Select(g => g.Integrated ? L("integrated") : L("dedicated")).Distinct())));
 
         var disk = p.SystemDisk;
-        items.Add(Spec("", L("Disque système"),
-            disk is null ? L("Inconnu") : $"{MediaLabel(disk)} · {Format.Bytes(disk.SizeBytes)}",
+        items.Add(Spec("", L("System disk"),
+            disk is null ? L("Unknown") : $"{MediaLabel(disk)} · {Format.Bytes(disk.SizeBytes)}",
             disk is null ? "" : disk.Model.Trim()));
 
-        items.Add(Spec(p.HasBattery ? "" : "", L("Alimentation"),
-            p.HasBattery ? L("Batterie présente") : L("Sur secteur uniquement"),
+        items.Add(Spec(p.HasBattery ? "" : "", L("Power"),
+            p.HasBattery ? L("Battery present") : L("AC power only"),
             p.FormFactorLabel));
 
-        var secure = p.SecureBoot switch { true => L("Secure Boot activé"), false => L("Secure Boot désactivé"), _ => L("Secure Boot : état inconnu") };
-        items.Add(Spec("", L("Micrologiciel"), p.IsUefi ? "UEFI" : L("BIOS hérité (Legacy)"), p.IsUefi ? secure : L("Secure Boot indisponible")));
+        var secure = p.SecureBoot switch { true => L("Secure Boot on"), false => L("Secure Boot off"), _ => L("Secure Boot: status unknown") };
+        items.Add(Spec("", L("Firmware"), p.IsUefi ? "UEFI" : L("Legacy BIOS"), p.IsUefi ? secure : L("Secure Boot unavailable")));
 
         var managed = new List<string>();
-        if (p.IsDomainJoined) managed.Add(L("domaine Active Directory"));
+        if (p.IsDomainJoined) managed.Add(L("Active Directory domain"));
         if (p.IsEntraJoined) managed.Add("Microsoft Entra ID");
-        if (p.IsMdmManaged) managed.Add(L("gestion MDM (Intune…)"));
-        items.Add(Spec("", L("Gestion"),
-            managed.Count == 0 ? L("PC non géré") : L("Géré : {0}", string.Join(", ", managed)),
-            p.IsUserAdmin ? L("Votre compte est administrateur ({0})", p.UserName) : L("Votre compte est standard ({0})", p.UserName)));
+        if (p.IsMdmManaged) managed.Add(L("MDM management (Intune…)"));
+        items.Add(Spec("", L("Management"),
+            managed.Count == 0 ? L("PC not managed") : L("Managed: {0}", string.Join(", ", managed)),
+            p.IsUserAdmin ? L("Your account is an administrator ({0})", p.UserName) : L("Your account is a standard user ({0})", p.UserName)));
         return DashUi.Columns(items, 4, 16);
     }
 
@@ -450,12 +450,12 @@ public sealed class DashboardPage : UserControl, INavigationAware
             .Replace(" CPU", "", StringComparison.Ordinal).Replace("  ", " ").Trim();
 
     /// <summary>Type du disque, avec la même détection de l'eMMC que la page Performance (Windows la classe en « SSD »).</summary>
-    private static string MediaLabel(DiskInfo d) => Performance.HardwareAdvice.IsEmmc(d) ? L("Mémoire eMMC") : d.Media switch
+    private static string MediaLabel(DiskInfo d) => Performance.HardwareAdvice.IsEmmc(d) ? L("eMMC storage") : d.Media switch
     {
         DiskMedia.Nvme => "SSD NVMe",
         DiskMedia.Ssd => "SSD",
-        DiskMedia.Hdd => L("Disque dur (HDD)"),
-        _ => L("Disque"),
+        DiskMedia.Hdd => L("Hard disk drive (HDD)"),
+        _ => L("Disk"),
     };
 
     // ================================================================== En direct
@@ -498,12 +498,12 @@ public sealed class DashboardPage : UserControl, INavigationAware
     private void BuildLiveTiles(bool hasBattery)
     {
         _liveHasBattery = hasBattery;
-        _cpuTile = new LiveTile("", L("Processeur"), ring: true);
-        _ramTile = new LiveTile("", L("Mémoire"), ring: true);
-        _diskTile = new LiveTile("", L("Disque système"), bar: true);
-        _batteryTile = hasBattery ? new LiveTile("", L("Batterie"), bar: true) : null;
-        _netTile = new LiveTile("", L("Réseau"));
-        _uptimeTile = new LiveTile("", L("Allumé depuis"));
+        _cpuTile = new LiveTile("", L("Processor"), ring: true);
+        _ramTile = new LiveTile("", L("Memory"), ring: true);
+        _diskTile = new LiveTile("", L("System disk"), bar: true);
+        _batteryTile = hasBattery ? new LiveTile("", L("Battery"), bar: true) : null;
+        _netTile = new LiveTile("", L("Network"));
+        _uptimeTile = new LiveTile("", L("Uptime"));
         var tiles = new List<UIElement> { _cpuTile, _ramTile, _diskTile };
         if (_batteryTile is not null) tiles.Add(_batteryTile);
         tiles.Add(_netTile);
@@ -516,42 +516,42 @@ public sealed class DashboardPage : UserControl, INavigationAware
         if (_liveHasBattery != s.HasBattery || _cpuTile is null) BuildLiveTiles(s.HasBattery);
 
         if (s.CpuRatio is { } cpu)
-            _cpuTile!.Set(Format.Percent(cpu), cpu >= 0.9 ? L("Très sollicité") : cpu >= 0.6 ? L("Assez sollicité") : L("Utilisation normale"),
+            _cpuTile!.Set(Format.Percent(cpu), cpu >= 0.9 ? L("Very busy") : cpu >= 0.6 ? L("Fairly busy") : L("Normal usage"),
                 cpu, cpu >= 0.9 ? "Pp.Danger" : cpu >= 0.75 ? "Pp.Warning" : "Pp.Accent");
-        else _cpuTile!.Set("…", L("Mesure en cours"), 0, "Pp.Accent");
+        else _cpuTile!.Set("…", L("Measuring"), 0, "Pp.Accent");
 
         if (s.RamTotal > 0)
         {
             var r = (double)s.RamUsed / s.RamTotal;
-            _ramTile!.Set(Format.Percent(r), L("{0} utilisés sur {1}", Format.Bytes((long)s.RamUsed), Format.Bytes((long)s.RamTotal)),
+            _ramTile!.Set(Format.Percent(r), L("{0} used of {1}", Format.Bytes((long)s.RamUsed), Format.Bytes((long)s.RamTotal)),
                 r, r >= 0.92 ? "Pp.Danger" : r >= 0.8 ? "Pp.Warning" : "Pp.Accent");
         }
 
         if (s.DriveTotal > 0)
         {
             var freeRatio = (double)s.DriveFree / s.DriveTotal;
-            _diskTile!.Set(L("{0} libres", Format.Bytes(s.DriveFree)), L("{0} · {1} utilisés sur {2}", s.DriveName, Format.Percent(1 - freeRatio), Format.Bytes(s.DriveTotal)),
+            _diskTile!.Set(L("{0} free", Format.Bytes(s.DriveFree)), L("{0} · {1} used of {2}", s.DriveName, Format.Percent(1 - freeRatio), Format.Bytes(s.DriveTotal)),
                 1 - freeRatio, freeRatio < 0.05 ? "Pp.Danger" : freeRatio < 0.10 ? "Pp.Warning" : "Pp.Accent");
         }
-        else _diskTile!.Set(L("Indisponible"), L("Lecteur système illisible"), 0, "Pp.Accent");
+        else _diskTile!.Set(L("Unavailable"), L("System drive unreadable"), 0, "Pp.Accent");
 
         if (_batteryTile is not null)
         {
             var pct = s.BatteryPercent;
-            string state = s.Charging ? L("En charge")
-                : s.OnAc == true ? L("Branché, charge en pause")
-                : s.BatteryRemaining is { } left ? L("Sur batterie · environ {0} restantes", Format.Duration(left))
-                : L("Sur batterie");
+            string state = s.Charging ? L("Charging")
+                : s.OnAc == true ? L("Plugged in, charging paused")
+                : s.BatteryRemaining is { } left ? L("On battery · about {0} left", Format.Duration(left))
+                : L("On battery");
             var brush = s.Charging || s.OnAc == true ? "Pp.Success" : pct < 10 ? "Pp.Danger" : pct < 20 ? "Pp.Warning" : "Pp.Accent";
-            _batteryTile.Set(pct is { } v ? Format.Percent(v / 100.0) : L("Inconnu"), state, (pct ?? 0) / 100.0, brush);
+            _batteryTile.Set(pct is { } v ? Format.Percent(v / 100.0) : L("Unknown"), state, (pct ?? 0) / 100.0, brush);
         }
 
-        _netTile!.Set(s.NetworkAvailable ? L("Connecté") : L("Hors ligne"),
-            s.NetworkAvailable ? L("Une connexion réseau est active") : L("Aucune connexion réseau active"),
+        _netTile!.Set(s.NetworkAvailable ? L("Connected") : L("Offline"),
+            s.NetworkAvailable ? L("A network connection is active") : L("No active network connection"),
             null, s.NetworkAvailable ? "Pp.Success" : "Pp.Danger");
 
         var boot = DateTime.Now - s.Uptime;
-        _uptimeTile!.Set(Format.Duration(s.Uptime), L("Depuis le {0}", Format.Date(boot)), null,
+        _uptimeTile!.Set(Format.Duration(s.Uptime), L("Since {0}", Format.Date(boot)), null,
             s.Uptime.TotalDays > 7 ? "Pp.Warning" : "Pp.Accent");
     }
 
@@ -562,11 +562,11 @@ public sealed class DashboardPage : UserControl, INavigationAware
         _healthHeadline.SetResourceReference(StyleProperty, "Pp.CardTitle");
         _healthHeadline.FontSize = 20;
         _healthHeadline.FontWeight = FontWeights.SemiBold;
-        _healthHeadline.Text = L("Analyse en cours…");
+        _healthHeadline.Text = L("Analyzing…");
         _healthSummary.SetResourceReference(StyleProperty, "Pp.Caption");
         _healthSummary.FontSize = 13;
         _healthSummary.Margin = new Thickness(0, 3, 0, 0);
-        _healthSummary.Text = L("Vérification de la sécurité, de l'espace disque, des redémarrages en attente et du matériel.");
+        _healthSummary.Text = L("Checking security, disk space, pending restarts and hardware.");
         _healthIcon.Content = DashUi.IconBox("", 48, 22, "Pp.Neutral", "Pp.NeutralBackground", 24);
 
         var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 0, 0, 0) };
@@ -608,7 +608,7 @@ public sealed class DashboardPage : UserControl, INavigationAware
         _healthStale = false;
         _healthRefresh.IsEnabled = false;
         _healthProgress.Visibility = Visibility.Visible;
-        _healthUpdated.Text = L("Analyse en cours…");
+        _healthUpdated.Text = L("Analyzing…");
         try
         {
             var checks = AppHost.Registry.HealthChecks.ToList();
@@ -620,7 +620,7 @@ public sealed class DashboardPage : UserControl, INavigationAware
         catch (Exception ex)
         {
             Log.Error("Dashboard", "contrôles de santé", ex);
-            _healthHeadline.Text = L("Analyse impossible");
+            _healthHeadline.Text = L("Analysis failed");
             _healthSummary.Text = ex.Message;
         }
         finally
@@ -642,32 +642,32 @@ public sealed class DashboardPage : UserControl, INavigationAware
             {
                 cts.Cancel();
                 _ = task.ContinueWith(t => _ = t.Exception, TaskScheduler.Default); // observe une éventuelle erreur tardive
-                return new HealthResult(HealthStatus.Unknown, L("Délai dépassé (5 s)"), L("Ce contrôle n'a pas répondu à temps ; réessayez avec « Actualiser »."));
+                return new HealthResult(HealthStatus.Unknown, L("Timed out (5 s)"), L("This check didn't respond in time; try again with “Refresh”."));
             }
-            return await task.ConfigureAwait(false) ?? new HealthResult(HealthStatus.Unknown, L("Aucun résultat"));
+            return await task.ConfigureAwait(false) ?? new HealthResult(HealthStatus.Unknown, L("No results"));
         }
         catch (OperationCanceledException)
         {
-            return new HealthResult(HealthStatus.Unknown, L("Délai dépassé (5 s)"));
+            return new HealthResult(HealthStatus.Unknown, L("Timed out (5 s)"));
         }
         catch (Exception ex)
         {
             Log.Warn("Dashboard", $"contrôle {check.Id} : {ex.Message}");
-            return new HealthResult(HealthStatus.Unknown, L("Contrôle impossible"), ex.Message);
+            return new HealthResult(HealthStatus.Unknown, LC("health check", "Check failed"), ex.Message);
         }
     }
 
     private void RenderHealth()
     {
         var list = _health ?? [];
-        _healthUpdated.Text = LP(list.Count, "{0} contrôle · analysé à {1}", "{0} contrôles · analysé à {1}", _healthAt.ToString("t", Loc.Culture));
+        _healthUpdated.Text = LP(list.Count, "{0} check · analyzed at {1}", "{0} checks · analyzed at {1}", _healthAt.ToString("t", Loc.Culture));
         if (list.Count == 0)
         {
-            _healthHeadline.Text = L("Aucun contrôle disponible");
-            _healthSummary.Text = L("Les modules installés ne proposent pas de contrôle de santé.");
+            _healthHeadline.Text = L("No checks available");
+            _healthSummary.Text = L("The installed modules don't provide any health checks.");
             _healthIcon.Content = DashUi.IconBox("", 48, 22, "Pp.Neutral", "Pp.NeutralBackground", 24);
             _healthList.Content = null;
-            SetHeroStatus(HealthStatus.Unknown, L("Aucun contrôle"));
+            SetHeroStatus(HealthStatus.Unknown, L("No checks"));
             return;
         }
 
@@ -683,29 +683,29 @@ public sealed class DashboardPage : UserControl, INavigationAware
         if (critical > 0)
         {
             overall = HealthStatus.Critical;
-            headline = LP(critical, "{0} problème important", "{0} problèmes importants");
-            if (warning > 0) headline = L("{0} et {1}", headline, LP(warning, "{0} point à vérifier", "{0} points à vérifier"));
+            headline = LP(critical, "{0} major issue", "{0} major issues");
+            if (warning > 0) headline = L("{0} and {1}", headline, LP(warning, "{0} item to check", "{0} items to check"));
         }
         else if (warning > 0)
         {
             overall = HealthStatus.Warning;
-            headline = LP(warning, "{0} point à vérifier", "{0} points à vérifier");
+            headline = LP(warning, "{0} item to check", "{0} items to check");
         }
         else
         {
             overall = HealthStatus.Good;
-            headline = L("Tout va bien");
+            headline = L("All good");
         }
 
         var parts = new List<string>();
         if (good > 0) parts.Add(LP(good, "{0} OK", "{0} OK"));
-        if (info > 0) parts.Add(LP(info, "{0} information", "{0} informations"));
-        if (issues > 0) parts.Add(LP(issues, "{0} à traiter", "{0} à traiter"));
-        if (unknown > 0) parts.Add(LP(unknown, "{0} indéterminé", "{0} indéterminés"));
+        if (info > 0) parts.Add(LP(info, "{0} info", "{0} info"));
+        if (issues > 0) parts.Add(LP(issues, "{0} to address", "{0} to address"));
+        if (unknown > 0) parts.Add(LP(unknown, "{0} undetermined", "{0} undetermined"));
         _healthHeadline.Text = headline;
         _healthSummary.Text = overall == HealthStatus.Good
-            ? L("{0}. Aucun problème détecté par les contrôles de Timonier.", string.Join(" · ", parts))
-            : L("{0}. Les éléments à traiter sont affichés en premier.", string.Join(" · ", parts));
+            ? L("{0}. No issues found by Timonier's checks.", string.Join(" · ", parts))
+            : L("{0}. Items that need attention are shown first.", string.Join(" · ", parts));
         var v = DashUi.StatusVisual(overall);
         _healthIcon.Content = DashUi.IconBox(v.Glyph, 48, 22, v.Fg, v.Bg, 24);
         SetHeroStatus(overall, headline);
@@ -722,8 +722,8 @@ public sealed class DashboardPage : UserControl, INavigationAware
         if (fold)
         {
             var toggle = DashUi.Button(_healthShowGood
-                    ? L("Masquer les contrôles réussis")
-                    : LP(good, "Afficher le {0} contrôle réussi", "Afficher les {0} contrôles réussis"),
+                    ? L("Hide passed checks")
+                    : LP(good, "Show {0} passed check", "Show {0} passed checks"),
                 _healthShowGood ? "" : "", "Pp.SubtleButton");
             toggle.HorizontalAlignment = HorizontalAlignment.Left;
             toggle.Margin = new Thickness(0, 8, 0, 0);
@@ -777,30 +777,30 @@ public sealed class DashboardPage : UserControl, INavigationAware
         var problem = result.Status is HealthStatus.Warning or HealthStatus.Critical;
         if (check.Id is "dashboard.pending-reboot" or "dashboard.uptime" && result.Status is not (HealthStatus.Good or HealthStatus.Unknown))
         {
-            var reboot = DashUi.Button(L("Redémarrer…"), null, problem ? "Pp.AccentButton" : "Pp.Button");
+            var reboot = DashUi.Button(L("Restart…"), null, problem ? "Pp.AccentButton" : "Pp.Button");
             reboot.Click += async (_, _) =>
             {
-                var ok = await AppHost.Dialogs.ConfirmAsync(L("Redémarrer maintenant ?"),
-                    L("Windows redémarrera dans 5 secondes. Enregistrez votre travail et fermez vos documents avant de continuer."),
-                    L("Redémarrer"), L("Plus tard"), danger: true);
+                var ok = await AppHost.Dialogs.ConfirmAsync(L("Restart now?"),
+                    L("Windows will restart in 5 seconds. Save your work and close your documents before continuing."),
+                    L("Restart"), L("Later"), danger: true);
                 if (!ok) return;
                 reboot.IsEnabled = false;
                 try { await SystemEffects.RebootNowAsync(); }
-                catch (Exception ex) { AppHost.Toasts.Show(L("Redémarrage impossible : {0}", ex.Message), ToastKind.Error); reboot.IsEnabled = true; }
+                catch (Exception ex) { AppHost.Toasts.Show(L("Couldn't restart: {0}", ex.Message), ToastKind.Error); reboot.IsEnabled = true; }
             };
             return reboot;
         }
         if (check.Id == "dashboard.disk-space" && AppHost.Registry.GetPage("maintenance") is null && problem)
         {
-            var storage = DashUi.Button(L("Stockage…"), null, "Pp.AccentButton");
-            storage.ToolTip = L("Ouvre Paramètres › Système › Stockage (assistant de stockage, fichiers temporaires).");
+            var storage = DashUi.Button(L("Storage…"), null, "Pp.AccentButton");
+            storage.ToolTip = L("Opens Settings › System › Storage (Storage Sense, temporary files).");
             storage.Click += (_, _) => { try { ProcessRunner.OpenSettingsUri("ms-settings:storagesense"); } catch (Exception ex) { AppHost.Toasts.Show(ex.Message, ToastKind.Error); } };
             return storage;
         }
 
         if (string.IsNullOrEmpty(check.PageId) || check.PageId == DashboardModule.PageId) return null;
         if (!PageExists(check.PageId)) return null;
-        var button = DashUi.Button(problem ? L("Corriger") : L("Voir"), null, problem ? "Pp.AccentButton" : "Pp.Button");
+        var button = DashUi.Button(problem ? L("Fix") : L("View"), null, problem ? "Pp.AccentButton" : "Pp.Button");
         var pageId = check.PageId;
         button.Click += (_, _) => AppHost.Navigator.Navigate(pageId);
         return button;
@@ -861,8 +861,8 @@ public sealed class DashboardPage : UserControl, INavigationAware
             }
 
             var total = candidates.Count;
-            ShowRecoWaiting(L("Analyse des réglages…"), (0, total));
-            var progress = new Progress<int>(done => { if (_recoBusy) ShowRecoWaiting(L("Analyse des réglages…"), (done, total)); });
+            ShowRecoWaiting(L("Analyzing settings…"), (0, total));
+            var progress = new Progress<int>(done => { if (_recoBusy) ShowRecoWaiting(L("Analyzing settings…"), (done, total)); });
             IProgress<int> report = progress;
             var done = 0;
             using var gate = new SemaphoreSlim(4);
@@ -895,7 +895,7 @@ public sealed class DashboardPage : UserControl, INavigationAware
         catch (Exception ex)
         {
             Log.Error("Dashboard", "recommandations", ex);
-            _recoHost.Content = DashUi.Card(DashUi.Text(L("Impossible d'analyser les réglages : {0}", ex.Message), "Pp.Body"));
+            _recoHost.Content = DashUi.Card(DashUi.Text(L("Couldn't analyze settings: {0}", ex.Message), "Pp.Body"));
         }
         finally { _recoBusy = false; }
     }
@@ -912,10 +912,10 @@ public sealed class DashboardPage : UserControl, INavigationAware
         var stack = new StackPanel();
 
         var profileBits = new List<string>();
-        if (p.Tier != PerformanceTier.Unknown) profileBits.Add(L("gamme {0}", p.TierLabel.ToLower(Loc.Culture)));
-        profileBits.Add(p.IsLaptopLike ? L("PC portable") : L("PC de bureau"));
+        if (p.Tier != PerformanceTier.Unknown) profileBits.Add(L("{0} tier", p.TierLabel.ToLower(Loc.Culture)));
+        profileBits.Add(p.IsLaptopLike ? L("laptop") : L("desktop PC"));
         if (p.SystemDisk is { } d && d.Media != DiskMedia.Unknown)
-            profileBits.Add(d.Media == DiskMedia.Hdd ? L("disque dur") : Performance.HardwareAdvice.IsEmmc(d) ? L("mémoire eMMC") : "SSD");
+            profileBits.Add(d.Media == DiskMedia.Hdd ? L("hard drive") : Performance.HardwareAdvice.IsEmmc(d) ? LC("mid-sentence", "eMMC storage") : "SSD");
         profileBits.Add("Windows " + (p.IsWindows11 ? "11 " : "10 ") + p.EditionLabel);
 
         if (mismatches.Count == 0)
@@ -926,10 +926,10 @@ public sealed class DashboardPage : UserControl, INavigationAware
             DockPanel.SetDock(icon, Dock.Left);
             dock.Children.Add(icon);
             var t = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-            t.Children.Add(DashUi.Text(analysed == 0 ? L("Aucun réglage à analyser") : L("Ce PC suit déjà toutes les recommandations"), "Pp.Body", 15, semiBold: true));
+            t.Children.Add(DashUi.Text(analysed == 0 ? L("No settings to analyze") : L("This PC already follows all recommendations"), "Pp.Body", 15, semiBold: true));
             t.Children.Add(DashUi.Text(analysed == 0
-                ? L("Aucun module de réglages n'est installé, ou aucun réglage ne s'applique à ce PC.")
-                : LP(analysed, "{0} réglage vérifié pour ce profil : {1}.", "{0} réglages vérifiés pour ce profil : {1}.", string.Join(", ", profileBits)), "Pp.Caption", 13));
+                ? L("No settings module is installed, or no settings apply to this PC.")
+                : LP(analysed, "{0} setting checked for this profile: {1}.", "{0} settings checked for this profile: {1}.", string.Join(", ", profileBits)), "Pp.Caption", 13));
             dock.Children.Add(t);
             _recoHost.Content = DashUi.Card(dock, new Thickness(18, 16, 18, 16));
             return;
@@ -943,8 +943,8 @@ public sealed class DashboardPage : UserControl, INavigationAware
         DockPanel.SetDock(number, Dock.Left);
         head.Children.Add(number);
         var headText = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        headText.Children.Add(DashUi.Text(mismatches.Count == 1 ? L("réglage peut être ajusté") : L("réglages peuvent être ajustés"), "Pp.Body", 15, semiBold: true));
-        headText.Children.Add(DashUi.Text(LP(analysed, "Sur {0} réglage vérifié, adapté à ce profil : {1}.", "Sur {0} réglages vérifiés, adaptés à ce profil : {1}.", string.Join(", ", profileBits)), "Pp.Caption", 13));
+        headText.Children.Add(DashUi.Text(mismatches.Count == 1 ? L("setting can be adjusted") : L("settings can be adjusted"), "Pp.Body", 15, semiBold: true));
+        headText.Children.Add(DashUi.Text(LP(analysed, "Out of {0} setting checked, tailored to this profile: {1}.", "Out of {0} settings checked, tailored to this profile: {1}.", string.Join(", ", profileBits)), "Pp.Caption", 13));
         head.Children.Add(headText);
         stack.Children.Add(head);
 
@@ -985,13 +985,13 @@ public sealed class DashboardPage : UserControl, INavigationAware
         {
             var shield = DashUi.Icon("", 12, "Pp.TextTertiary");
             shield.Margin = new Thickness(8, 0, 0, 0);
-            shield.ToolTip = admin == items.Count ? L("Nécessitent les droits administrateur") : LP(admin, "{0} nécessite les droits administrateur", "{0} nécessitent les droits administrateur");
+            shield.ToolTip = admin == items.Count ? L("Require administrator rights") : LP(admin, "{0} requires administrator rights", "{0} require administrator rights");
             title.Children.Add(shield);
         }
 
         var names = items.Take(3).Select(t => t.Title).ToList();
         var sample = items.Count > 3
-            ? L("{0} et {1}", string.Join(", ", names), LP(items.Count - 3, "{0} autre", "{0} autres"))
+            ? L("{0} and {1}", string.Join(", ", names), LP(items.Count - 3, "{0} other", "{0} others"))
             : string.Join(", ", names);
         var caption = DashUi.Text(sample, "Pp.Caption", 12.5);
         caption.Margin = new Thickness(0, 3, 0, 0);
@@ -1004,7 +1004,7 @@ public sealed class DashboardPage : UserControl, INavigationAware
         text.Children.Add(caption);
 
         var pageId = AppHost.Registry.PageIdForCategory(id);
-        var button = DashUi.Button(L("Voir"), null, "Pp.Button");
+        var button = DashUi.Button(L("View"), null, "Pp.Button");
         button.Margin = new Thickness(12, 0, 0, 0);
         button.VerticalAlignment = VerticalAlignment.Center;
         button.Click += (_, _) => AppHost.Navigator.Navigate(pageId);
@@ -1027,10 +1027,10 @@ public sealed class DashboardPage : UserControl, INavigationAware
             .ThenBy(q => q.Title, StringComparer.Create(Loc.Culture, true))
             .ToList();
         _quickToggle.Visibility = all.Count > QuickPreview ? Visibility.Visible : Visibility.Collapsed;
-        _quickToggle.Content = _quickAll ? L("Afficher moins") : L("Afficher tout ({0})", all.Count);
+        _quickToggle.Content = _quickAll ? L("Show less") : L("Show all ({0})", all.Count);
         if (all.Count == 0)
         {
-            _quickHost.Content = DashUi.Card(DashUi.Text(L("Aucune action rapide n'est disponible."), "Pp.Caption", 13));
+            _quickHost.Content = DashUi.Card(DashUi.Text(L("No quick actions are available."), "Pp.Caption", 13));
             return;
         }
         var shown = _quickAll ? all : all.Take(QuickPreview).ToList();
@@ -1049,7 +1049,7 @@ public sealed class DashboardPage : UserControl, INavigationAware
         {
             var shield = DashUi.Icon("", 12, "Pp.TextTertiary");
             shield.VerticalAlignment = VerticalAlignment.Top;
-            shield.ToolTip = L("Demande les droits administrateur");
+            shield.ToolTip = L("Asks for administrator rights");
             DockPanel.SetDock(shield, Dock.Right);
             top.Children.Add(shield);
         }
@@ -1076,7 +1076,7 @@ public sealed class DashboardPage : UserControl, INavigationAware
             catch (Exception ex)
             {
                 Log.Error("Dashboard", "action rapide " + action.Id, ex);
-                AppHost.Toasts.Show(L("« {0} » a échoué : {1}", action.Title, ex.Message), ToastKind.Error);
+                AppHost.Toasts.Show(L("“{0}” failed: {1}", action.Title, ex.Message), ToastKind.Error);
             }
             finally { button.IsEnabled = true; }
         };
@@ -1097,10 +1097,10 @@ public sealed class DashboardPage : UserControl, INavigationAware
         }
         var appsPage = AppHost.Registry.GetPage("apps") is not null;
         var known = p.ManufacturerKnown;
-        AddSection("vendor", L("Outils du fabricant"),
+        AddSection("vendor", L("Manufacturer tools"),
             DashUi.Text(known
-                ? L("Logiciels officiels conseillés d'après le fabricant de ce PC ({0}) et de sa carte graphique. Timonier n'installe rien sans votre accord.", p.Manufacturer)
-                : L("Logiciels officiels conseillés d'après le fabricant de ce PC et de sa carte graphique. Timonier n'installe rien sans votre accord."), "Pp.Caption"),
+                ? L("Official software recommended for this PC's manufacturer ({0}) and its graphics card. Timonier doesn't install anything without your consent.", p.Manufacturer)
+                : L("Official software recommended for this PC's manufacturer and its graphics card. Timonier doesn't install anything without your consent."), "Pp.Caption"),
             null, _vendorSection);
 
         var stack = new StackPanel();
@@ -1137,8 +1137,8 @@ public sealed class DashboardPage : UserControl, INavigationAware
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
         if (appsPage)
         {
-            var see = DashUi.Button(L("Voir dans Applications"), null, "Pp.Button");
-            see.ToolTip = L("Rechercher « {0} » dans la page Applications (installation via winget)", tool.Search);
+            var see = DashUi.Button(L("View in Apps"), null, "Pp.Button");
+            see.ToolTip = L("Search for “{0}” on the Apps page (install with winget)", tool.Search);
             see.Click += (_, _) => AppHost.Navigator.Navigate("apps", "search:" + tool.Search);
             buttons.Children.Add(see);
         }
@@ -1146,11 +1146,11 @@ public sealed class DashboardPage : UserControl, INavigationAware
         {
             var store = DashUi.Button("Microsoft Store", "", "Pp.SubtleButton");
             store.Margin = new Thickness(6, 0, 0, 0);
-            store.ToolTip = L("Ouvrir la fiche de l'application dans le Microsoft Store");
+            store.ToolTip = L("Open the app's page in the Microsoft Store");
             store.Click += (_, _) =>
             {
                 try { ProcessRunner.OpenSettingsUri("ms-windows-store://pdp/?ProductId=" + id); }
-                catch (Exception ex) { AppHost.Toasts.Show(L("Impossible d'ouvrir le Microsoft Store : {0}", ex.Message), ToastKind.Error); }
+                catch (Exception ex) { AppHost.Toasts.Show(L("Couldn't open the Microsoft Store: {0}", ex.Message), ToastKind.Error); }
             };
             buttons.Children.Add(store);
         }
@@ -1179,11 +1179,11 @@ public sealed class DashboardPage : UserControl, INavigationAware
 
         var metrics = DashUi.Columns(
         [
-            Metric(tweaks.Count, L("réglages déclarés"), L("presque tous annulables depuis le journal")),
-            Metric(actions.Count, L("actions paramétrées"), L("validées avant exécution")),
-            Metric(admin, L("demandent l'administrateur"), L("une seule invite UAC par session")),
-            Metric(unavailable, L("indisponibles sur ce PC"), AppHost.Profile.HardwareLoaded
-                ? L("édition, matériel ou version de Windows") : L("matériel en cours d'analyse")),
+            Metric(tweaks.Count, L("declared settings"), L("almost all can be undone from History")),
+            Metric(actions.Count, L("parameterized actions"), L("validated before running")),
+            Metric(admin, L("require administrator"), L("a single UAC prompt per session")),
+            Metric(unavailable, L("unavailable on this PC"), AppHost.Profile.HardwareLoaded
+                ? L("edition, hardware or Windows version") : L("hardware being scanned")),
         ], 4, 16);
 
         var divider = new Border { Height = 1, Margin = new Thickness(0, 16, 0, 14) };
@@ -1198,16 +1198,16 @@ public sealed class DashboardPage : UserControl, INavigationAware
         var links = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
         if (reg.GetPage("transparency") is not null)
         {
-            var b = DashUi.Button(L("Détails"), null, "Pp.Button");
-            b.ToolTip = L("Ouvrir la page Transparence : tout ce que Timonier peut modifier et pourquoi");
+            var b = DashUi.Button(L("Details"), null, "Pp.Button");
+            b.ToolTip = L("Open the Transparency page: everything Timonier can change and why");
             b.Click += (_, _) => AppHost.Navigator.Navigate("transparency");
             links.Children.Add(b);
         }
         if (reg.GetPage("journal") is not null)
         {
-            var b = DashUi.Button(L("Journal"), "", "Pp.SubtleButton");
+            var b = DashUi.Button(L("History"), "", "Pp.SubtleButton");
             b.Margin = new Thickness(6, 0, 0, 0);
-            b.ToolTip = L("Historique des modifications, avec annulation");
+            b.ToolTip = L("Change history, with undo");
             b.Click += (_, _) => AppHost.Navigator.Navigate("journal");
             links.Children.Add(b);
         }
@@ -1217,8 +1217,8 @@ public sealed class DashboardPage : UserControl, INavigationAware
             privacy.Children.Add(links);
         }
         var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        text.Children.Add(DashUi.Text(L("Timonier fonctionne 100 % en local, sans télémétrie"), "Pp.Body", 14, semiBold: true));
-        text.Children.Add(DashUi.Text(L("Aucune donnée ne quitte ce PC. Chaque modification est journalisée et, sauf exception signalée, annulable ; les opérations administrateur passent par un processus élevé qui revalide tout."), "Pp.Caption", 12.5));
+        text.Children.Add(DashUi.Text(L("Timonier runs 100% locally, with no telemetry"), "Pp.Body", 14, semiBold: true));
+        text.Children.Add(DashUi.Text(L("No data leaves this PC. Every change is logged and, unless otherwise noted, can be undone; administrator operations go through an elevated process that revalidates everything."), "Pp.Caption", 12.5));
         privacy.Children.Add(text);
 
         var stack = new StackPanel();

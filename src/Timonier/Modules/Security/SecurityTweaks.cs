@@ -15,10 +15,10 @@ internal static class SecurityTweaks
     private const string On = TweakDefinition.On;
     private const string Off = TweakDefinition.Off;
 
-    public static string GroupRemote => L("Accès à distance et partage réseau");
-    public static string GroupMalware => L("Protection contre les logiciels malveillants");
-    public static string GroupSystem => L("Protection du système et de l'ouverture de session");
-    public static string GroupAsr => L("Règles de réduction de la surface d'attaque (ASR)");
+    public static string GroupRemote => L("Remote access and network sharing");
+    public static string GroupMalware => L("Malware protection");
+    public static string GroupSystem => L("System and sign-in protection");
+    public static string GroupAsr => L("Attack surface reduction (ASR) rules");
 
     public static string[] Groups => [GroupMalware, GroupSystem, GroupRemote, GroupAsr];
 
@@ -46,10 +46,10 @@ internal static class SecurityTweaks
     internal const string Smb1ClientService = @"SYSTEM\CurrentControlSet\Services\mrxsmb10";
 
     private static readonly Requirement DefenderActive = Requires.When(_ => SecurityProbe.DefenderLikelyActive(),
-        L("Nécessite que Microsoft Defender soit l'antivirus actif (un autre antivirus est installé ou Defender est désactivé)."));
+        L("Requires Microsoft Defender to be the active antivirus (another antivirus is installed or Defender is turned off)."));
 
     private static readonly Requirement Smb1Installed = Requires.When(_ => RegistryAccess.KeyExists(RegHive.LocalMachine, Smb1ClientService),
-        L("Le protocole SMBv1 n'est pas installé sur ce PC (c'est le cas par défaut depuis Windows 10 1709) : il n'y a rien à désactiver."));
+        L("The SMBv1 protocol isn't installed on this PC (the default since Windows 10 1709): there's nothing to turn off."));
 
     public static IEnumerable<TweakDefinition> All() =>
         MalwareTweaks().Concat(SystemTweaks()).Concat(RemoteTweaks()).Concat(AsrTweaks());
@@ -60,25 +60,25 @@ internal static class SecurityTweaks
 
     private static IEnumerable<TweakDefinition> MalwareTweaks()
     {
-        yield return Tweak.Toggle("security.smartscreen.apps", L("SmartScreen pour les applications et fichiers"),
-                L("Vérifie la réputation des programmes et fichiers téléchargés avant leur ouverture et avertit s'ils sont inconnus ou malveillants. « Imposé » fixe SmartScreen sur « Avertir » par stratégie (Sécurité Windows affiche alors « géré par votre organisation ») ; l'autre position supprime simplement la stratégie et rend la main à Sécurité Windows. Timonier ne propose jamais de désactiver SmartScreen."))
+        yield return Tweak.Toggle("security.smartscreen.apps", L("SmartScreen for apps and files"),
+                L("Checks the reputation of downloaded programs and files before they open and warns you if they're unknown or malicious. “Enforced” sets SmartScreen to “Warn” by policy (Windows Security then shows “managed by your organization”); the other position simply removes the policy and hands control back to Windows Security. Timonier never offers to turn off SmartScreen."))
             .In(C, GroupMalware)
-            .Keywords(L("smartscreen, réputation, téléchargement, application inconnue, defender smartscreen, filtre"))
+            .Keywords(L("smartscreen, reputation, download, unknown app, defender smartscreen, filter"))
             .Tags("security", "family", "kiosk", "office")
-            .Labels(L("Imposé (avertir)"), L("Réglage de Sécurité Windows"))
+            .Labels(L("Enforced (warn)"), L("Windows Security setting"))
             .WhenOn(Reg.LmDword(SystemPolicy, "EnableSmartScreen", 1), Reg.LmString(SystemPolicy, "ShellSmartScreenLevel", "Warn"))
             .WhenOff(Reg.LmDel(SystemPolicy, "EnableSmartScreen"), Reg.LmDel(SystemPolicy, "ShellSmartScreenLevel"))
             .Detect(() => RegistryAccess.ReadDword(RegHive.LocalMachine, SystemPolicy, "EnableSmartScreen") == 1 ? On : Off)
             .WindowsDefault(Off)
             .Build();
 
-        yield return Tweak.Toggle("security.defender.pua", L("Blocage des applications potentiellement indésirables (PUA)"),
-                L("Microsoft Defender bloque les logiciels « limites » : barres d'outils, mineurs de cryptomonnaie, installateurs publicitaires, faux optimiseurs. « Imposé » active la stratégie PUAProtection ; l'autre position supprime la stratégie et laisse le choix à Sécurité Windows (Contrôle des applications › Protection fondée sur la réputation)."))
+        yield return Tweak.Toggle("security.defender.pua", L("Potentially unwanted app (PUA) blocking"),
+                L("Microsoft Defender blocks “borderline” software: toolbars, cryptocurrency miners, adware installers, fake optimizers. “Enforced” turns on the PUAProtection policy; the other position removes the policy and leaves the choice to Windows Security (App & browser control › Reputation-based protection)."))
             .In(C, GroupMalware)
-            .Keywords(L("pua, pup, adware, logiciel indésirable, bloatware, defender, réputation"))
+            .Keywords(L("pua, pup, adware, unwanted software, bloatware, defender, reputation"))
             .Tags("security", "family", "kiosk", "office")
             .Requires(DefenderActive)
-            .Labels(L("Imposé"), L("Réglage de Sécurité Windows"))
+            .Labels(L("Enforced"), L("Windows Security setting"))
             .WhenOn(Reg.LmDword(DefenderPolicy, "PUAProtection", 1))
             .WhenOff(Reg.LmDel(DefenderPolicy, "PUAProtection"))
             .Detect(() => RegistryAccess.ReadDword(RegHive.LocalMachine, DefenderPolicy, "PUAProtection") == 1 ? On : Off)
@@ -86,41 +86,41 @@ internal static class SecurityTweaks
             .RecommendWhen(p => p.IsManaged ? null : On)
             .Build();
 
-        yield return Tweak.Toggle("security.defender.cfa", L("Dossiers protégés contre les rançongiciels"),
-                L("Contrôle d'accès aux dossiers de Microsoft Defender : seules les applications de confiance peuvent modifier Documents, Images, Vidéos, Musique, Bureau et Favoris. Protège efficacement contre les rançongiciels, mais Windows bloque aussi des applications légitimes inconnues (jeux, éditeurs photo, outils de sauvegarde) : il faut alors les autoriser dans Sécurité Windows › Protection contre les rançongiciels."))
+        yield return Tweak.Toggle("security.defender.cfa", L("Ransomware-protected folders"),
+                L("Microsoft Defender Controlled folder access: only trusted apps can change Documents, Pictures, Videos, Music, Desktop and Favorites. Protects effectively against ransomware, but Windows also blocks unknown legitimate apps (games, photo editors, backup tools): you then have to allow them in Windows Security › Ransomware protection."))
             .In(C, GroupMalware)
-            .Keywords(L("ransomware, rançongiciel, controlled folder access, dossiers protégés, cfa, defender"))
+            .Keywords(L("ransomware, controlled folder access, protected folders, cfa, defender"))
             .Tags("security", "family")
             .Risk(RiskLevel.Moderate)
             .Requires(DefenderActive)
-            .Warning(L("Des applications légitimes pourront être empêchées d'enregistrer dans vos dossiers : Windows affiche alors une notification « Modification non autorisée bloquée ». Si la protection contre les falsifications refuse le changement, utilisez Sécurité Windows › Protection contre les rançongiciels."))
-            .WhenOn(Sys.Tool(SystemTool.PowerShell, true, L("Microsoft Defender : active le contrôle d'accès aux dossiers (Set-MpPreference)"),
+            .Warning(L("Legitimate apps may be prevented from saving to your folders: Windows then shows an “Unauthorized changes blocked” notification. If Tamper Protection rejects the change, use Windows Security › Ransomware protection."))
+            .WhenOn(Sys.Tool(SystemTool.PowerShell, true, L("Microsoft Defender: turns on Controlled folder access (Set-MpPreference)"),
                 "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", "Set-MpPreference -EnableControlledFolderAccess Enabled"))
-            .WhenOff(Sys.Tool(SystemTool.PowerShell, true, L("Microsoft Defender : désactive le contrôle d'accès aux dossiers (Set-MpPreference)"),
+            .WhenOff(Sys.Tool(SystemTool.PowerShell, true, L("Microsoft Defender: turns off Controlled folder access (Set-MpPreference)"),
                 "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", "Set-MpPreference -EnableControlledFolderAccess Disabled"))
             .Detect(DetectControlledFolderAccess)
             .WindowsDefault(Off)
             .Build();
 
-        yield return Tweak.Toggle("security.defender.networkprotection", L("Protection du réseau (Microsoft Defender)"),
-                L("Étend SmartScreen à toutes les applications et à tous les navigateurs : les connexions vers des domaines d'hameçonnage, d'arnaque ou de logiciels malveillants connus sont bloquées. « Imposée » active la stratégie en mode blocage ; l'autre position supprime la stratégie (comportement par défaut de Windows : protection inactive)."))
+        yield return Tweak.Toggle("security.defender.networkprotection", L("Network protection (Microsoft Defender)"),
+                L("Extends SmartScreen to all apps and all browsers: connections to known phishing, scam or malware domains are blocked. “Enforced” turns on the policy in block mode; the other position removes the policy (Windows default behavior: protection off)."))
             .In(C, GroupMalware)
-            .Keywords(L("network protection, hameçonnage, phishing, domaine malveillant, defender, exploit guard"))
+            .Keywords(L("network protection, phishing, malicious domain, scam, defender, exploit guard, smartscreen"))
             .Tags("security", "family")
             .Risk(RiskLevel.Moderate)
             .Requires(DefenderActive)
-            .Warning(L("Un site légitime mal classé peut être bloqué dans toutes les applications, pas seulement dans Edge."))
-            .Labels(L("Imposée"), L("Réglage de Windows"))
+            .Warning(L("A misclassified legitimate site can be blocked in all apps, not just in Edge."))
+            .Labels(LC("feminine", "Enforced"), L("Windows setting"))
             .WhenOn(Reg.LmDword(NetworkProtectionPolicy, "EnableNetworkProtection", 1))
             .WhenOff(Reg.LmDel(NetworkProtectionPolicy, "EnableNetworkProtection"))
             .Detect(() => RegistryAccess.ReadDword(RegHive.LocalMachine, NetworkProtectionPolicy, "EnableNetworkProtection") == 1 ? On : Off)
             .WindowsDefault(Off)
             .Build();
 
-        yield return Tweak.Toggle("security.autorun", L("Exécution et lecture automatiques des supports"),
-                L("Quand c'est désactivé, Windows n'exécute plus rien et ne propose plus d'action à l'insertion d'un CD/DVD, d'une clé USB, d'un disque ou d'un téléphone (stratégies NoDriveTypeAutoRun = 255, NoAutorun et « lecture automatique pour les périphériques sans volume »). Depuis Windows 7, autorun.inf n'est déjà plus exécuté depuis une clé USB ; ce réglage supprime le reste de la surface d'attaque. Vous ouvrez simplement vos supports depuis l'Explorateur."))
+        yield return Tweak.Toggle("security.autorun", L("Media AutoRun and AutoPlay"),
+                L("When it's off, Windows no longer runs anything or suggests an action when you insert a CD/DVD, USB drive, disk or phone (NoDriveTypeAutoRun = 255, NoAutorun and “AutoPlay for non-volume devices” policies). Since Windows 7, autorun.inf no longer runs from a USB drive anyway; this setting removes the rest of the attack surface. You simply open your media from File Explorer."))
             .In(C, GroupMalware)
-            .Keywords(L("autorun, autoplay, exécution automatique, lecture automatique, clé usb, cd, autorun.inf"))
+            .Keywords(L("autorun, autoplay, usb drive, usb stick, flash drive, cd, dvd, autorun.inf"))
             .Tags("security", "family", "kiosk", "office")
             .WhenOn(Reg.LmDel(PolExplorer, "NoDriveTypeAutoRun"), Reg.LmDel(PolExplorer, "NoAutorun"),
                     Reg.LmDel(PolWinExplorer, "NoAutoplayfornonVolume"))
@@ -130,13 +130,13 @@ internal static class SecurityTweaks
             .Recommend(Off)
             .Build();
 
-        yield return Tweak.Toggle("security.wsh", L("Windows Script Host (scripts .vbs et .js)"),
-                L("Moteur qui exécute les scripts VBScript et JScript (.vbs, .vbe, .js, .wsf) par double-clic. Ces fichiers sont un vecteur classique de pièces jointes piégées. Le désactiver pour tout le PC bloque ces scripts ; PowerShell et les fichiers .bat ne sont pas concernés. Microsoft a d'ailleurs engagé le retrait progressif de VBScript."))
+        yield return Tweak.Toggle("security.wsh", L("Windows Script Host (.vbs and .js scripts)"),
+                L("Engine that runs VBScript and JScript scripts (.vbs, .vbe, .js, .wsf) on double-click. These files are a classic vector for booby-trapped attachments. Turning it off for the whole PC blocks these scripts; PowerShell and .bat files aren't affected. Microsoft has also started phasing out VBScript."))
             .In(C, GroupMalware)
-            .Keywords(L("wsh, vbs, vbscript, jscript, wscript, cscript, script, pièce jointe"))
+            .Keywords(L("wsh, vbs, vbscript, jscript, wscript, cscript, script, attachment"))
             .Tags("security", "family", "kiosk")
             .Risk(RiskLevel.Moderate)
-            .Warning(L("Certains installateurs, scripts d'ouverture de session d'entreprise ou utilitaires d'imprimante utilisent des scripts .vbs : ils afficheront « L'accès à Windows Script Host est désactivé sur cet ordinateur »."))
+            .Warning(L("Some installers, corporate sign-in scripts or printer utilities use .vbs scripts: they'll show “Windows Script Host access is disabled on this machine”."))
             .WhenOn(Reg.LmDel(ScriptHost, "Enabled"))
             .WhenOff(Reg.LmDword(ScriptHost, "Enabled", 0))
             .WindowsDefault(On)
@@ -158,36 +158,36 @@ internal static class SecurityTweaks
 
     private static IEnumerable<TweakDefinition> SystemTweaks()
     {
-        yield return Tweak.Action("security.uac.recommended", L("Rétablir le niveau UAC recommandé"),
-                L("Remet le Contrôle de compte d'utilisateur (UAC) à son réglage d'origine : UAC actif (EnableLUA = 1), invite de consentement pour les programmes non Windows (ConsentPromptBehaviorAdmin = 5) affichée sur le Bureau sécurisé (PromptOnSecureDesktop = 1). Utile si un logiciel ou un « tutoriel » a abaissé l'UAC."))
+        yield return Tweak.Action("security.uac.recommended", L("Restore the recommended UAC level"),
+                L("Resets User Account Control (UAC) to its original setting: UAC on (EnableLUA = 1), consent prompt for non-Windows programs (ConsentPromptBehaviorAdmin = 5) shown on the secure desktop (PromptOnSecureDesktop = 1). Useful if software or a “tutorial” lowered UAC."))
             .In(C, GroupSystem)
-            .Keywords(L("uac, contrôle de compte, élévation, invite admin, bureau sécurisé, enablelua"))
+            .Keywords(L("uac, user account control, elevation, admin prompt, secure desktop, enablelua"))
             .Tags("security", "family", "kiosk", "office")
             .Requires(Requires.When(_ => !SecurityProbe.UacStricterThanDefault(),
-                L("L'invite UAC est déjà réglée plus strictement que le niveau recommandé : utilisez plutôt « Passer l'UAC au niveau maximal », qui réactive l'UAC et le Bureau sécurisé sans abaisser ce réglage.")))
-            .Warning(L("Si l'UAC était complètement désactivé (EnableLUA = 0), un redémarrage est nécessaire."))
+                L("The UAC prompt is already set stricter than the recommended level: use “Set UAC to the highest level” instead, which turns UAC and the secure desktop back on without lowering this setting.")))
+            .Warning(L("If UAC was completely turned off (EnableLUA = 0), a restart is required."))
             .Run(Reg.LmDword(PolSystem, "EnableLUA", 1), Reg.LmDword(PolSystem, "ConsentPromptBehaviorAdmin", 5),
                  Reg.LmDword(PolSystem, "PromptOnSecureDesktop", 1))
             .Build();
 
-        yield return Tweak.Action("security.uac.always", L("Passer l'UAC au niveau maximal (« Toujours m'avertir »)"),
-                L("Demande une confirmation sur le Bureau sécurisé pour toute élévation, y compris quand vous modifiez vous-même des paramètres Windows (ConsentPromptBehaviorAdmin = 2). Plus sûr pour un compte administrateur utilisé au quotidien, mais les invites sont plus fréquentes."))
+        yield return Tweak.Action("security.uac.always", L("Set UAC to the highest level (“Always notify”)"),
+                L("Asks for confirmation on the secure desktop for every elevation, including when you change Windows settings yourself (ConsentPromptBehaviorAdmin = 2). Safer for an administrator account used every day, but prompts are more frequent."))
             .In(C, GroupSystem)
-            .Keywords(L("uac, toujours m'avertir, niveau maximal, contrôle de compte, élévation"))
+            .Keywords(L("uac, always notify, highest level, maximum level, user account control, elevation"))
             .Tags("security", "family", "kiosk")
             .Run(Reg.LmDword(PolSystem, "EnableLUA", 1), Reg.LmDword(PolSystem, "ConsentPromptBehaviorAdmin", 2),
                  Reg.LmDword(PolSystem, "PromptOnSecureDesktop", 1))
             .Build();
 
-        yield return Tweak.Toggle("security.lsa.ppl", L("Protection de l'autorité de sécurité locale (LSA)"),
-                L("Exécute le processus LSASS, qui détient vos identifiants de session, en processus protégé : les outils de vol de mots de passe (type Mimikatz) ne peuvent plus lire sa mémoire. Timonier l'active sans verrou UEFI (RunAsPPL = 2) pour qu'elle reste désactivable. Windows 11 l'active par défaut sur les nouvelles installations compatibles."))
+        yield return Tweak.Toggle("security.lsa.ppl", L("Local Security Authority (LSA) protection"),
+                L("Runs the LSASS process, which holds your sign-in credentials, as a protected process: password-stealing tools (like Mimikatz) can no longer read its memory. Timonier turns it on without a UEFI lock (RunAsPPL = 2) so it can still be turned off. Windows 11 turns it on by default on new compatible installations."))
             .In(C, GroupSystem)
-            .Keywords(L("lsa, lsass, runasppl, identifiants, mimikatz, credential, processus protégé"))
+            .Keywords(L("lsa, lsass, runasppl, credentials, mimikatz, protected process, password theft"))
             .Tags("security", "office")
             .Requires(Requires.Windows11_22H2)
             .Risk(RiskLevel.Moderate)
             .Effect(ApplyEffect.Reboot)
-            .Warning(L("Des modules d'authentification ou pilotes tiers non signés par Microsoft (anciens lecteurs de cartes à puce, VPN, logiciels anti-triche) peuvent ne plus se charger. Si la protection a été verrouillée en UEFI (RunAsPPL = 1), la désactiver ici ne suffit pas."))
+            .Warning(L("Authentication modules or third-party drivers not signed by Microsoft (old smart card readers, VPNs, anti-cheat software) may no longer load. If the protection was locked in UEFI (RunAsPPL = 1), turning it off here isn't enough."))
             .WhenOn(Reg.LmDword(Lsa, "RunAsPPL", 2))
             .WhenOff(Reg.LmDword(Lsa, "RunAsPPL", 0))
             .Detect(() => SecurityProbe.LsaProtectionConfigured() ? On : Off)
@@ -195,27 +195,27 @@ internal static class SecurityTweaks
             .Recommend(On)
             .Build();
 
-        yield return Tweak.Toggle("security.hvci", L("Intégrité de la mémoire (isolation du noyau)"),
-                L("Utilise la virtualisation (VBS) pour empêcher le chargement de pilotes non signés ou malveillants dans le noyau. Activée par défaut sur les PC neufs compatibles sous Windows 11. Au redémarrage, Windows refuse de l'activer si un pilote incompatible est présent (liste visible dans Sécurité Windows › Sécurité de l'appareil)."))
+        yield return Tweak.Toggle("security.hvci", L("Memory integrity (core isolation)"),
+                L("Uses virtualization (VBS) to prevent unsigned or malicious drivers from loading into the kernel. On by default on new compatible PCs running Windows 11. At restart, Windows refuses to turn it on if an incompatible driver is present (list shown in Windows Security › Device security)."))
             .In(C, GroupSystem)
-            .Keywords(L("hvci, intégrité mémoire, isolation du noyau, core isolation, vbs, memory integrity, pilote"))
+            .Keywords(L("hvci, memory integrity, core isolation, kernel isolation, vbs, driver"))
             .Tags("security", "office")
             .Risk(RiskLevel.Moderate)
             .Effect(ApplyEffect.Reboot)
-            .Warning(L("Un pilote ancien incompatible (périphérique, anti-triche, logiciel de virtualisation) peut cesser de fonctionner. Sur un processeur modeste ou ancien, une légère baisse de performances est possible."))
+            .Warning(L("An old incompatible driver (device, anti-cheat, virtualization software) may stop working. On a low-end or older processor, a slight performance drop is possible."))
             .WhenOn(Reg.LmDword(Hvci, "Enabled", 1))
             .WhenOff(Reg.LmDword(Hvci, "Enabled", 0))
             .WindowsDefault(Off)
             .RecommendWhen(p => p.Tier == PerformanceTier.Low || p.IsVirtualMachine ? null : On)
             .Build();
 
-        yield return Tweak.Toggle("security.logon.cad", L("Ctrl+Alt+Suppr avant l'ouverture de session"),
-                L("Exige d'appuyer sur Ctrl+Alt+Suppr avant de saisir son mot de passe. Cette séquence est toujours interceptée par Windows : elle garantit que vous tapez votre mot de passe dans le véritable écran de connexion et pas dans une imitation affichée par un programme."))
+        yield return Tweak.Toggle("security.logon.cad", L("Ctrl+Alt+Delete before sign-in"),
+                L("Requires pressing Ctrl+Alt+Delete before typing your password. Windows always intercepts this key sequence: it guarantees you're typing your password on the real sign-in screen and not in an imitation shown by a program."))
             .In(C, GroupSystem)
-            .Keywords(L("ctrl alt suppr, ctrl alt del, disablecad, ouverture de session, écran de connexion, sas"))
+            .Keywords(L("ctrl alt del, ctrl alt delete, disablecad, sign-in, login, sign-in screen, sas"))
             .Tags("security", "office", "kiosk")
-            .Labels(L("Exigé"), L("Non exigé"))
-            .Warning(L("Sur une tablette sans clavier, la séquence s'obtient avec Windows + bouton d'alimentation."))
+            .Labels(L("Required"), L("Not required"))
+            .Warning(L("On a tablet without a keyboard, you get this sequence with Windows + power button."))
             .WhenOn(Reg.LmDword(PolSystem, "DisableCAD", 0))
             .WhenOff(Reg.LmDel(PolSystem, "DisableCAD"))
             .WindowsDefault(Off)
@@ -228,10 +228,10 @@ internal static class SecurityTweaks
 
     private static IEnumerable<TweakDefinition> RemoteTweaks()
     {
-        yield return Tweak.Toggle("security.rdp", L("Bureau à distance (connexions entrantes)"),
-                L("Autorise d'autres appareils à ouvrir une session sur ce PC via le protocole RDP (port 3389). Si vous ne l'utilisez pas, laissez-le désactivé : c'est une cible fréquente d'attaques par force brute. Activer ici n'ouvre pas le pare-feu : pour une première configuration, passez plutôt par Paramètres › Système › Bureau à distance."))
+        yield return Tweak.Toggle("security.rdp", L("Remote Desktop (incoming connections)"),
+                L("Lets other devices sign in to this PC via the RDP protocol (port 3389). If you don't use it, leave it off: it's a frequent target of brute-force attacks. Turning it on here doesn't open the firewall: for a first-time setup, use Settings › System › Remote Desktop instead."))
             .In(C, GroupRemote)
-            .Keywords(L("rdp, bureau à distance, remote desktop, mstsc, 3389, prise de contrôle"))
+            .Keywords(L("rdp, remote desktop, mstsc, 3389, remote control, remote access"))
             .Tags("security", "family", "kiosk")
             .Requires(Requires.ProOrHigher)
             .WhenOn(Reg.LmDword(TerminalServer, "fDenyTSConnections", 0))
@@ -240,10 +240,10 @@ internal static class SecurityTweaks
             .RecommendWhen(p => p.IsManaged ? null : Off)
             .Build();
 
-        yield return Tweak.Toggle("security.remoteassistance", L("Assistance à distance Windows"),
-                L("Permet à une personne que vous invitez (fichier d'invitation ou Easy Connect) de voir et contrôler ce PC avec l'ancien outil « Assistance à distance » (msra.exe). Rarement utilisé aujourd'hui : l'application Assistance rapide, qui fonctionne autrement, n'est pas concernée par ce réglage."))
+        yield return Tweak.Toggle("security.remoteassistance", L("Windows Remote Assistance"),
+                L("Lets someone you invite (invitation file or Easy Connect) see and control this PC with the old “Remote Assistance” tool (msra.exe). Rarely used today: the Quick Assist app, which works differently, isn't affected by this setting."))
             .In(C, GroupRemote)
-            .Keywords(L("assistance à distance, remote assistance, msra, easy connect, invitation, aide à distance"))
+            .Keywords(L("remote assistance, msra, easy connect, invitation, remote help"))
             .Tags("security", "family", "kiosk", "office")
             .WhenOn(Reg.LmDword(RemoteAssistance, "fAllowToGetHelp", 1))
             .WhenOff(Reg.LmDword(RemoteAssistance, "fAllowToGetHelp", 0))
@@ -251,10 +251,10 @@ internal static class SecurityTweaks
             .RecommendWhen(p => p.IsManaged ? null : Off)
             .Build();
 
-        yield return Tweak.Toggle("security.remoteregistry", L("Service Registre à distance"),
-                L("Permet à un administrateur d'un autre ordinateur du réseau de lire et modifier le registre de ce PC. Désactivé par défaut sur Windows 10 et 11 ; certains outils d'inventaire d'entreprise en ont besoin."))
+        yield return Tweak.Toggle("security.remoteregistry", L("Remote Registry service"),
+                L("Lets an administrator on another computer on the network read and change this PC's registry. Off by default on Windows 10 and 11; some corporate inventory tools need it."))
             .In(C, GroupRemote)
-            .Keywords(L("remote registry, registre à distance, remoteregistry, service"))
+            .Keywords(L("remote registry, remoteregistry, service"))
             .Tags("security", "family", "kiosk")
             .WhenOn(Sys.Service("RemoteRegistry", ServiceStartKind.Manual))
             .WhenOff(Sys.Service("RemoteRegistry", ServiceStartKind.Disabled))
@@ -262,10 +262,10 @@ internal static class SecurityTweaks
             .RecommendWhen(p => p.IsManaged ? null : Off)
             .Build();
 
-        yield return Tweak.Toggle("security.llmnr", L("Résolution de noms multidiffusion (LLMNR)"),
-                L("Protocole ancien qui demande à tout le réseau local « qui est ce nom ? » quand le DNS échoue. Sur un Wi-Fi public, un attaquant peut répondre à la place du vrai appareil et intercepter des identifiants. Le désactiver (stratégie EnableMulticast = 0) est une recommandation classique ; la résolution DNS normale n'est pas affectée."))
+        yield return Tweak.Toggle("security.llmnr", L("Multicast name resolution (LLMNR)"),
+                L("Old protocol that asks the entire local network “who is this name?” when DNS fails. On public Wi-Fi, an attacker can answer instead of the real device and intercept credentials. Turning it off (EnableMulticast = 0 policy) is a classic recommendation; normal DNS resolution isn't affected."))
             .In(C, GroupRemote)
-            .Keywords(L("llmnr, multicast, multidiffusion, résolution de noms, responder, empoisonnement"))
+            .Keywords(L("llmnr, multicast, name resolution, responder, poisoning, spoofing"))
             .Tags("security", "office")
             .WhenOn(Reg.LmDel(DnsClientPolicy, "EnableMulticast"))
             .WhenOff(Reg.LmDword(DnsClientPolicy, "EnableMulticast", 0))
@@ -273,15 +273,15 @@ internal static class SecurityTweaks
             .RecommendWhen(p => p.IsManaged ? null : Off)
             .Build();
 
-        yield return Tweak.Toggle("security.smb1", L("Protocole SMBv1 (partage de fichiers ancien)"),
-                L("Première version du protocole de partage de fichiers Windows, obsolète et exploitée par les rançongiciels WannaCry et NotPetya. Désactive le client (service mrxsmb10) et le serveur SMBv1. Pour le supprimer complètement, utilisez le bouton « Désinstaller » de l'état de sécurité."))
+        yield return Tweak.Toggle("security.smb1", L("SMBv1 protocol (old file sharing)"),
+                L("First version of the Windows file sharing protocol, obsolete and exploited by the WannaCry and NotPetya ransomware. Turns off the SMBv1 client (mrxsmb10 service) and server. To remove it completely, use the “Uninstall” button in the security status."))
             .In(C, GroupRemote)
-            .Keywords(L("smb1, smbv1, cifs, partage de fichiers, wannacry, nas"))
+            .Keywords(L("smb1, smbv1, cifs, file sharing, wannacry, nas"))
             .Tags("security", "office")
             .Requires(Smb1Installed)
             .Risk(RiskLevel.Moderate)
             .Effect(ApplyEffect.Reboot)
-            .Warning(L("Les très anciens NAS, box ou imprimantes/scanners réseau qui ne parlent que SMBv1 ne seront plus accessibles."))
+            .Warning(L("Very old NAS devices, routers or network printers/scanners that only speak SMBv1 will no longer be reachable."))
             .WhenOn(Sys.Service("mrxsmb10", ServiceStartKind.Automatic),
                     Reg.Lm(LanmanWorkstation, "DependOnService", RegistryValueKind.MultiString, new[] { "Bowser", "MRxSmb10", "MRxSmb20", "NSI" }),
                     Reg.LmDel(LanmanServerParams, "SMB1"))
@@ -293,14 +293,14 @@ internal static class SecurityTweaks
             .Recommend(Off)
             .Build();
 
-        yield return Tweak.Toggle("security.adminshares", L("Partages administratifs automatiques (C$, ADMIN$)"),
-                L("Windows partage automatiquement chaque disque (C$…) et le dossier Windows (ADMIN$) pour l'administration à distance. Ils ne sont accessibles qu'aux administrateurs et, par défaut, pas aux comptes locaux via le réseau : les supprimer réduit un peu la surface d'attaque sur un PC personnel."))
+        yield return Tweak.Toggle("security.adminshares", L("Automatic administrative shares (C$, ADMIN$)"),
+                L("Windows automatically shares each drive (C$…) and the Windows folder (ADMIN$) for remote administration. They're only accessible to administrators and, by default, not to local accounts over the network: removing them slightly reduces the attack surface on a personal PC."))
             .In(C, GroupRemote)
-            .Keywords(L("partage administratif, c$, admin$, autosharewks, partage caché"))
+            .Keywords(L("administrative share, admin share, c$, admin$, autosharewks, hidden share"))
             .Tags("security", "kiosk")
             .Risk(RiskLevel.Moderate)
             .Effect(ApplyEffect.Reboot)
-            .Warning(L("Les outils d'administration ou de sauvegarde réseau qui utilisent \\\\PC\\C$ ne fonctionneront plus."))
+            .Warning(L("Network administration or backup tools that use \\\\PC\\C$ will stop working."))
             .WhenOn(Reg.LmDel(LanmanServerParams, "AutoShareWks"))
             .WhenOff(Reg.LmDword(LanmanServerParams, "AutoShareWks", 0))
             .WindowsDefault(On)
@@ -315,23 +315,23 @@ internal static class SecurityTweaks
 
     private static readonly AsrRule[] AsrRules =
     [
-        new("lsass", "9E6C4E1F-7D60-472F-BA1A-A39EF669E4B2", L("ASR : bloquer le vol d'identifiants dans LSASS"),
-            L("Empêche les programmes non fiables d'ouvrir la mémoire du processus LSASS pour y voler des mots de passe. Règle très peu intrusive, recommandée par Microsoft en blocage."), L("lsass, mimikatz, identifiants")),
-        new("drivers", "56A863A9-875E-4185-98A7-B882C64B5CE5", L("ASR : bloquer l'abus de pilotes signés vulnérables"),
-            L("Empêche l'installation de pilotes légitimes mais connus pour être vulnérables, utilisés par les attaquants pour désactiver les protections du noyau."), L("pilote vulnérable, byovd, driver")),
-        new("email", "BE9BA2D9-53EA-4CDC-84E5-9B1EEEE46550", L("ASR : bloquer le contenu exécutable des e-mails et webmails"),
-            L("Empêche l'exécution de programmes et scripts ouverts directement depuis Outlook ou un webmail."), L("mail, pièce jointe, outlook")),
-        new("scriptdl", "D3E037E1-3EB8-44C8-A917-57927947596D", L("ASR : empêcher JavaScript et VBScript de lancer du contenu téléchargé"),
-            L("Bloque les scripts qui téléchargent puis exécutent un programme, technique fréquente des pièces jointes piégées."),
-            L("javascript, vbscript, téléchargement, dropper")),
-        new("obfuscated", "5BEB7EFE-FD9A-4556-801D-275E5FFC04CC", L("ASR : bloquer les scripts potentiellement obscurcis"),
-            L("Détecte les scripts (PowerShell, VBScript, JavaScript) dont le code est volontairement masqué. Peut signaler certains scripts d'administration légitimes : commencez par l'audit."), L("obfuscation, powershell, script masqué")),
-        new("officechild", "D4F940AB-401B-4EFC-AADC-AD5F3C50688A", L("ASR : empêcher les applications Office de créer des processus enfants"),
-            L("Word, Excel, PowerPoint… ne peuvent plus lancer d'autres programmes (technique des macros malveillantes). Certains compléments Office légitimes peuvent être bloqués."), L("office, macro, word, excel")),
-        new("usb", "B2B3F03D-6A65-4F7B-A9C7-1C7EF74A9BA4", L("ASR : bloquer les processus non signés lancés depuis une clé USB"),
-            L("Les programmes non signés ou non fiables présents sur un support amovible ne peuvent plus être exécutés."), L("usb, clé usb, amovible")),
-        new("wmi", "E6DB77E5-3DF2-4CF1-B95A-636979351E5B", L("ASR : bloquer la persistance via les abonnements WMI"),
-            L("Empêche les logiciels malveillants de se relancer automatiquement grâce aux abonnements aux événements WMI."), L("wmi, persistance")),
+        new("lsass", "9E6C4E1F-7D60-472F-BA1A-A39EF669E4B2", L("ASR: block credential stealing from LSASS"),
+            L("Prevents untrusted programs from opening the memory of the LSASS process to steal passwords. A very unintrusive rule, recommended by Microsoft in block mode."), L("lsass, mimikatz, credentials")),
+        new("drivers", "56A863A9-875E-4185-98A7-B882C64B5CE5", L("ASR: block abuse of exploited vulnerable signed drivers"),
+            L("Prevents installing legitimate drivers that are known to be vulnerable, which attackers use to turn off kernel protections."), L("vulnerable driver, byovd, driver")),
+        new("email", "BE9BA2D9-53EA-4CDC-84E5-9B1EEEE46550", L("ASR: block executable content from email and webmail"),
+            L("Prevents programs and scripts opened directly from Outlook or webmail from running."), L("mail, email, attachment, outlook")),
+        new("scriptdl", "D3E037E1-3EB8-44C8-A917-57927947596D", L("ASR: block JavaScript or VBScript from launching downloaded content"),
+            L("Blocks scripts that download and then run a program, a common technique in booby-trapped attachments."),
+            L("javascript, vbscript, download, dropper")),
+        new("obfuscated", "5BEB7EFE-FD9A-4556-801D-275E5FFC04CC", L("ASR: block execution of potentially obfuscated scripts"),
+            L("Detects scripts (PowerShell, VBScript, JavaScript) whose code is deliberately hidden. May flag some legitimate administration scripts: start with audit mode."), L("obfuscation, powershell, obfuscated script, hidden script")),
+        new("officechild", "D4F940AB-401B-4EFC-AADC-AD5F3C50688A", L("ASR: block Office apps from creating child processes"),
+            L("Word, Excel, PowerPoint… can no longer start other programs (the malicious macro technique). Some legitimate Office add-ins may be blocked."), L("office, macro, word, excel")),
+        new("usb", "B2B3F03D-6A65-4F7B-A9C7-1C7EF74A9BA4", L("ASR: block unsigned processes that run from USB"),
+            L("Unsigned or untrusted programs on removable media can no longer run."), L("usb, usb drive, flash drive, removable")),
+        new("wmi", "E6DB77E5-3DF2-4CF1-B95A-636979351E5B", L("ASR: block persistence through WMI event subscription"),
+            L("Prevents malware from restarting itself automatically through WMI event subscriptions."), L("wmi, persistence")),
     ];
 
     private static IEnumerable<TweakDefinition> AsrTweaks()
@@ -339,17 +339,17 @@ internal static class SecurityTweaks
         foreach (var rule in AsrRules)
         {
             yield return Tweak.Choice("security.asr." + rule.Suffix, rule.Title,
-                    rule.Description + " " + L("« Audit » se contente de journaliser (Observateur d'événements › Windows Defender › Operational, événement 1122) : idéal pour tester avant de bloquer."))
+                    rule.Description + " " + L("“Audit” only logs events (Event Viewer › Windows Defender › Operational, event 1122): ideal for testing before blocking."))
                 .In(C, GroupAsr)
-                .Keywords(rule.Keywords, L("asr, attack surface reduction, réduction de la surface d'attaque, exploit guard, defender"))
+                .Keywords(rule.Keywords, L("asr, attack surface reduction, exploit guard, defender"))
                 .Tags("security")
                 .Risk(RiskLevel.Advanced)
                 .Requires(Requires.ProOrHigher.And(DefenderActive))
-                .Warning(L("Les règles ASR ne fonctionnent que si Microsoft Defender est l'antivirus actif. En mode blocage, une application légitime peut être empêchée d'agir : repassez la règle en audit si c'est le cas."))
-                .Option("off", L("Non configurée"), Reg.LmDel(AsrRulesPolicy, rule.Guid))
-                .Option("audit", L("Audit (journal uniquement)"),
+                .Warning(L("ASR rules only work if Microsoft Defender is the active antivirus. In block mode, a legitimate app may be prevented from acting: switch the rule back to audit if that happens."))
+                .Option("off", L("Not configured"), Reg.LmDel(AsrRulesPolicy, rule.Guid))
+                .Option("audit", L("Audit (log only)"),
                     Reg.LmDword(AsrPolicy, "ExploitGuard_ASR_Rules", 1), Reg.LmString(AsrRulesPolicy, rule.Guid, "2"))
-                .Option("block", L("Bloquer"),
+                .Option("block", L("Block"),
                     Reg.LmDword(AsrPolicy, "ExploitGuard_ASR_Rules", 1), Reg.LmString(AsrRulesPolicy, rule.Guid, "1"))
                 .WindowsDefault("off")
                 .Build();

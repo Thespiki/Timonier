@@ -117,7 +117,7 @@ public static class SystemEffects
     }
 
     public static Task RebootNowAsync() =>
-        ProcessRunner.RunAsync(SystemTool.Shutdown, ["/r", "/t", "5", "/c", L("Redémarrage demandé depuis Timonier")], new RunOptions());
+        ProcessRunner.RunAsync(SystemTool.Shutdown, ["/r", "/t", "5", "/c", L("Restart requested from Timonier")], new RunOptions());
 
     public static Task SignOutNowAsync() =>
         ProcessRunner.RunAsync(SystemTool.Shutdown, ["/l"], new RunOptions());
@@ -145,8 +145,8 @@ public sealed class TrayIcon : IDisposable
                 Icon = System.Drawing.Icon.ExtractAssociatedIcon(AppPaths.ExecutablePath),
                 ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip(),
             };
-            _icon.ContextMenuStrip.Items.Add(L("Ouvrir Timonier"), null, (_, _) => _open());
-            _icon.ContextMenuStrip.Items.Add(L("Quitter"), null, (_, _) => _exit());
+            _icon.ContextMenuStrip.Items.Add(L("Open Timonier"), null, (_, _) => _open());
+            _icon.ContextMenuStrip.Items.Add(L("Exit"), null, (_, _) => _exit());
             _icon.DoubleClick += (_, _) => _open();
         }
         var text = reasons.Count == 0 ? "Timonier" : "Timonier — " + string.Join(", ", reasons);

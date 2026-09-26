@@ -36,8 +36,8 @@ public sealed class CustomizationPage : UserControl, INavigationAware
 
         _stack.Children.Add(new PageHeader
         {
-            Title = L("Personnalisation"),
-            Subtitle = L("Mode clair ou sombre, couleurs, fond d'écran, barre des tâches, menu Démarrer, Explorateur et ouverture de session."),
+            Title = L("Personalization"),
+            Subtitle = L("Light or dark mode, colors, wallpaper, taskbar, Start menu, File Explorer and sign-in."),
             Glyph = "",
         });
 
@@ -45,7 +45,7 @@ public sealed class CustomizationPage : UserControl, INavigationAware
         _stack.Children.Add(jumpBar);
 
         // ---- Apparence
-        _appearanceAnchor = PageScaffold.Section(L("Apparence"));
+        _appearanceAnchor = PageScaffold.Section(L("Appearance"));
         _stack.Children.Add(_appearanceAnchor);
         var appearance = new AppearancePanel();
         _stack.Children.Add(appearance);
@@ -54,7 +54,7 @@ public sealed class CustomizationPage : UserControl, INavigationAware
         _stack.Children.Add(_appearanceList);
 
         // ---- Fond d'écran et écran de verrouillage
-        _wallpaperAnchor = PageScaffold.Section(L("Fond d'écran et écran de verrouillage"));
+        _wallpaperAnchor = PageScaffold.Section(L("Wallpaper and lock screen"));
         _stack.Children.Add(_wallpaperAnchor);
         var wallpaper = new WallpaperPanel();
         wallpaper.PreviewChanged += (_, image) => appearance.SetDesktopPreview(image);
@@ -78,15 +78,15 @@ public sealed class CustomizationPage : UserControl, INavigationAware
 
     private void BuildJumpBar(WrapPanel bar)
     {
-        AddJump(bar, L("Fond d'écran"), "", () => _wallpaperAnchor);
+        AddJump(bar, L("Wallpaper"), "", () => _wallpaperAnchor);
         foreach (var (group, label, glyph) in new[]
                  {
-                     (CustomizationTweaks.GroupTaskbar, L("Barre des tâches"), ""),
-                     (CustomizationTweaks.GroupStart, L("Démarrer"), ""),
-                     (CustomizationTweaks.GroupExplorer, L("Explorateur"), ""),
-                     (CustomizationTweaks.GroupDesktop, L("Bureau"), ""),
-                     (CustomizationTweaks.GroupLogon, L("Connexion"), ""),
-                     (CustomizationTweaks.GroupInput, L("Souris et clavier"), ""),
+                     (CustomizationTweaks.GroupTaskbar, L("Taskbar"), ""),
+                     (CustomizationTweaks.GroupStart, L("Start"), ""),
+                     (CustomizationTweaks.GroupExplorer, LC("short form", "File Explorer"), ""),
+                     (CustomizationTweaks.GroupDesktop, L("Desktop"), ""),
+                     (CustomizationTweaks.GroupLogon, LC("sign-in screen", "Sign-in"), ""),
+                     (CustomizationTweaks.GroupInput, L("Mouse and keyboard"), ""),
                  })
         {
             if (GroupHeading(group) is null) continue; // groupe vide (réglages avancés masqués)
@@ -101,7 +101,7 @@ public sealed class CustomizationPage : UserControl, INavigationAware
         b.MinHeight = 28;
         b.FontSize = 12;
         b.Margin = new Thickness(0, 0, 6, 6);
-        b.ToolTip = L("Aller à la section « {0} »", label);
+        b.ToolTip = L("Go to the “{0}” section", label);
         bar.Children.Add(b);
     }
 
@@ -154,8 +154,8 @@ public sealed class CustomizationPage : UserControl, INavigationAware
     private void AddUnavailableToggle()
     {
         _unavailableLabel = LP(_unavailable.Count,
-            "{0} réglage n'existe pas sur cette version de Windows",
-            "{0} réglages n'existent pas sur cette version de Windows");
+            "{0} setting doesn't exist on this version of Windows",
+            "{0} settings don't exist on this version of Windows");
         _unavailableText = new TextBlock { VerticalAlignment = VerticalAlignment.Center };
         _unavailableChevron = UiKit.Icon("", 12, "Pp.AccentText");
         _unavailableChevron.Margin = new Thickness(0, 1, 8, 0);
@@ -164,7 +164,7 @@ public sealed class CustomizationPage : UserControl, INavigationAware
         content.Children.Add(_unavailableText);
         _unavailableToggle = new Button { Content = content, Margin = new Thickness(-2, 20, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, FontSize = 13 }
             .Styled("Pp.LinkButton");
-        _unavailableToggle.ToolTip = L("Réglages réservés à Windows 10 ou à d'autres versions de Windows 11, affichés pour information.");
+        _unavailableToggle.ToolTip = L("Settings only available on Windows 10 or other versions of Windows 11, shown for information.");
         _unavailableToggle.Click += (_, _) => ShowUnavailable(_unavailableList is not { Visibility: Visibility.Visible });
         _stack.Children.Add(_unavailableToggle);
         ShowUnavailable(false);
@@ -179,7 +179,7 @@ public sealed class CustomizationPage : UserControl, INavigationAware
             _stack.Children.Insert(_stack.Children.IndexOf(_unavailableToggle) + 1, _unavailableList);
         }
         if (_unavailableList is not null) _unavailableList.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
-        _unavailableText.Text = show ? L("{0} : masquer", _unavailableLabel) : L("{0} : afficher", _unavailableLabel);
+        _unavailableText.Text = show ? L("{0}: hide", _unavailableLabel) : L("{0}: show", _unavailableLabel);
         _unavailableChevron.Text = show ? "" : "";
     }
 
@@ -187,38 +187,38 @@ public sealed class CustomizationPage : UserControl, INavigationAware
 
     private static Border ExplorerRestartBar()
     {
-        var restart = UiKit.Button(L("Relancer l'Explorateur"), "", "Pp.Button", async (_, _) =>
+        var restart = UiKit.Button(L("Restart Explorer"), "", "Pp.Button", async (_, _) =>
         {
-            if (!await AppHost.Dialogs.ConfirmAsync(L("Relancer l'Explorateur ?"),
-                    L("La barre des tâches et le bureau disparaissent une seconde, et les fenêtres de dossiers ouvertes sont fermées. Vos applications et documents ne sont pas touchés."), L("Relancer")))
+            if (!await AppHost.Dialogs.ConfirmAsync(L("Restart Explorer?"),
+                    L("The taskbar and desktop disappear for a second, and open folder windows are closed. Your apps and documents aren't affected."), LC("Explorer", "Restart")))
                 return;
             try
             {
                 await SystemEffects.RestartExplorerAsync();
-                AppHost.Toasts.Show(L("Explorateur Windows relancé."), ToastKind.Success);
+                AppHost.Toasts.Show(L("Windows Explorer restarted."), ToastKind.Success);
             }
             catch (Exception ex)
             {
                 Log.Error("Customization", "relance de l'Explorateur", ex);
-                AppHost.Toasts.Show(L("Impossible de relancer l'Explorateur : {0}", ex.Message), ToastKind.Error);
+                AppHost.Toasts.Show(L("Couldn't restart Explorer: {0}", ex.Message), ToastKind.Error);
             }
         });
         restart.Margin = new Thickness(12, 0, 0, 0);
         restart.VerticalAlignment = VerticalAlignment.Center;
 
-        var folders = UiKit.Button(L("Options des dossiers"), "", "Pp.Button", (_, _) =>
+        var folders = UiKit.Button(L("Folder options"), "", "Pp.Button", (_, _) =>
         {
             try { ProcessRunner.Launch(SystemTool.Control, "folders"); }
-            catch (Exception ex) { AppHost.Toasts.Show(L("Impossible d'ouvrir les options des dossiers : {0}", ex.Message), ToastKind.Error); }
+            catch (Exception ex) { AppHost.Toasts.Show(L("Couldn't open folder options: {0}", ex.Message), ToastKind.Error); }
         });
         folders.Margin = new Thickness(12, 0, 0, 0);
         folders.VerticalAlignment = VerticalAlignment.Center;
-        folders.ToolTip = L("Options de l'Explorateur de fichiers (Panneau de configuration)");
+        folders.ToolTip = L("File Explorer Options (Control Panel)");
 
         var icon = UiKit.Icon("", 16, "Pp.AccentText");
         icon.Margin = new Thickness(0, 1, 12, 0);
         icon.VerticalAlignment = VerticalAlignment.Top;
-        var text = UiKit.Text(L("Les réglages marqués « Explorateur » s'affichent après le redémarrage de l'Explorateur Windows ; ceux marqués « Déconnexion », à la prochaine ouverture de session."));
+        var text = UiKit.Text(L("Settings marked “Explorer” take effect after Windows Explorer restarts; those marked “Sign out”, the next time you sign in."));
         text.VerticalAlignment = VerticalAlignment.Center;
 
         var dock = new DockPanel();

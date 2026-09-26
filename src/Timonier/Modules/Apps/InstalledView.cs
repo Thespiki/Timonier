@@ -13,7 +13,7 @@ namespace Timonier.Modules.Apps;
 internal sealed class InstalledView : StackPanel
 {
     private readonly AppsContext _ctx;
-    private readonly TextBox _search = AppsUi.SearchBox(L("Rechercher un programme ou un éditeur…"));
+    private readonly TextBox _search = AppsUi.SearchBox(L("Search for a program or publisher…"));
     private readonly ComboBox _sort = new() { Width = 200, Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
     private readonly TextBlock _summary = AppsUi.Caption("");
     private readonly ContentControl _host = new() { Focusable = false };
@@ -36,13 +36,13 @@ internal sealed class InstalledView : StackPanel
         bar.Children.Add(_search);
         Children.Add(bar);
         _search.TextChanged += (_, _) => { _debounce.Stop(); _debounce.Start(); };
-        foreach (var s in new[] { L("Trier par nom"), L("Trier par taille"), L("Trier par date d'installation"), L("Trier par éditeur") }) _sort.Items.Add(s);
+        foreach (var s in new[] { L("Sort by name"), L("Sort by size"), L("Sort by install date"), L("Sort by publisher") }) _sort.Items.Add(s);
         _sort.SelectedIndex = 0;
         _sort.SelectionChanged += (_, _) => ApplyFilter();
-        System.Windows.Automation.AutomationProperties.SetName(_sort, L("Ordre de tri"));
+        System.Windows.Automation.AutomationProperties.SetName(_sort, L("Sort order"));
 
-        _refresh = AppsUi.Button(L("Actualiser"), "", "Pp.SubtleButton", async (_, _) => await LoadAsync(true));
-        var settings = AppsUi.Button(L("Applications installées (Paramètres)"), "", "Pp.SubtleButton",
+        _refresh = AppsUi.Button(L("Refresh"), "", "Pp.SubtleButton", async (_, _) => await LoadAsync(true));
+        var settings = AppsUi.Button(L("Installed apps (Settings)"), "", "Pp.SubtleButton",
             (_, _) => ProcessRunner.OpenSettingsUri("ms-settings:appsfeatures"));
         settings.Margin = new Thickness(6, 0, 0, 0);
         var tools = AppsUi.Row(_refresh, settings);
@@ -68,7 +68,7 @@ internal sealed class InstalledView : StackPanel
         if (_loading) return;
         _loading = true;
         _refresh.IsEnabled = false;
-        if (!_loaded) _host.Content = AppsUi.Loading(L("Lecture de la liste des programmes…"));
+        if (!_loaded) _host.Content = AppsUi.Loading(L("Reading the program list…"));
         try
         {
             var programs = await _ctx.GetInstalledAsync(refresh);
@@ -76,8 +76,8 @@ internal sealed class InstalledView : StackPanel
             _list.Children.Clear();
             foreach (var r in _rows) _list.Children.Add(r);
             var totalSize = programs.Sum(p => p.SizeBytes);
-            _summary.Text = LP(programs.Count, "{0} programme de bureau · {1}", "{0} programmes de bureau · {1}", Format.Bytes(totalSize));
-            _summary.ToolTip = L("Tailles déclarées par les éditeurs (parfois absentes). Les applications du Store figurent dans l'onglet « Préinstallées ».");
+            _summary.Text = LP(programs.Count, "{0} desktop program · {1}", "{0} desktop programs · {1}", Format.Bytes(totalSize));
+            _summary.ToolTip = L("Sizes reported by publishers (sometimes missing). Store apps are listed in the “Preinstalled” tab.");
             _host.Content = AppsUi.Card(_list, new Thickness(12, 4, 12, 4));
             _loaded = true;
             ApplyFilter();
@@ -86,7 +86,7 @@ internal sealed class InstalledView : StackPanel
         catch (Exception ex)
         {
             Log.Error("Apps", "liste des programmes", ex);
-            _host.Content = AppsUi.EmptyState("", L("Liste indisponible"), L("La liste des programmes n'a pas pu être lue : {0}", ex.Message), "Pp.Warning");
+            _host.Content = AppsUi.EmptyState("", L("List unavailable"), L("Couldn't read the program list: {0}", ex.Message), "Pp.Warning");
         }
         finally
         {
@@ -117,7 +117,7 @@ internal sealed class InstalledView : StackPanel
         }
         if (visible == 0)
         {
-            var empty = AppsUi.Caption(L("Aucun programme ne correspond à « {0} ».", _search.Text.Trim()));
+            var empty = AppsUi.Caption(L("No program matches “{0}”.", _search.Text.Trim()));
             empty.Margin = new Thickness(6, 14, 0, 14);
             _list.Children.Add(empty);
         }
@@ -131,18 +131,18 @@ internal sealed class InstalledView : StackPanel
     private async Task UninstallAsync(InstalledProgram p)
     {
         if (_ctx.Activity.IsBusy) return;
-        var who = p.Publisher is { Length: > 0 } pub ? L("« {0} » ({1})", p.DisplayName, pub) : L("« {0} »", p.DisplayName);
+        var who = p.Publisher is { Length: > 0 } pub ? L("“{0}” ({1})", p.DisplayName, pub) : L("“{0}”", p.DisplayName);
         // Programme installé pour ce compte seulement : désinstallé sans élévation (son désinstalleur ne doit jamais
         // s'exécuter avec les droits administrateur, voir WingetUninstallAction).
         var message = p.PerUser
-            ? L("{0} sera désinstallé par winget, en mode silencieux quand l'éditeur le permet ; sinon son assistant de désinstallation s'affiche.\n\nVos documents ne sont pas touchés, mais les réglages du programme peuvent être perdus.", who)
-            : L("{0} sera désinstallé par winget, en mode silencieux quand l'éditeur le permet ; sinon son assistant de désinstallation s'affiche.\n\nVos documents ne sont pas touchés, mais les réglages du programme peuvent être perdus. Une confirmation administrateur sera demandée.", who);
-        if (!await AppHost.Dialogs.ConfirmAsync(L("Désinstaller ce programme ?"), message, L("Désinstaller"), L("Annuler"), danger: true)) return;
+            ? L("{0} will be uninstalled by winget, silently when the publisher allows it; otherwise its uninstall wizard appears.\n\nYour documents aren't affected, but the program's settings may be lost.", who)
+            : L("{0} will be uninstalled by winget, silently when the publisher allows it; otherwise its uninstall wizard appears.\n\nYour documents aren't affected, but the program's settings may be lost. You'll be asked for administrator confirmation.", who);
+        if (!await AppHost.Dialogs.ConfirmAsync(L("Uninstall this program?"), message, L("Uninstall"), L("Undo"), danger: true)) return;
         var parameters = p.ProductCode is { } code
             ? new Dictionary<string, string> { ["productCode"] = code, ["name"] = p.DisplayName }
             : new Dictionary<string, string> { ["name"] = p.DisplayName };
         var actionId = p.PerUser ? WingetUninstallUserAction.ActionId : WingetUninstallAction.ActionId;
-        var outcome = await _ctx.Activity.RunAsync(L("Désinstallation de {0}", p.DisplayName), actionId, parameters);
+        var outcome = await _ctx.Activity.RunAsync(L("Uninstalling {0}", p.DisplayName), actionId, parameters);
         if (outcome is { Success: true }) _ctx.NotifyInstalledChanged();
     }
 
@@ -179,7 +179,7 @@ internal sealed class InstalledView : StackPanel
             var sub = new List<string>();
             if (p.Publisher is { Length: > 0 } pub) sub.Add(pub);
             if (p.Version is { Length: > 0 } v) sub.Add(L("version {0}", v));
-            sub.Add(p.ScopeLabel + (p.Is32Bit ? " · " + L("32 bits") : ""));
+            sub.Add(p.ScopeLabel + (p.Is32Bit ? " · " + L("32-bit") : ""));
             var caption = AppsUi.Caption(string.Join(" · ", sub));
             caption.TextTrimming = TextTrimming.CharacterEllipsis;
             caption.TextWrapping = TextWrapping.NoWrap;
@@ -192,13 +192,13 @@ internal sealed class InstalledView : StackPanel
             size.FontSize = 13;
             size.HorizontalAlignment = HorizontalAlignment.Right;
             meta.Children.Add(size);
-            var date = AppsUi.Caption(p.InstallDate is { } d ? L("installé le {0}", Format.Day(d)) : L("date inconnue"));
+            var date = AppsUi.Caption(p.InstallDate is { } d ? L("installed on {0}", Format.Day(d)) : L("unknown date"));
             date.HorizontalAlignment = HorizontalAlignment.Right;
             meta.Children.Add(date);
             Grid.SetColumn(meta, 2);
             grid.Children.Add(meta);
 
-            _uninstall = AppsUi.Button(L("Désinstaller"), "", "Pp.Button", async (_, _) => await owner.UninstallAsync(p));
+            _uninstall = AppsUi.Button(L("Uninstall"), "", "Pp.Button", async (_, _) => await owner.UninstallAsync(p));
             _uninstall.VerticalAlignment = VerticalAlignment.Center;
             Grid.SetColumn(_uninstall, 3);
             grid.Children.Add(_uninstall);
@@ -209,8 +209,8 @@ internal sealed class InstalledView : StackPanel
         {
             _uninstall.IsEnabled = winget && !busy && !Program.NoRemove;
             ToolTipService.SetShowOnDisabled(_uninstall, true);
-            _uninstall.ToolTip = Program.NoRemove ? L("L'éditeur ne permet pas de désinstaller ce programme.")
-                : !winget ? L("winget est nécessaire : utilisez sinon les Paramètres Windows.")
+            _uninstall.ToolTip = Program.NoRemove ? L("The publisher doesn't allow this program to be uninstalled.")
+                : !winget ? L("winget is required: otherwise, use Windows Settings.")
                 : null;
         }
     }

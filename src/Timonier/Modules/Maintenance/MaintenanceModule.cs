@@ -17,7 +17,7 @@ public sealed class MaintenanceModule : IModule
     public void Register(ModuleRegistry r)
     {
         r.AddCategory(new CategoryInfo(Category, L("Maintenance"), Glyph,
-            L("Nettoyage, réparation de Windows, points de restauration, Windows Update et journal des erreurs.")));
+            L("Cleanup, Windows repair, restore points, Windows Update and error log.")));
 
         r.AddTweaks(MaintenanceTweaks.All());
 
@@ -37,34 +37,34 @@ public sealed class MaintenanceModule : IModule
         r.AddPage(new PageInfo(PageId, L("Maintenance"), Glyph, NavSection.Tools, 30, () => new MaintenancePage())
         {
             CategoryId = Category,
-            Description = L("Nettoyage du disque, réparation de Windows, points de restauration, Windows Update et journal des erreurs."),
-            Keywords = [L("maintenance, nettoyage, nettoyer, réparer, réparation, sfc, dism, chkdsk, point de restauration, windows update, mises à jour, journal, erreurs, espace disque, fichiers temporaires, corbeille")],
+            Description = L("Disk cleanup, Windows repair, restore points, Windows Update and error log."),
+            Keywords = [L("maintenance, cleanup, repair, sfc, dism, chkdsk, restore point, windows update, error log, disk space, temp files, recycle bin")],
         });
 
         // Contrôles de santé : lecture seule, exécutés hors du thread UI dans l'interface uniquement.
         r.AddHealthCheck(HealthCheck.Sync("maintenance.updates", "Windows Update", "", PageId, () => UpdateStatus.Read().ToHealth()));
-        r.AddHealthCheck(HealthCheck.Sync("maintenance.junk", L("Fichiers inutiles"), "", PageId, QuickClean.EstimateHealth));
+        r.AddHealthCheck(HealthCheck.Sync("maintenance.junk", L("Junk files"), "", PageId, QuickClean.EstimateHealth));
 
-        r.AddQuickAction(new QuickAction("maintenance.quick-clean", L("Nettoyage rapide"), "",
-            L("Supprime les fichiers temporaires de plus de 24 h de votre compte et vide la corbeille, après confirmation."),
+        r.AddQuickAction(new QuickAction("maintenance.quick-clean", L("Quick cleanup"), "",
+            L("Deletes your account's temporary files older than 24 h and empties the Recycle Bin, after confirmation."),
             QuickClean.RunAsync)
         {
-            Keywords = [L("nettoyage, nettoyer, fichiers temporaires, corbeille, libérer de l'espace, clean, temp")],
+            Keywords = [L("cleanup, clean, temp files, temporary files, recycle bin, free up space")],
             Order = 30,
         });
-        r.AddQuickAction(new QuickAction("maintenance.restore-point", L("Créer un point de restauration"), "",
-            L("Enregistre l'état actuel de Windows pour pouvoir y revenir en cas de problème (description « Timonier »)."),
+        r.AddQuickAction(new QuickAction("maintenance.restore-point", L("Create a restore point"), "",
+            L("Saves the current state of Windows so you can go back to it if something goes wrong (description “Timonier”)."),
             QuickClean.CreateRestorePointAsync)
         {
-            Keywords = [L("point de restauration, restore point, sauvegarde système, restauration")],
+            Keywords = [L("restore point, system backup, restore, system restore")],
             Order = 35,
             RequiresAdmin = true,
         });
-        r.AddQuickAction(new QuickAction("maintenance.sfc", L("Vérifier les fichiers système"), "",
-            L("Lance SFC /scannow pour détecter et réparer les fichiers de Windows endommagés (10 à 30 minutes)."),
+        r.AddQuickAction(new QuickAction("maintenance.sfc", L("Check system files"), "",
+            L("Runs SFC /scannow to detect and repair damaged Windows files (10 to 30 minutes)."),
             () => { AppHost.Navigator.Navigate(PageId, "run:sfc"); return Task.CompletedTask; })
         {
-            Keywords = [L("sfc, scannow, réparer windows, fichiers système, corruption")],
+            Keywords = [L("sfc, scannow, repair windows, system files, corruption, corrupted files")],
             Order = 60,
             RequiresAdmin = true,
         });
@@ -85,56 +85,56 @@ public sealed class MaintenanceModule : IModule
 
     private static void RegisterSearchEntries(ModuleRegistry r)
     {
-        Section(r, "cleanup", L("Nettoyage du disque"), L("Fichiers temporaires, corbeille, caches, rapports d'erreurs, cache Windows Update"), "",
-            [L("nettoyage, espace disque, fichiers temporaires, cache, liberer espace, disque plein")]);
-        Section(r, "repair", L("Réparer Windows"), L("SFC, DISM, analyse du disque, cache des icônes, Microsoft Store, heure"), "",
-            [L("reparer, reparation, sfc, dism, chkdsk, windows corrompu, depannage")]);
-        Section(r, "restore", L("Points de restauration"), L("Créer, lister, activer la protection du système"), "",
-            [L("point de restauration, restauration systeme, revenir en arriere, restore")]);
-        Section(r, "updates", L("Windows Update : pause et heures d'activité"), L("État, suspendre 1 à 5 semaines, heures d'activité, réglages"), "",
-            [L("windows update, mises a jour, suspendre, pause, heures activite, redemarrage")]);
-        Section(r, "events", L("Journal des erreurs"), L("Erreurs et événements critiques des 7 derniers jours, expliqués"), "",
-            [L("journal, erreurs, evenements, event viewer, plantage, kernel-power, ecran bleu")]);
+        Section(r, "cleanup", L("Disk cleanup"), L("Temporary files, Recycle Bin, caches, error reports, Windows Update cache"), "",
+            [L("cleanup, disk space, temp files, temporary files, cache, free up space, disk full")]);
+        Section(r, "repair", L("Repair Windows"), L("SFC, DISM, disk scan, icon cache, Microsoft Store, time"), "",
+            [L("repair, fix, sfc, dism, chkdsk, corrupted windows, troubleshooting")]);
+        Section(r, "restore", L("Restore points"), L("Create, list, turn on system protection"), "",
+            [L("restore point, system restore, go back, roll back, restore")]);
+        Section(r, "updates", L("Windows Update: pause and active hours"), L("Status, pause for 1 to 5 weeks, active hours, settings"), "",
+            [L("windows update, updates, pause, pause updates, active hours, restart")]);
+        Section(r, "events", L("Error log"), L("Errors and critical events from the last 7 days, explained"), "",
+            [L("log, errors, events, event viewer, crash, kernel-power, blue screen, bsod")]);
 
-        Feature(r, "maintenance.tool.dism", L("Réparer l'image de Windows (DISM)"), "DISM /Online /Cleanup-Image /RestoreHealth", "repair",
-            [L("dism, restorehealth, reparer image, magasin de composants")]);
-        Feature(r, "maintenance.tool.chkdsk", L("Analyser le disque système (chkdsk)"), L("Analyse en ligne du système de fichiers, sans redémarrage"), "repair",
-            [L("chkdsk, erreurs disque, check disk, systeme de fichiers")]);
-        Feature(r, "maintenance.tool.iconcache", L("Réinitialiser le cache des icônes"), L("Icônes et miniatures incorrectes ou vides"), "repair",
-            [L("icones, cache icones, icones blanches, miniatures, iconcache")]);
-        Feature(r, "maintenance.tool.wsreset", L("Réinitialiser le cache du Microsoft Store"), L("WSReset : le Store ne s'ouvre pas ou ne télécharge plus"), "repair",
-            [L("microsoft store, wsreset, store bloque, cache store")]);
-        Feature(r, "maintenance.tool.time", L("Resynchroniser l'heure"), L("Horloge décalée : synchronisation avec le serveur de temps"), "repair",
-            [L("heure, horloge, w32tm, synchroniser heure, time sync")]);
+        Feature(r, "maintenance.tool.dism", L("Repair Windows image (DISM)"), "DISM /Online /Cleanup-Image /RestoreHealth", "repair",
+            [L("dism, restorehealth, repair image, component store, repair windows")]);
+        Feature(r, "maintenance.tool.chkdsk", L("Scan system disk (chkdsk)"), L("Online file system scan, no restart needed"), "repair",
+            [L("chkdsk, disk errors, check disk, file system, scan disk")]);
+        Feature(r, "maintenance.tool.iconcache", L("Reset icon cache"), L("Wrong or blank icons and thumbnails"), "repair",
+            [L("icons, icon cache, blank icons, white icons, thumbnails, iconcache")]);
+        Feature(r, "maintenance.tool.wsreset", L("Reset Microsoft Store cache"), L("WSReset: the Store won't open or no longer downloads"), "repair",
+            [L("microsoft store, wsreset, store stuck, store cache")]);
+        Feature(r, "maintenance.tool.time", L("Resync time"), L("Clock is off: sync with the time server"), "repair",
+            [L("time, clock, w32tm, sync time, time sync, wrong time")]);
 
         r.AddSearchEntry(new SearchEntry
         {
-            Id = "maintenance.win.storage", Title = L("Stockage (Paramètres Windows)"), Subtitle = L("Espace utilisé par catégorie et Assistant de stockage"),
-            Glyph = "", Keywords = [L("stockage, storage, espace disque, storage sense")], Kind = SearchEntryKind.WindowsSetting,
+            Id = "maintenance.win.storage", Title = L("Storage (Windows Settings)"), Subtitle = L("Space used by category and Storage Sense"),
+            Glyph = "", Keywords = [L("storage, disk space, storage sense, free space")], Kind = SearchEntryKind.WindowsSetting,
             Execute = () => ProcessRunner.OpenSettingsUri("ms-settings:storagesense"),
         });
         r.AddSearchEntry(new SearchEntry
         {
-            Id = "maintenance.win.update", Title = L("Windows Update (Paramètres Windows)"), Subtitle = L("Rechercher et installer les mises à jour"),
-            Glyph = "", Keywords = [L("windows update, rechercher mises a jour, check for updates")], Kind = SearchEntryKind.WindowsSetting,
+            Id = "maintenance.win.update", Title = L("Windows Update (Windows Settings)"), Subtitle = L("Check for and install updates"),
+            Glyph = "", Keywords = [L("windows update, check for updates, updates")], Kind = SearchEntryKind.WindowsSetting,
             Execute = () => ProcessRunner.OpenSettingsUri("ms-settings:windowsupdate-action"),
         });
         r.AddSearchEntry(new SearchEntry
         {
-            Id = "maintenance.win.recovery", Title = L("Récupération (Paramètres Windows)"), Subtitle = L("Réinitialiser ce PC, démarrage avancé"),
-            Glyph = "", Keywords = [L("reinitialiser, reset pc, demarrage avance, recuperation, recovery")], Kind = SearchEntryKind.WindowsSetting,
+            Id = "maintenance.win.recovery", Title = L("Recovery (Windows Settings)"), Subtitle = L("Reset this PC, advanced startup"),
+            Glyph = "", Keywords = [L("reset, reset pc, advanced startup, recovery, reinstall windows")], Kind = SearchEntryKind.WindowsSetting,
             Execute = () => ProcessRunner.OpenSettingsUri("ms-settings:recovery"),
         });
         r.AddSearchEntry(new SearchEntry
         {
-            Id = "maintenance.tool.cleanmgr", Title = L("Nettoyage de disque (outil Windows)"), Subtitle = L("Ouvre l'outil classique cleanmgr"),
-            Glyph = "", Keywords = [L("cleanmgr, nettoyage de disque, disk cleanup")], Kind = SearchEntryKind.Tool,
+            Id = "maintenance.tool.cleanmgr", Title = L("Disk Cleanup (Windows tool)"), Subtitle = L("Opens the classic cleanmgr tool"),
+            Glyph = "", Keywords = [L("cleanmgr, disk cleanup, clean disk")], Kind = SearchEntryKind.Tool,
             Execute = () => MaintUi.OpenTool(SystemTool.CleanMgr),
         });
         r.AddSearchEntry(new SearchEntry
         {
-            Id = "maintenance.tool.rstrui", Title = L("Restauration du système (outil Windows)"), Subtitle = L("Revenir à un point de restauration"),
-            Glyph = "", Keywords = [L("rstrui, restaurer le systeme, system restore")], Kind = SearchEntryKind.Tool,
+            Id = "maintenance.tool.rstrui", Title = L("System Restore (Windows tool)"), Subtitle = L("Go back to a restore point"),
+            Glyph = "", Keywords = [L("rstrui, system restore, restore system")], Kind = SearchEntryKind.Tool,
             Execute = () => MaintUi.OpenTool(SystemTool.Rstrui),
         });
     }

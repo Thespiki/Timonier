@@ -33,7 +33,7 @@ internal sealed record LocalAccount
     public bool IsSystemAccount => Rid is 503 or 504 || LocalAccounts.IsSetupLeftover(Name);
     public bool HasLogonRestriction => LogonHours is { } h && h.Any(b => b != 0xFF);
     public string DisplayName => string.IsNullOrWhiteSpace(FullName) ? Name : FullName;
-    public string TypeLabel => IsAdmin ? L("Administrateur") : LC("account type", "Standard");
+    public string TypeLabel => IsAdmin ? L("Administrator") : LC("account type", "Standard user");
 }
 
 /// <summary>
@@ -71,7 +71,7 @@ internal static partial class LocalAccounts
         catch (Exception ex)
         {
             Log.Warn("Users", "membres Administrateurs illisibles : " + ex.Message);
-            if (strict) throw new InvalidOperationException(L("Impossible de lire les membres du groupe Administrateurs : opération annulée par sécurité."), ex);
+            if (strict) throw new InvalidOperationException(L("Couldn't read the members of the Administrators group: operation canceled for security."), ex);
             admins = [];
         }
 
@@ -113,7 +113,7 @@ internal static partial class LocalAccounts
     public static string ValidateLocalSid(string value)
     {
         var sid = Validate.Sid(value.Trim());
-        if (!LocalSidRx().IsMatch(sid)) throw new ValidationException(L("Ce SID ne correspond pas à un compte local."));
+        if (!LocalSidRx().IsMatch(sid)) throw new ValidationException(L("This SID doesn't match a local account."));
         return sid;
     }
 
@@ -122,7 +122,7 @@ internal static partial class LocalAccounts
     {
         var all = Enumerate(clientSid, strict: true);
         var target = all.FirstOrDefault(a => string.Equals(a.Sid, sid, StringComparison.OrdinalIgnoreCase))
-                     ?? throw new ValidationException(L("Compte local introuvable (il a peut-être été supprimé entre-temps)."));
+                     ?? throw new ValidationException(L("Local account not found (it may have been deleted in the meantime)."));
         return (target, all);
     }
 
@@ -161,7 +161,7 @@ internal static partial class LocalAccounts
         var otherUsableAdmins = all.Count(a => a.IsAdmin && a.Enabled && !a.LockedOut
                                                && !string.Equals(a.Sid, account.Sid, StringComparison.OrdinalIgnoreCase));
         if (otherUsableAdmins == 0)
-            throw new ValidationException(L("C'est le dernier compte administrateur actif de ce PC : sans lui, plus personne ne pourrait administrer Windows."));
+            throw new ValidationException(L("This is the last active administrator account on this PC: without it, no one could administer Windows anymore."));
     }
 
     public static string AdministratorsGroup => GroupName(AdministratorsSid);

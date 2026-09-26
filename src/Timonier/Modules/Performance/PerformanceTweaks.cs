@@ -12,12 +12,12 @@ public static class PerformanceTweaks
 {
     private const string C = PerformanceModule.Category;
 
-    public static readonly string GroupVisual = L("Effets visuels");
-    public static readonly string GroupGames = L("Jeux");
-    public static readonly string GroupEnergy = L("Énergie");
-    public static readonly string GroupBackground = L("Arrière-plan et démarrage");
+    public static readonly string GroupVisual = L("Visual effects");
+    public static readonly string GroupGames = L("Games");
+    public static readonly string GroupEnergy = LC("settings group", "Power");
+    public static readonly string GroupBackground = L("Background and startup");
     public static readonly string GroupServices = L("Services");
-    public static readonly string GroupStorage = L("Stockage");
+    public static readonly string GroupStorage = L("Storage");
 
     public static readonly string[] Groups = [GroupVisual, GroupGames, GroupEnergy, GroupBackground, GroupServices, GroupStorage];
 
@@ -58,18 +58,18 @@ public static class PerformanceTweaks
 
     private static IEnumerable<TweakDefinition> Visual()
     {
-        yield return Tweak.Choice("perf.fx.preset", L("Effets visuels de Windows"),
-                L("Équivalent des « Options de performances » de Windows (sysdm.cpl > Avancé > Performances). « Performances » coupe les animations, fondus, ombres et aperçus : l'interface paraît plus vive sur un PC modeste, sans accélérer les applications. Contrairement au bouton de Windows, le lissage des polices est conservé. Pris en compte après une déconnexion."))
+        yield return Tweak.Choice("perf.fx.preset", L("Windows visual effects"),
+                L("Equivalent to Windows' “Performance Options” (sysdm.cpl › Advanced › Performance). “Best performance” turns off animations, fades, shadows and previews: the interface feels snappier on a modest PC, without speeding up apps. Unlike the Windows button, font smoothing is kept. Takes effect after you sign out."))
             .In(C, GroupVisual)
-            .Keywords(L("effets visuels, visual effects, animations, options de performances, apparence, fluidité, ombres, fondu"))
+            .Keywords(L("visual effects, animations, performance options, appearance, smoothness, shadows, fade"))
             .Tags("lowend")
-            .OptionWithHelp("auto", L("Laisser Windows choisir"), L("Réglage d'origine : tous les effets activés sur la plupart des PC."),
+            .OptionWithHelp("auto", L("Let Windows choose"), L("Original setting: all effects on for most PCs."),
                 VisualSet(0, MaskDefault, true))
-            .OptionWithHelp("appearance", L("Meilleure apparence"), L("Tous les effets, y compris l'ombre sous le pointeur."),
+            .OptionWithHelp("appearance", L("Best appearance"), L("All effects, including the shadow under the mouse pointer."),
                 VisualSet(1, MaskAppearance, true))
-            .OptionWithHelp("performance", L("Meilleures performances"), L("Coupe animations, fondus, ombres et aperçus (lissage des polices conservé)."),
+            .OptionWithHelp("performance", L("Best performance"), L("Turns off animations, fades, shadows and previews (font smoothing kept)."),
                 VisualSet(2, MaskPerformance, false))
-            .OptionWithHelp("custom", L("Personnalisé"), L("Conserve vos réglages individuels (ceux ci-dessous)."),
+            .OptionWithHelp("custom", L("Custom"), L("Keeps your individual settings (the ones below)."),
                 Reg.CuDword(VisualEffects, "VisualFXSetting", 3))
             .Detect(() => RegistryAccess.ReadDword(RegHive.CurrentUser, VisualEffects, "VisualFXSetting") switch
             {
@@ -84,10 +84,10 @@ public static class PerformanceTweaks
             .RecommendWhen(p => LowEnd(p) ? "performance" : null)
             .Build();
 
-        yield return Tweak.Toggle("perf.fx.minanimate", L("Animation des fenêtres (réduire et agrandir)"),
-                L("Effet de zoom lorsqu'une fenêtre est réduite dans la barre des tâches ou agrandie. Le couper rend ces gestes instantanés ; aucun effet sur la vitesse des applications."))
+        yield return Tweak.Toggle("perf.fx.minanimate", L("Window animations (minimize and maximize)"),
+                L("Zoom effect when a window is minimized to the taskbar or maximized. Turning it off makes these actions instant; no effect on app speed."))
             .In(C, GroupVisual)
-            .Keywords(L("animation, réduire, agrandir, minimize, maximize, zoom fenêtre"))
+            .Keywords(L("animation, minimize, maximize, window zoom, window animation"))
             .Tags("lowend")
             .WhenOn(Reg.CuString(WindowMetrics, "MinAnimate", "1"))
             .WhenOff(Reg.CuString(WindowMetrics, "MinAnimate", "0"))
@@ -96,10 +96,10 @@ public static class PerformanceTweaks
             .RecommendWhen(p => LowEnd(p) ? TweakDefinition.Off : null)
             .Build();
 
-        yield return Tweak.Toggle("perf.fx.taskbaranim", L("Animations de la barre des tâches"),
-                L("Animations des boutons et des aperçus de la barre des tâches. Les couper allège légèrement l'Explorateur sur un PC modeste."))
+        yield return Tweak.Toggle("perf.fx.taskbaranim", L("Taskbar animations"),
+                L("Animations of taskbar buttons and previews. Turning them off slightly lightens File Explorer on a modest PC."))
             .In(C, GroupVisual)
-            .Keywords(L("barre des tâches, taskbar, animation, aperçu"))
+            .Keywords(L("taskbar, animation, preview, thumbnail"))
             .Tags("lowend")
             .WhenOn(Reg.CuDword(ExplorerAdvanced, "TaskbarAnimations", 1))
             .WhenOff(Reg.CuDword(ExplorerAdvanced, "TaskbarAnimations", 0))
@@ -108,21 +108,21 @@ public static class PerformanceTweaks
             .RecommendWhen(p => LowEnd(p) ? TweakDefinition.Off : null)
             .Build();
 
-        yield return Tweak.Choice("perf.fx.menudelay", L("Délai d'ouverture des sous-menus"),
-                L("Temps d'attente avant l'ouverture d'un sous-menu classique au survol (menus contextuels, barres de menus). Un délai plus court donne une impression de réactivité, sans rien changer à la puissance du PC."))
+        yield return Tweak.Choice("perf.fx.menudelay", L("Submenu opening delay"),
+                L("Wait time before a classic submenu opens on hover (context menus, menu bars). A shorter delay feels more responsive, without changing the PC's power at all."))
             .In(C, GroupVisual)
-            .Keywords(L("menu, délai, MenuShowDelay, sous-menu, réactivité, survol"))
+            .Keywords(L("menu, delay, MenuShowDelay, submenu, responsiveness, hover"))
             .Option("400", L("Standard (400 ms)"), Reg.CuString(Desktop, "MenuShowDelay", "400"))
-            .Option("200", L("Rapide (200 ms)"), Reg.CuString(Desktop, "MenuShowDelay", "200"))
-            .Option("50", L("Très rapide (50 ms)"), Reg.CuString(Desktop, "MenuShowDelay", "50"))
+            .Option("200", L("Fast (200 ms)"), Reg.CuString(Desktop, "MenuShowDelay", "200"))
+            .Option("50", L("Very fast (50 ms)"), Reg.CuString(Desktop, "MenuShowDelay", "50"))
             .WindowsDefault("400")
             .Effect(ApplyEffect.SignOut)
             .Build();
 
-        yield return Tweak.Toggle("perf.fx.dragfull", L("Contenu des fenêtres pendant le déplacement"),
-                L("Affiche la fenêtre entière pendant qu'on la déplace ou la redimensionne. Désactivé, seul un cadre suit la souris : utile surtout sur une carte graphique très faible ou en bureau à distance."))
+        yield return Tweak.Toggle("perf.fx.dragfull", L("Window contents while dragging"),
+                L("Shows the whole window while you move or resize it. When off, only an outline follows the mouse: mainly useful on a very weak graphics card or over Remote Desktop."))
             .In(C, GroupVisual)
-            .Keywords(L("déplacer, glisser, drag, redimensionner, contenu fenêtre"))
+            .Keywords(L("move, drag, resize, window contents, show window contents while dragging"))
             .Tags("lowend")
             .WhenOn(Reg.CuString(Desktop, "DragFullWindows", "1"))
             .WhenOff(Reg.CuString(Desktop, "DragFullWindows", "0"))
@@ -130,30 +130,30 @@ public static class PerformanceTweaks
             .Effect(ApplyEffect.SignOut)
             .Build();
 
-        yield return Tweak.Toggle("perf.fx.peek", L("Aperçu du Bureau (Peek)"),
-                L("Rend les fenêtres transparentes pour montrer le Bureau quand on survole le coin droit de la barre des tâches. Le désactiver n'a qu'un effet minime sur les performances."))
+        yield return Tweak.Toggle("perf.fx.peek", L("Desktop preview (Peek)"),
+                L("Makes windows transparent to show the desktop when you hover over the right corner of the taskbar. Turning it off has only a minimal effect on performance."))
             .In(C, GroupVisual)
-            .Keywords(L("peek, aero peek, aperçu bureau, coin barre des tâches"))
+            .Keywords(L("peek, aero peek, desktop preview, taskbar corner, show desktop"))
             .WhenOn(Reg.CuDword(Dwm, "EnableAeroPeek", 1))
             .WhenOff(Reg.CuDword(Dwm, "EnableAeroPeek", 0))
             .WindowsDefault(TweakDefinition.On)
             .Effect(ApplyEffect.SignOut)
             .Build();
 
-        yield return Tweak.Toggle("perf.fx.iconshadow", L("Ombre sous le nom des icônes du Bureau"),
-                L("Ombre portée derrière le texte des icônes pour le rendre lisible sur tous les fonds d'écran. Impact négligeable sur les performances."))
+        yield return Tweak.Toggle("perf.fx.iconshadow", L("Shadow under desktop icon labels"),
+                L("Drop shadow behind icon text to keep it readable on any wallpaper. Negligible impact on performance."))
             .In(C, GroupVisual)
-            .Keywords(L("ombre, icônes, bureau, shadow, texte icône"))
+            .Keywords(L("shadow, icons, desktop, drop shadow, icon text, icon labels"))
             .WhenOn(Reg.CuDword(ExplorerAdvanced, "ListviewShadow", 1))
             .WhenOff(Reg.CuDword(ExplorerAdvanced, "ListviewShadow", 0))
             .WindowsDefault(TweakDefinition.On)
             .Effect(ApplyEffect.RestartExplorer)
             .Build();
 
-        yield return Tweak.Toggle("perf.fx.alphaselect", L("Rectangle de sélection translucide"),
-                L("Rectangle bleu semi-transparent lorsqu'on sélectionne des fichiers à la souris. Désactivé, un simple cadre en pointillés est affiché."))
+        yield return Tweak.Toggle("perf.fx.alphaselect", L("Translucent selection rectangle"),
+                L("Semi-transparent blue rectangle when you select files with the mouse. When off, a simple dotted outline is shown."))
             .In(C, GroupVisual)
-            .Keywords(L("sélection, rectangle, translucide, explorateur"))
+            .Keywords(L("selection, rectangle, translucent, file explorer, explorer"))
             .WhenOn(Reg.CuDword(ExplorerAdvanced, "ListviewAlphaSelect", 1))
             .WhenOff(Reg.CuDword(ExplorerAdvanced, "ListviewAlphaSelect", 0))
             .WindowsDefault(TweakDefinition.On)
@@ -178,10 +178,10 @@ public static class PerformanceTweaks
 
     private static IEnumerable<TweakDefinition> Games()
     {
-        yield return Tweak.Toggle("perf.game.mode", L("Mode Jeu"),
-                L("Quand un jeu est détecté, Windows lui donne la priorité (processeur, carte graphique) et suspend l'installation des pilotes et les notifications de redémarrage de Windows Update. Sans effet hors des jeux ; activé par défaut."))
+        yield return Tweak.Toggle("perf.game.mode", L("Game Mode"),
+                L("When a game is detected, Windows gives it priority (processor, graphics card) and holds off driver installations and Windows Update restart notifications. No effect outside games; on by default."))
             .In(C, GroupGames)
-            .Keywords(L("mode jeu, game mode, gaming, jeux, fps"))
+            .Keywords(L("game mode, gaming, games, fps"))
             .Tags("gaming")
             .WhenOn(Reg.CuDword(GameBar, "AutoGameModeEnabled", 1))
             .WhenOff(Reg.CuDword(GameBar, "AutoGameModeEnabled", 0))
@@ -189,10 +189,10 @@ public static class PerformanceTweaks
             .Recommend(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Toggle("perf.game.capture", L("Captures de jeu (Xbox Game Bar)"),
-                L("Captures d'écran et enregistrements vidéo des jeux avec la Xbox Game Bar (Win + Alt + Impr. écran). Désactivé, la Game Bar ne peut plus enregistrer et Windows ne prépare plus la capture au lancement des jeux."))
+        yield return Tweak.Toggle("perf.game.capture", L("Game captures (Xbox Game Bar)"),
+                L("Screenshots and video recordings of games with the Xbox Game Bar (Win + Alt + Print Screen). When off, the Game Bar can no longer record and Windows no longer prepares capture when games launch."))
             .In(C, GroupGames)
-            .Keywords(L("game dvr, capture, enregistrement, xbox game bar, vidéo jeu, clip"))
+            .Keywords(L("game dvr, capture, recording, xbox game bar, game video, clip, screen recording"))
             .Tags("gaming", "lowend")
             .WhenOn(Reg.CuDword(GameConfigStore, "GameDVR_Enabled", 1), Reg.CuDword(GameDvr, "AppCaptureEnabled", 1),
                 Reg.LmDel(GameDvrPolicy, "AllowGameDVR"))
@@ -202,10 +202,10 @@ public static class PerformanceTweaks
             .RecommendWhen(p => LowEnd(p) ? TweakDefinition.Off : null)
             .Build();
 
-        yield return Tweak.Toggle("perf.game.bgrecord", L("Enregistrement en arrière-plan"),
-                L("Filme en continu les dernières minutes de jeu pour pouvoir « enregistrer ce qui vient de se passer ». L'encodage vidéo permanent coûte des images par seconde et de l'autonomie : désactivé par défaut dans Windows."))
+        yield return Tweak.Toggle("perf.game.bgrecord", L("Background recording"),
+                L("Continuously records the last few minutes of gameplay so you can “record what happened”. Constant video encoding costs frames per second and battery life: off by default in Windows."))
             .In(C, GroupGames)
-            .Keywords(L("enregistrer ce qui vient de se passer, background recording, replay, dvr, enregistrement continu"))
+            .Keywords(L("record what happened, background recording, replay, dvr, continuous recording"))
             .Tags("gaming", "lowend", "battery")
             .WhenOn(Reg.CuDword(GameDvr, "HistoricalCaptureEnabled", 1))
             .WhenOff(Reg.CuDword(GameDvr, "HistoricalCaptureEnabled", 0))
@@ -213,27 +213,27 @@ public static class PerformanceTweaks
             .Recommend(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("perf.game.nexus", L("Ouvrir la Game Bar avec le bouton Xbox"),
-                L("Le bouton Xbox d'une manette ouvre la Xbox Game Bar. À couper si vous l'ouvrez par erreur en jouant ou si un autre lanceur (Steam) utilise ce bouton."))
+        yield return Tweak.Toggle("perf.game.nexus", L("Open Game Bar with the Xbox button"),
+                L("The Xbox button on a controller opens the Xbox Game Bar. Turn this off if you open it by mistake while playing or if another launcher (Steam) uses this button."))
             .In(C, GroupGames)
-            .Keywords(L("manette, bouton xbox, controller, game bar, nexus"))
+            .Keywords(L("controller, gamepad, xbox button, game bar, nexus"))
             .Tags("gaming")
             .WhenOn(Reg.CuDword(GameBar, "UseNexusForGameBarEnabled", 1))
             .WhenOff(Reg.CuDword(GameBar, "UseNexusForGameBarEnabled", 0))
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Choice("perf.game.hags", L("Planification GPU à accélération matérielle"),
-                L("La carte graphique gère elle-même sa file de travail au lieu de Windows, ce qui peut réduire légèrement la latence et la charge du processeur dans les jeux. Nécessite une carte récente avec un pilote WDDM 2.7 ou plus récent (NVIDIA GTX 10xx et ultérieures, AMD RX 5000 et ultérieures, Intel Arc) ; les gains varient selon les jeux."))
+        yield return Tweak.Choice("perf.game.hags", L("Hardware-accelerated GPU scheduling"),
+                L("The graphics card manages its own work queue instead of Windows, which can slightly reduce latency and processor load in games. Requires a recent card with a WDDM 2.7 or later driver (NVIDIA GTX 10xx and later, AMD RX 5000 and later, Intel Arc); gains vary by game."))
             .In(C, GroupGames)
-            .Keywords(L("hags, gpu scheduling, planification gpu, carte graphique, latence, wddm, dlss 3, génération d'images"))
+            .Keywords(L("hags, gpu scheduling, hardware accelerated gpu scheduling, graphics card, latency, wddm, dlss 3, frame generation"))
             .Tags("gaming")
-            .Option("default", L("Choix du pilote"), Reg.LmDel(GraphicsDrivers, "HwSchMode"))
-            .Option("on", L("Activée"), Reg.LmDword(GraphicsDrivers, "HwSchMode", 2))
-            .Option("off", L("Désactivée"), Reg.LmDword(GraphicsDrivers, "HwSchMode", 1))
+            .Option("default", L("Driver's choice"), Reg.LmDel(GraphicsDrivers, "HwSchMode"))
+            .Option("on", LC("feminine", "On"), Reg.LmDword(GraphicsDrivers, "HwSchMode", 2))
+            .Option("off", L("Disabled"), Reg.LmDword(GraphicsDrivers, "HwSchMode", 1))
             .WindowsDefault("default")
             .Requires(new Requirement { MinBuild = 19041 }.And(Requires.When(HasDedicatedGpu,
-                L("Nécessite une carte graphique dédiée récente (NVIDIA, AMD ou Intel Arc) avec un pilote WDDM 2.7 ou plus récent."))))
+                L("Requires a recent dedicated graphics card (NVIDIA, AMD or Intel Arc) with a WDDM 2.7 or later driver."))))
             .Effect(ApplyEffect.Reboot)
             .RecommendWhen(p => HasDedicatedGpu(p) && p.Tier != PerformanceTier.Low ? "on" : null)
             .Build();
@@ -243,43 +243,43 @@ public static class PerformanceTweaks
 
     private static IEnumerable<TweakDefinition> Energy()
     {
-        yield return Tweak.Toggle("perf.power.hibernate", L("Veille prolongée"),
-                L("Enregistre la session sur le disque puis éteint complètement le PC : aucune consommation, reprise là où vous étiez. Le fichier hiberfil.sys occupe environ 40 % de la mémoire vive. La désactiver libère cet espace mais supprime aussi le démarrage rapide et la veille prolongée automatique (un portable en veille pourra alors se vider complètement)."))
+        yield return Tweak.Toggle("perf.power.hibernate", L("Hibernation"),
+                L("Saves your session to disk, then shuts the PC down completely: no power draw, and you pick up where you left off. The hiberfil.sys file takes up about 40% of RAM. Turning it off frees this space but also removes Fast startup and automatic hibernation (a sleeping laptop could then drain its battery completely)."))
             .In(C, GroupEnergy)
-            .Keywords(L("hibernation, veille prolongée, hiberfil, hibernate, espace disque"))
+            .Keywords(L("hibernation, hibernate, hiberfil, disk space"))
             .Tags("battery")
-            .WhenOn(Sys.Tool(SystemTool.PowerCfg, true, L("Active la veille prolongée (powercfg /hibernate on)"), "/hibernate", "on"))
-            .WhenOff(Sys.Tool(SystemTool.PowerCfg, true, L("Désactive la veille prolongée et supprime hiberfil.sys (powercfg /hibernate off)"), "/hibernate", "off"))
+            .WhenOn(Sys.Tool(SystemTool.PowerCfg, true, L("Turns on hibernation (powercfg /hibernate on)"), "/hibernate", "on"))
+            .WhenOff(Sys.Tool(SystemTool.PowerCfg, true, L("Turns off hibernation and deletes hiberfil.sys (powercfg /hibernate off)"), "/hibernate", "off"))
             .Detect(() => PowerApi.HibernationEnabled() ? TweakDefinition.On : TweakDefinition.Off)
             .WindowsDefault(TweakDefinition.On)
             .Risk(RiskLevel.Moderate)
-            .Warning(L("Désactiver la veille prolongée désactive aussi le démarrage rapide."))
+            .Warning(L("Turning off hibernation also turns off Fast startup."))
             .RecommendWhen(p => p.HasBattery ? TweakDefinition.On : null)
             .Build();
 
-        yield return Tweak.Toggle("perf.power.faststartup", L("Démarrage rapide"),
-                L("À l'arrêt, Windows ferme votre session mais met le noyau en veille prolongée : le démarrage suivant est plus court, surtout sur disque dur. Inconvénients : le PC n'est pas vraiment « neuf » après un arrêt (seul « Redémarrer » le fait), certaines mises à jour et pilotes attendent un redémarrage, et les disques Windows restent verrouillés en double démarrage (Linux)."))
+        yield return Tweak.Toggle("perf.power.faststartup", L("Fast startup"),
+                L("At shutdown, Windows signs you out but puts the kernel into hibernation: the next startup is faster, especially on a hard drive. Downsides: the PC isn't truly “fresh” after a shutdown (only “Restart” does that), some updates and drivers wait for a restart, and Windows drives stay locked in dual-boot setups (Linux)."))
             .In(C, GroupEnergy)
-            .Keywords(L("démarrage rapide, fast startup, hiberboot, arrêt, boot, dual boot"))
+            .Keywords(L("fast startup, hiberboot, shutdown, boot, dual boot, fast boot"))
             .WhenOn(Reg.LmDword(SessionPower, "HiberbootEnabled", 1))
             .WhenOff(Reg.LmDword(SessionPower, "HiberbootEnabled", 0))
             .WindowsDefault(TweakDefinition.On)
             .Requires(Requires.When(_ => PowerApi.HibernationEnabled(),
-                L("Nécessite la veille prolongée : activez-la d'abord (réglage ci-dessus).")))
+                L("Requires hibernation: turn it on first (setting above).")))
             .RecommendWhen(p => p.SystemDiskIsHdd ? TweakDefinition.On : null)
             .Build();
 
-        yield return Tweak.Toggle("perf.power.throttling", L("Limitation de l'énergie des tâches en arrière-plan"),
-                L("Power Throttling : Windows fait tourner les applications en arrière-plan sur les cœurs et fréquences les plus économes. C'est ce qui préserve l'autonomie d'un portable. La désactiver ne sert qu'à un PC fixe sur secteur dont un traitement en arrière-plan (encodage, calcul) est anormalement ralenti."))
+        yield return Tweak.Toggle("perf.power.throttling", L("Power throttling for background tasks"),
+                L("Power Throttling: Windows runs background apps on the most power-efficient cores and frequencies. This is what preserves a laptop's battery life. Turning it off is only useful for a desktop PC on AC power whose background processing (encoding, computing) is abnormally slow."))
             .In(C, GroupEnergy)
-            .Keywords(L("power throttling, ecoqos, limitation, arrière-plan, efficacité, autonomie"))
+            .Keywords(L("power throttling, ecoqos, throttling, background, efficiency, battery life"))
             .Tags("battery")
             .WhenOn(Reg.LmDel(PowerThrottling, "PowerThrottlingOff"))
             .WhenOff(Reg.LmDword(PowerThrottling, "PowerThrottlingOff", 1))
             .WindowsDefault(TweakDefinition.On)
             .Risk(RiskLevel.Moderate)
             .Effect(ApplyEffect.Reboot)
-            .Warning(L("Sur un portable, la désactiver réduit l'autonomie."))
+            .Warning(L("On a laptop, turning it off reduces battery life."))
             .RecommendWhen(p => p.HasBattery ? TweakDefinition.On : null)
             .Build();
     }
@@ -288,40 +288,40 @@ public static class PerformanceTweaks
 
     private static IEnumerable<TweakDefinition> Background()
     {
-        yield return Tweak.Toggle("perf.bg.apps", L("Applications en arrière-plan"),
-                L("Autorise les applications du Microsoft Store à s'exécuter en arrière-plan (réception de notifications, mises à jour de vignettes, synchronisation). Les bloquer économise un peu de mémoire et de batterie."))
+        yield return Tweak.Toggle("perf.bg.apps", L("Background apps"),
+                L("Allows Microsoft Store apps to run in the background (receiving notifications, updating tiles, syncing). Blocking them saves a little memory and battery."))
             .In(C, GroupBackground)
-            .Keywords(L("arrière-plan, background apps, applications en arrière-plan, batterie, notifications"))
+            .Keywords(L("background, background apps, apps running in background, battery, notifications"))
             .Tags("battery", "lowend")
             .WhenOn(Reg.CuDword(BackgroundApps, "GlobalUserDisabled", 0))
             .WhenOff(Reg.CuDword(BackgroundApps, "GlobalUserDisabled", 1))
             .WindowsDefault(TweakDefinition.On)
             .Requires(Requires.Windows10Only)
             .Risk(RiskLevel.Moderate)
-            .Warning(L("Certaines applications (Courrier, Calendrier, Téléphone…) ne recevront plus de notifications tant qu'elles sont fermées."))
+            .Warning(L("Some apps (Mail, Calendar, Phone…) will no longer receive notifications while they're closed."))
             .RecommendWhen(p => LowEnd(p) ? TweakDefinition.Off : null)
             .Build();
 
-        yield return Tweak.Toggle("perf.bg.apps.policy", L("Applications du Store en arrière-plan"),
-                L("Stratégie « Autoriser les applications Windows à s'exécuter en arrière-plan » (Windows 11 n'a plus d'interrupteur global). Bloquée, aucune application du Microsoft Store ne tourne tant qu'elle n'est pas ouverte : un peu de mémoire et de batterie économisées. Les applications classiques (Win32) ne sont pas concernées."))
+        yield return Tweak.Toggle("perf.bg.apps.policy", L("Store apps in the background"),
+                L("“Let Windows apps run in the background” policy (Windows 11 no longer has a global switch). When blocked, no Microsoft Store app runs until it's opened: a little memory and battery saved. Classic (Win32) apps aren't affected."))
             .In(C, GroupBackground)
-            .Keywords(L("arrière-plan, background apps, LetAppsRunInBackground, applications store, batterie"))
+            .Keywords(L("background, background apps, LetAppsRunInBackground, store apps, battery"))
             .Tags("battery", "lowend")
-            .Labels(L("Autorisées"), L("Bloquées"))
+            .Labels(LC("feminine plural", "Allowed"), LC("feminine plural", "Blocked"))
             .WhenOn(Reg.LmDel(AppPrivacyPolicy, "LetAppsRunInBackground"))
             .WhenOff(Reg.LmDword(AppPrivacyPolicy, "LetAppsRunInBackground", 2))
             .WindowsDefault(TweakDefinition.On)
             .Requires(Requires.Windows11)
             .Risk(RiskLevel.Moderate)
-            .Warning(L("Les applications du Store (Teams, WhatsApp, Téléphone, Courrier…) ne recevront plus de notifications tant qu'elles sont fermées."))
+            .Warning(L("Store apps (Teams, WhatsApp, Phone, Mail…) will no longer receive notifications while they're closed."))
             .Build();
 
-        yield return Tweak.Toggle("perf.boot.startupdelay", L("Délai avant les applications de démarrage"),
-                L("Après l'ouverture de session, l'Explorateur attend une dizaine de secondes avant de lancer les programmes de démarrage, pour que le Bureau soit utilisable plus vite. Sans ce délai, ils démarrent immédiatement : intéressant sur SSD rapide, contre-productif sur un disque dur ou un PC modeste."))
+        yield return Tweak.Toggle("perf.boot.startupdelay", L("Startup apps delay"),
+                L("After you sign in, File Explorer waits about ten seconds before launching startup programs, so the desktop becomes usable sooner. Without this delay, they start immediately: worthwhile on a fast SSD, counterproductive on a hard drive or a modest PC."))
             .In(C, GroupBackground)
-            .Keywords(L("démarrage, startup delay, ouverture de session, programmes au démarrage, StartupDelayInMSec"))
+            .Keywords(L("startup, startup delay, sign-in, startup programs, StartupDelayInMSec"))
             .Tags("office")
-            .Labels(L("Délai actif"), L("Lancement immédiat"))
+            .Labels(L("Delay on"), L("Launch immediately"))
             .WhenOn(Reg.CuDel(Serialize, "StartupDelayInMSec"))
             .WhenOff(Reg.CuDword(Serialize, "StartupDelayInMSec", 0))
             .WindowsDefault(TweakDefinition.On)
@@ -336,11 +336,11 @@ public static class PerformanceTweaks
 
     private static IEnumerable<TweakDefinition> Services()
     {
-        yield return Tweak.Toggle("perf.svc.sysmain", L("SysMain (préchargement des applications)"),
-                L("Anciennement SuperFetch : garde en mémoire les applications que vous utilisez souvent pour les lancer plus vite. Indispensable sur disque dur. Sur SSD le gain est plus faible ; ne le désactivez que si vous constatez une activité disque anormale et durable."))
+        yield return Tweak.Toggle("perf.svc.sysmain", L("SysMain (app preloading)"),
+                L("Formerly SuperFetch: keeps the apps you use often in memory so they launch faster. Essential on a hard drive. On an SSD the gain is smaller; only turn it off if you notice abnormal and sustained disk activity."))
             .In(C, GroupServices)
-            .Keywords(L("sysmain, superfetch, prefetch, préchargement, disque 100 %, service"))
-            .Labels(L("Actif"), L("Désactivé"))
+            .Keywords(L("sysmain, superfetch, prefetch, preloading, 100% disk, disk usage, service"))
+            .Labels(L("Active"), L("Off"))
             .WhenOn(Sys.Service("SysMain", ServiceStartKind.Automatic))
             .WhenOff(Sys.Service("SysMain", ServiceStartKind.Disabled))
             .WindowsDefault(TweakDefinition.On)
@@ -348,87 +348,87 @@ public static class PerformanceTweaks
             .RecommendWhen(p => p.SystemDiskIsHdd ? TweakDefinition.On : null)
             .Build();
 
-        yield return Tweak.Toggle("perf.svc.wsearch", L("Indexation de la recherche Windows"),
-                L("Service Windows Search : indexe le nom et le contenu des fichiers, courriers Outlook et paramètres pour des résultats instantanés. Désactivé, la recherche du menu Démarrer et de l'Explorateur fonctionne encore mais devient lente et ne cherche plus dans le contenu des documents."))
+        yield return Tweak.Toggle("perf.svc.wsearch", L("Windows Search indexing"),
+                L("Windows Search service: indexes the names and contents of files, Outlook emails and settings for instant results. When off, search in the Start menu and File Explorer still works but becomes slow and no longer searches inside document contents."))
             .In(C, GroupServices)
-            .Keywords(L("indexation, windows search, wsearch, recherche, indexer, service"))
+            .Keywords(L("indexing, windows search, wsearch, search, indexer, service"))
             .Tags("lowend")
-            .Labels(L("Actif"), L("Désactivé"))
+            .Labels(L("Active"), L("Off"))
             .WhenOn(Sys.Service("WSearch", ServiceStartKind.AutomaticDelayed))
             .WhenOff(Sys.Service("WSearch", ServiceStartKind.Disabled))
             .WindowsDefault(TweakDefinition.On)
             .Risk(RiskLevel.Moderate)
-            .Warning(L("La recherche dans Outlook, le menu Démarrer et l'Explorateur sera nettement plus lente."))
+            .Warning(L("Search in Outlook, the Start menu and File Explorer will be much slower."))
             .RecommendWhen(p => p.SystemDiskIsHdd && p.Tier == PerformanceTier.Low ? TweakDefinition.Off : null)
             .Build();
 
-        yield return Tweak.Toggle("perf.svc.xbox", L("Services Xbox"),
-                L("Authentification Xbox Live, sauvegardes de jeux dans le cloud, réseau Xbox et accessoires Xbox (XblAuthManager, XblGameSave, XboxNetApiSvc, XboxGipSvc). Ils ne démarrent qu'à la demande : les désactiver ne fait gagner presque rien si vous ne jouez pas, mais casse le Game Pass et les jeux du Microsoft Store si vous jouez."))
+        yield return Tweak.Toggle("perf.svc.xbox", L("Xbox services"),
+                L("Xbox Live authentication, cloud game saves, Xbox networking and Xbox accessories (XblAuthManager, XblGameSave, XboxNetApiSvc, XboxGipSvc). They only start on demand: disabling them gains almost nothing if you don't play, but breaks Game Pass and Microsoft Store games if you do."))
             .In(C, GroupServices)
-            .Keywords(L("xbox, xbox live, game pass, services xbox, sauvegarde jeux, manette xbox"))
+            .Keywords(L("xbox, xbox live, game pass, xbox services, game saves, xbox controller"))
             .Tags("office")
-            .Labels(L("À la demande"), L("Désactivés"))
+            .Labels(L("On demand"), LC("plural", "Disabled"))
             .WhenOn(Sys.Service("XblAuthManager", ServiceStartKind.Manual), Sys.Service("XblGameSave", ServiceStartKind.Manual),
                 Sys.Service("XboxNetApiSvc", ServiceStartKind.Manual), Sys.Service("XboxGipSvc", ServiceStartKind.Manual))
             .WhenOff(Sys.Service("XblAuthManager", ServiceStartKind.Disabled), Sys.Service("XblGameSave", ServiceStartKind.Disabled),
                 Sys.Service("XboxNetApiSvc", ServiceStartKind.Disabled), Sys.Service("XboxGipSvc", ServiceStartKind.Disabled))
             .WindowsDefault(TweakDefinition.On)
             .Risk(RiskLevel.Moderate)
-            .Warning(L("Game Pass, jeux du Microsoft Store, sauvegardes Xbox et mises à jour des manettes Xbox ne fonctionneront plus."))
+            .Warning(L("Game Pass, Microsoft Store games, Xbox saves and Xbox controller updates will no longer work."))
             .Build();
 
-        yield return Tweak.Toggle("perf.svc.maps", L("Gestionnaire des cartes téléchargées (démarrage automatique)"),
-                L("Service MapsBroker : met à jour les cartes hors connexion de l'application Cartes. En démarrage manuel, il ne se lance que si une application en a besoin ; gain faible mais sans inconvénient."))
+        yield return Tweak.Toggle("perf.svc.maps", L("Downloaded Maps Manager (automatic start)"),
+                L("MapsBroker service: updates offline maps for the Maps app. With manual startup, it only runs if an app needs it; a small gain with no downside."))
             .In(C, GroupServices)
-            .Keywords(L("cartes, maps, mapsbroker, cartes hors connexion, service"))
+            .Keywords(L("maps, mapsbroker, offline maps, service"))
             .Tags("lowend")
-            .Labels(L("Automatique"), L("Manuel"))
+            .Labels(L("Automatic"), L("Manual"))
             .WhenOn(Sys.Service("MapsBroker", ServiceStartKind.AutomaticDelayed))
             .WhenOff(Sys.Service("MapsBroker", ServiceStartKind.Manual))
             .WindowsDefault(TweakDefinition.On)
             .RecommendWhen(p => LowEnd(p) ? TweakDefinition.Off : null)
             .Build();
 
-        yield return Tweak.Toggle("perf.svc.fax", L("Service de télécopie (Fax)"),
-                L("Nécessaire uniquement pour envoyer ou recevoir des télécopies avec un modem fax. Il ne démarre qu'à la demande : le désactiver ne libère presque rien. Absent sur les installations récentes."))
+        yield return Tweak.Toggle("perf.svc.fax", L("Fax service"),
+                L("Only needed to send or receive faxes with a fax modem. It only starts on demand: disabling it frees almost nothing. Not present on recent installations."))
             .In(C, GroupServices)
-            .Keywords(L("fax, télécopie, service"))
-            .Labels(L("À la demande"), L("Désactivé"))
+            .Keywords(L("fax, service"))
+            .Labels(L("On demand"), L("Off"))
             .WhenOn(Sys.Service("Fax", ServiceStartKind.Manual))
             .WhenOff(Sys.Service("Fax", ServiceStartKind.Disabled))
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Toggle("perf.svc.retaildemo", L("Service de démonstration en magasin"),
-                L("Sert uniquement au mode « démo » des PC exposés en magasin. Inutile sur un PC personnel ; le désactiver est sans risque."))
+        yield return Tweak.Toggle("perf.svc.retaildemo", L("Retail Demo Service"),
+                L("Only used for the “demo” mode of PCs on display in stores. Useless on a personal PC; disabling it is safe."))
             .In(C, GroupServices)
-            .Keywords(L("retaildemo, démo magasin, retail demo, service"))
-            .Labels(L("À la demande"), L("Désactivé"))
+            .Keywords(L("retaildemo, store demo, retail demo, service"))
+            .Labels(L("On demand"), L("Off"))
             .WhenOn(Sys.Service("RetailDemo", ServiceStartKind.Manual))
             .WhenOff(Sys.Service("RetailDemo", ServiceStartKind.Disabled))
             .WindowsDefault(TweakDefinition.On)
             .Recommend(TweakDefinition.Off)
             .Build();
 
-        yield return Tweak.Toggle("perf.svc.wmpnetwork", L("Partage réseau du Lecteur Windows Media"),
-                L("Partage la bibliothèque de l'ancien Lecteur Windows Media avec d'autres appareils (DLNA). Il ne démarre qu'à la demande : le désactiver ne fait rien gagner tant que le partage n'est pas utilisé, mais réduit la surface réseau."))
+        yield return Tweak.Toggle("perf.svc.wmpnetwork", L("Windows Media Player network sharing"),
+                L("Shares the legacy Windows Media Player library with other devices (DLNA). It only starts on demand: disabling it gains nothing as long as sharing isn't used, but reduces the network attack surface."))
             .In(C, GroupServices)
-            .Keywords(L("wmpnetworksvc, windows media, dlna, partage multimédia, service"))
-            .Labels(L("À la demande"), L("Désactivé"))
+            .Keywords(L("wmpnetworksvc, windows media, dlna, media sharing, service"))
+            .Labels(L("On demand"), L("Off"))
             .WhenOn(Sys.Service("WMPNetworkSvc", ServiceStartKind.Manual))
             .WhenOff(Sys.Service("WMPNetworkSvc", ServiceStartKind.Disabled))
             .WindowsDefault(TweakDefinition.On)
             .Build();
 
-        yield return Tweak.Toggle("perf.svc.wisvc", L("Service du programme Windows Insider"),
-                L("Nécessaire uniquement pour recevoir les versions préliminaires de Windows (programme Insider). Démarre à la demande."))
+        yield return Tweak.Toggle("perf.svc.wisvc", L("Windows Insider Program service"),
+                L("Only needed to receive preview builds of Windows (Insider Program). Starts on demand."))
             .In(C, GroupServices)
-            .Keywords(L("insider, wisvc, préversion, service"))
-            .Labels(L("À la demande"), L("Désactivé"))
+            .Keywords(L("insider, wisvc, preview, preview builds, service"))
+            .Labels(L("On demand"), L("Off"))
             .WhenOn(Sys.Service("wisvc", ServiceStartKind.Manual))
             .WhenOff(Sys.Service("wisvc", ServiceStartKind.Disabled))
             .WindowsDefault(TweakDefinition.On)
-            .Warning(L("Le programme Windows Insider ne fonctionnera plus sur ce PC."))
+            .Warning(L("The Windows Insider Program will no longer work on this PC."))
             .Build();
     }
 
@@ -436,15 +436,15 @@ public static class PerformanceTweaks
 
     private static IEnumerable<TweakDefinition> Storage()
     {
-        yield return Tweak.Choice("perf.storage.lastaccess", L("Horodatage du dernier accès NTFS"),
-                L("NTFS peut noter la date du dernier accès à chaque fichier lu, ce qui ajoute des écritures. Depuis Windows 10 1803, Windows gère ce réglage seul (activé uniquement sur les petits volumes système) : n'y touchez que si un logiciel de sauvegarde ou d'archivage a besoin de cette date. Pris en compte au redémarrage."))
+        yield return Tweak.Choice("perf.storage.lastaccess", L("NTFS last access timestamp"),
+                L("NTFS can record the last access date of every file that's read, which adds writes. Since Windows 10 1803, Windows manages this setting on its own (on only for small system volumes): only change it if backup or archiving software needs this date. Takes effect after a restart."))
             .In(C, GroupStorage)
-            .Keywords(L("ntfs, last access, dernier accès, horodatage, fsutil, disque"))
-            .OptionWithHelp("system", L("Géré par Windows"), L("Valeur d'origine (0x80000002)."),
+            .Keywords(L("ntfs, last access, timestamp, fsutil, disk"))
+            .OptionWithHelp("system", L("Managed by Windows"), L("Original value (0x80000002)."),
                 Reg.LmDword(FileSystem, "NtfsDisableLastAccessUpdate", unchecked((int)0x80000002)))
-            .OptionWithHelp("off", L("Toujours désactivé"), L("Aucune date de dernier accès n'est enregistrée (0x80000001)."),
+            .OptionWithHelp("off", L("Always off"), L("No last access date is recorded (0x80000001)."),
                 Reg.LmDword(FileSystem, "NtfsDisableLastAccessUpdate", unchecked((int)0x80000001)))
-            .OptionWithHelp("on", L("Toujours activé"), L("Nécessaire à certains outils d'archivage (0x80000000)."),
+            .OptionWithHelp("on", L("Always on"), L("Required by some archiving tools (0x80000000)."),
                 Reg.LmDword(FileSystem, "NtfsDisableLastAccessUpdate", unchecked((int)0x80000000)))
             .Detect(() => RegistryAccess.ReadDword(RegHive.LocalMachine, FileSystem, "NtfsDisableLastAccessUpdate") switch
             {
@@ -458,25 +458,25 @@ public static class PerformanceTweaks
             .Effect(ApplyEffect.Reboot)
             .Build();
 
-        yield return Tweak.Toggle("perf.storage.trim", L("TRIM des SSD"),
-                L("Windows signale au SSD les blocs libérés (fsutil behavior DisableDeleteNotify). Indispensable pour conserver les performances et la durée de vie d'un SSD ; activé par défaut. À ne désactiver que sur demande d'un fabricant."))
+        yield return Tweak.Toggle("perf.storage.trim", L("SSD TRIM"),
+                L("Windows tells the SSD which blocks have been freed (fsutil behavior DisableDeleteNotify). Essential to preserve an SSD's performance and lifespan; on by default. Only turn it off if a manufacturer asks you to."))
             .In(C, GroupStorage)
-            .Keywords(L("trim, ssd, nvme, DisableDeleteNotify, optimisation ssd, fsutil"))
+            .Keywords(L("trim, ssd, nvme, DisableDeleteNotify, ssd optimization, fsutil"))
             .WhenOn(Reg.LmDword(FileSystem, "DisableDeleteNotification", 0))
             .WhenOff(Reg.LmDword(FileSystem, "DisableDeleteNotification", 1))
             .WindowsDefault(TweakDefinition.On)
             .Requires(Requires.When(p => !p.HardwareLoaded || p.Disks.Count == 0 || p.Disks.Any(d => d.Media is DiskMedia.Ssd or DiskMedia.Nvme),
-                L("Aucun SSD détecté sur ce PC.")))
+                L("No SSD detected on this PC.")))
             .Risk(RiskLevel.Moderate)
-            .Warning(L("Sans TRIM, un SSD ralentit progressivement et s'use davantage."))
+            .Warning(L("Without TRIM, an SSD gradually slows down and wears out faster."))
             .Recommend(TweakDefinition.On)
             .Effect(ApplyEffect.Reboot)
             .Build();
 
-        yield return Tweak.Toggle("perf.storage.thumbnails", L("Miniatures des fichiers dans l'Explorateur"),
-                L("Aperçu des images, vidéos et documents à la place des icônes. Désactivées, l'Explorateur ouvre plus vite les dossiers contenant beaucoup de photos, surtout sur disque dur ou clé USB lente."))
+        yield return Tweak.Toggle("perf.storage.thumbnails", L("File thumbnails in File Explorer"),
+                L("Previews of images, videos and documents instead of icons. When off, File Explorer opens folders containing lots of photos faster, especially on a hard drive or a slow USB drive."))
             .In(C, GroupStorage)
-            .Keywords(L("miniatures, thumbnails, aperçu, icônes, explorateur, photos"))
+            .Keywords(L("thumbnails, preview, icons, file explorer, explorer, photos"))
             .Tags("lowend")
             .WhenOn(Reg.CuDword(ExplorerAdvanced, "IconsOnly", 0))
             .WhenOff(Reg.CuDword(ExplorerAdvanced, "IconsOnly", 1))

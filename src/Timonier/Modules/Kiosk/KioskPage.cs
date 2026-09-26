@@ -25,21 +25,21 @@ public sealed partial class KioskPage : UserControl, INavigationAware
 
     public KioskPage()
     {
-        _stack = PageScaffold.Create(this, L("Mode kiosque"),
-            L("Transformez ce PC en borne dédiée à une seule application, pour un compte à part, puis revenez en arrière en un clic."), KioskModule.Glyph);
+        _stack = PageScaffold.Create(this, L("Kiosk mode"),
+            L("Turn this PC into a kiosk dedicated to a single app, for a separate account, then undo it in one click."), KioskModule.Glyph);
 
-        _stack.Children.Add(PageScaffold.Section(L("Compatibilité")));
+        _stack.Children.Add(PageScaffold.Section(L("Compatibility")));
         _stack.Children.Add(BuildCompatibility());
 
-        _wizardAnchor = PageScaffold.Section(L("Assistant"));
+        _wizardAnchor = PageScaffold.Section(L("Wizard"));
         _stack.Children.Add(_wizardAnchor);
         _stack.Children.Add(BuildWizard());
 
-        _statusAnchor = PageScaffold.Section(L("État et retrait"));
+        _statusAnchor = PageScaffold.Section(L("Status and removal"));
         _stack.Children.Add(_statusAnchor);
         _stack.Children.Add(_statusCard);
 
-        _stack.Children.Add(PageScaffold.Section(L("Limites à connaître")));
+        _stack.Children.Add(PageScaffold.Section(L("Limitations to know")));
         _stack.Children.Add(BuildLimits());
 
         _mode = _profile.SupportsAssignedAccess ? KioskModes.Store : KioskModes.Win32;
@@ -92,8 +92,8 @@ public sealed partial class KioskPage : UserControl, INavigationAware
         var p = _profile;
         var stack = new StackPanel();
 
-        var header = Row(null, p.WindowsLabel.Length > 0 ? p.WindowsLabel : "Windows", L("Édition {0} · {1}", p.EditionLabel, (p.IsUserAdmin ? L("votre compte est administrateur") : L("votre compte n'est pas administrateur"))),
-            Badge(p.SupportsAssignedAccess ? L("Accès attribué pris en charge") : L("Accès attribué indisponible"), p.SupportsAssignedAccess ? "Success" : "Warning"));
+        var header = Row(null, p.WindowsLabel.Length > 0 ? p.WindowsLabel : "Windows", L("{0} edition · {1}", p.EditionLabel, (p.IsUserAdmin ? L("your account is an administrator") : L("your account isn't an administrator"))),
+            Badge(p.SupportsAssignedAccess ? L("Assigned access supported") : L("Assigned access unavailable"), p.SupportsAssignedAccess ? "Success" : "Warning"));
         var tile = GlyphTile("");
         tile.Margin = new Thickness(0, 0, 14, 0);
         DockPanel.SetDock(tile, Dock.Left);
@@ -101,40 +101,40 @@ public sealed partial class KioskPage : UserControl, INavigationAware
         stack.Children.Add(header);
         stack.Children.Add(Divider(new Thickness(0, 12, 0, 6)));
 
-        stack.Children.Add(CompatRow("", L("Application du Store en plein écran"),
+        stack.Children.Add(CompatRow("", L("Full-screen Store app"),
             p.SupportsAssignedAccess
-                ? L("Accès attribué à application unique (Set-AssignedAccess) : l'application occupe tout l'écran, sans Bureau ni barre des tâches.")
-                : L("L'accès attribué n'existe pas sur l'édition Famille : il faut Windows Professionnel, Entreprise ou Éducation."),
-            p.SupportsAssignedAccess ? (L("Disponible"), "Success") : (L("Indisponible ici"), "Danger")));
+                ? L("Single-app assigned access (Set-AssignedAccess): the app fills the whole screen, with no desktop or taskbar.")
+                : L("Assigned access doesn't exist on the Home edition: you need Windows Pro, Enterprise or Education."),
+            p.SupportsAssignedAccess ? (L("Available"), "Success") : (L("Unavailable here"), "Danger")));
 
-        stack.Children.Add(CompatRow("", L("Microsoft Edge en mode kiosque"),
+        stack.Children.Add(CompatRow("", L("Microsoft Edge in kiosk mode"),
             _edgePath is null
-                ? L("Microsoft Edge n'est pas installé pour tous les utilisateurs sur ce PC.")
-                : L("Edge s'ouvre en plein écran sur votre site à la place du Bureau du compte kiosque (options officielles --kiosk d'Edge).")
-                  + (p.SupportsAssignedAccess ? L(" L'assistant kiosque de Windows propose aussi Edge, via l'accès attribué.") : ""),
-            _edgePath is null ? (L("Edge absent"), "Danger") : (L("Disponible"), "Success")));
+                ? L("Microsoft Edge isn't installed for all users on this PC.")
+                : L("Edge opens in full screen on your site instead of the kiosk account's desktop (Edge's official --kiosk options).")
+                  + (p.SupportsAssignedAccess ? L(" The Windows kiosk wizard also offers Edge, through assigned access.") : ""),
+            _edgePath is null ? (L("Edge not installed"), "Danger") : (L("Available"), "Success")));
 
-        stack.Children.Add(CompatRow("", L("Application classique (.exe)"),
-            L("Le programme choisi remplace le Bureau pour ce compte uniquement (stratégie « Interface utilisateur personnalisée »). C'est une alternative légère à Shell Launcher.")
-            + (p.IsHomeEdition ? L(" Sur l'édition Famille, les stratégies utilisateur ne sont pas officiellement prises en charge : fonctionnement non garanti.") : ""),
-            p.IsHomeEdition ? (L("Non garanti"), "Warning") : (L("Disponible"), "Success")));
+        stack.Children.Add(CompatRow("", L("Classic app (.exe)"),
+            L("The selected program replaces the desktop for this account only (“Custom User Interface” policy). It's a lightweight alternative to Shell Launcher.")
+            + (p.IsHomeEdition ? L(" On the Home edition, user policies aren't officially supported: it may not work.") : ""),
+            p.IsHomeEdition ? (L("Not guaranteed"), "Warning") : (L("Available"), "Success")));
 
-        stack.Children.Add(CompatRow("", L("Shell Launcher et kiosque multi-applications"),
+        stack.Children.Add(CompatRow("", L("Shell Launcher and multi-app kiosk"),
             p.SupportsShellLauncher
-                ? L("Pris en charge par votre édition, mais configurés par fichier XML (Windows Configuration Designer, MDM/Intune) : Timonier ne les gère pas.")
-                : L("Shell Launcher est réservé aux éditions Entreprise et Éducation ; le kiosque multi-applications nécessite une configuration XML ou MDM. Timonier ne les gère pas."),
-            (L("Non géré"), "Neutral")));
+                ? L("Supported by your edition, but configured through an XML file (Windows Configuration Designer, MDM/Intune): Timonier doesn't manage them.")
+                : L("Shell Launcher is only available on Enterprise and Education editions; the multi-app kiosk requires an XML or MDM configuration. Timonier doesn't manage them."),
+            (L("Not managed"), "Neutral")));
 
         if (p.IsManaged)
         {
-            var bar = PageScaffold.InfoBar(L("Ce PC est géré par une organisation (domaine, Microsoft Entra ou MDM) : ses stratégies peuvent remplacer ou bloquer la configuration de borne. Vérifiez avec votre service informatique."),
+            var bar = PageScaffold.InfoBar(L("This PC is managed by an organization (domain, Microsoft Entra or MDM): its policies may override or block the kiosk configuration. Check with your IT department."),
                 "", "Pp.InfoBar.Warning");
             bar.Margin = new Thickness(0, 10, 0, 0);
             stack.Children.Add(bar);
         }
         if (!p.IsUserAdmin)
         {
-            var bar = PageScaffold.InfoBar(L("Votre compte n'est pas administrateur : Windows demandera les identifiants d'un administrateur au moment d'appliquer."), "");
+            var bar = PageScaffold.InfoBar(L("Your account isn't an administrator: Windows will ask for an administrator's credentials when you apply."), "");
             bar.Margin = new Thickness(0, 10, 0, 0);
             stack.Children.Add(bar);
         }
@@ -155,12 +155,12 @@ public sealed partial class KioskPage : UserControl, INavigationAware
         var stack = new StackPanel();
         string[] items =
         [
-            L("Ctrl+Alt+Suppr fonctionne toujours, par conception de Windows : c'est la sortie de secours. Pour quitter une session kiosque, appuyez sur Ctrl+Alt+Suppr puis choisissez « Se déconnecter »."),
-            L("Testez d'abord : déconnectez-vous et ouvrez la session kiosque avant de laisser la borne en libre-service. Gardez toujours un compte administrateur dont vous connaissez le mot de passe."),
-            L("Avec une application classique ou Edge comme interface, rien ne relance l'application si elle se ferme : l'écran reste noir jusqu'à la déconnexion. Choisissez une application prévue pour rester ouverte."),
-            L("Les applications classiques (Win32) sous accès attribué et le kiosque multi-applications nécessitent une configuration XML (MDM, Intune, Windows Configuration Designer) : non gérés ici."),
-            L("Windows Update continue d'installer les mises à jour et peut redémarrer le PC : planifiez les heures d'activité pour éviter un redémarrage pendant l'utilisation de la borne."),
-            L("Les restrictions (Gestionnaire des tâches, Exécuter…) sont des stratégies utilisateur : elles gênent un utilisateur curieux, pas une personne déterminée ayant un accès physique au PC."),
+            L("Ctrl+Alt+Del always works, by Windows design: it's the emergency exit. To leave a kiosk session, press Ctrl+Alt+Del and choose “Sign out”."),
+            L("Test first: sign out and sign in to the kiosk session before leaving the kiosk for public use. Always keep an administrator account whose password you know."),
+            L("With a classic app or Edge as the shell, nothing restarts the app if it closes: the screen stays black until sign-out. Choose an app designed to stay open."),
+            L("Classic (Win32) apps under assigned access and the multi-app kiosk require an XML configuration (MDM, Intune, Windows Configuration Designer): not managed here."),
+            L("Windows Update keeps installing updates and may restart the PC: set active hours to avoid a restart while the kiosk is in use."),
+            L("The restrictions (Task Manager, Run…) are user policies: they stop a curious user, not a determined person with physical access to the PC."),
         ];
         foreach (var i in items) stack.Children.Add(Bullet(i, "", "Pp.TextSecondary"));
         return PageScaffold.Card(stack);
@@ -174,7 +174,7 @@ public sealed partial class KioskPage : UserControl, INavigationAware
 
     private async Task RefreshStatusAsync()
     {
-        _statusCard.Child = State("", L("Lecture de la configuration…"), busy: true);
+        _statusCard.Child = State("", L("Reading the configuration…"), busy: true);
         try
         {
             (_state, _autologon) = await Task.Run(() => (KioskState.Read(), AutologonInfo.Read()));
@@ -183,7 +183,7 @@ public sealed partial class KioskPage : UserControl, INavigationAware
         catch (Exception ex)
         {
             Log.Error("Kiosk", "lecture de l'état", ex);
-            _statusCard.Child = State("", L("Impossible de lire la configuration"), ex.Message);
+            _statusCard.Child = State("", L("Couldn't read the configuration"), ex.Message);
         }
     }
 
@@ -195,22 +195,22 @@ public sealed partial class KioskPage : UserControl, INavigationAware
 
         if (s is { IsConfigured: true })
         {
-            var head = Row(null, L("Borne configurée pour « {0} »", s.User), KioskModes.Label(s.Mode), Badge(LC("state", "Active"), "Success",""));
+            var head = Row(null, L("Kiosk set up for “{0}”", s.User), KioskModes.Label(s.Mode), Badge(LC("state", "Active"), "Success",""));
             var tile = GlyphTile(KioskModule.Glyph, "Pp.SuccessBackground", "Pp.Success");
             tile.Margin = new Thickness(0, 0, 14, 0);
             DockPanel.SetDock(tile, Dock.Left);
             head.Children.Insert(head.Children.Count - 1, tile);
             stack.Children.Add(head);
             stack.Children.Add(Divider(new Thickness(0, 12, 0, 8)));
-            stack.Children.Add(PageScaffold.KeyValue(L("Application"), TargetLabel(s)));
+            stack.Children.Add(PageScaffold.KeyValue(L("App"), TargetLabel(s)));
             var keys = s.RestrictionKeys.Select(k => KioskRestrictions.Get(k)?.Title).Where(t => t is not null).ToList();
-            stack.Children.Add(PageScaffold.KeyValue(L("Restrictions du compte"), keys.Count == 0 ? L("Aucune") : string.Join(" · ", keys)));
-            if (s.AppliedAt is { } at) stack.Children.Add(PageScaffold.KeyValue(L("Configurée le"), Format.Date(at)));
+            stack.Children.Add(PageScaffold.KeyValue(L("Account restrictions"), keys.Count == 0 ? LC("feminine", "None") : string.Join(" · ", keys)));
+            if (s.AppliedAt is { } at) stack.Children.Add(PageScaffold.KeyValue(L("Set up on"), Format.Date(at)));
         }
         else
         {
-            var head = Row(null, L("Aucune borne configurée par Timonier"),
-                L("Utilisez l'assistant ci-dessus. Une borne créée avec les Paramètres de Windows peut être détectée avec « Vérifier dans Windows »."));
+            var head = Row(null, L("No kiosk set up by Timonier"),
+                L("Use the wizard above. A kiosk created with Windows Settings can be detected with “Check in Windows”."));
             var tile = GlyphTile(KioskModule.Glyph, "Pp.NeutralBackground", "Pp.Neutral");
             tile.Margin = new Thickness(0, 0, 14, 0);
             DockPanel.SetDock(tile, Dock.Left);
@@ -219,11 +219,11 @@ public sealed partial class KioskPage : UserControl, INavigationAware
             stack.Children.Add(Divider(new Thickness(0, 12, 0, 8)));
         }
 
-        stack.Children.Add(PageScaffold.KeyValue(L("Ouverture de session automatique"),
-            al.Enabled ? L("Activée pour « {0} »", al.User) : L("Désactivée")));
+        stack.Children.Add(PageScaffold.KeyValue(L("Automatic sign-in"),
+            al.Enabled ? L("On for “{0}”", al.User) : L("Disabled")));
         if (al.PlainPasswordInRegistry)
         {
-            var bar = PageScaffold.InfoBar(L("Un mot de passe est stocké en clair dans le registre (valeur Winlogon « DefaultPassword »). Désactiver l'ouverture automatique le supprime."),
+            var bar = PageScaffold.InfoBar(L("A password is stored in plain text in the registry (Winlogon “DefaultPassword” value). Turning off automatic sign-in deletes it."),
                 "", "Pp.InfoBar.Warning");
             bar.Margin = new Thickness(0, 8, 0, 0);
             stack.Children.Add(bar);
@@ -232,24 +232,24 @@ public sealed partial class KioskPage : UserControl, INavigationAware
         stack.Children.Add(_detected);
 
         var actions = new WrapPanel { Margin = new Thickness(0, 14, 0, 0) };
-        var remove = Button(L("Désactiver le mode kiosque"), "", "Pp.DangerButton", async (b, _) => await RemoveAsync((Button)b));
+        var remove = Button(L("Turn off kiosk mode"), "", "Pp.DangerButton", async (b, _) => await RemoveAsync((Button)b));
         remove.IsEnabled = s is { IsConfigured: true } || al.Enabled || _detectedAssigned;
         remove.Margin = new Thickness(0, 0, 8, 6);
         actions.Children.Add(remove);
         if (al.Enabled)
         {
-            var clear = Button(L("Désactiver l'ouverture automatique"), "", "Pp.Button", async (b, _) => await ClearAutologonAsync((Button)b));
+            var clear = Button(LC("short form", "Turn off automatic sign-in"), "", "Pp.Button", async (b, _) => await ClearAutologonAsync((Button)b));
             clear.Margin = new Thickness(0, 0, 8, 6);
             actions.Children.Add(clear);
         }
-        var check = Button(L("Vérifier dans Windows"), "", "Pp.Button", async (b, _) => await DetectAsync((Button)b));
-        check.ToolTip = L("Lit la configuration d'accès attribué de Windows (nécessite les droits administrateur).");
+        var check = Button(L("Check in Windows"), "", "Pp.Button", async (b, _) => await DetectAsync((Button)b));
+        check.ToolTip = L("Reads the Windows assigned access configuration (requires administrator rights).");
         check.Margin = new Thickness(0, 0, 8, 6);
         actions.Children.Add(check);
-        var settings = Button(L("Kiosque dans les Paramètres"), "", "Pp.SubtleButton", (_, _) => OpenAssignedAccessSettings());
+        var settings = Button(L("Kiosk in Settings"), "", "Pp.SubtleButton", (_, _) => OpenAssignedAccessSettings());
         settings.Margin = new Thickness(0, 0, 8, 6);
         actions.Children.Add(settings);
-        var refresh = IconButton("", L("Actualiser"), async (_, _) => await RefreshStatusAsync());
+        var refresh = IconButton("", L("Refresh"), async (_, _) => await RefreshStatusAsync());
         refresh.Margin = new Thickness(0, 0, 0, 6);
         actions.Children.Add(refresh);
         stack.Children.Add(actions);
@@ -259,7 +259,7 @@ public sealed partial class KioskPage : UserControl, INavigationAware
 
     private static string TargetLabel(KioskState s) => s.Mode switch
     {
-        KioskModes.Edge => L("Microsoft Edge sur {0}", s.Target),
+        KioskModes.Edge => L("Microsoft Edge on {0}", s.Target),
         KioskModes.Win32 => Path.GetFileName(s.Target ?? "") is { Length: > 0 } f ? $"{f} ({s.Target})" : s.Target ?? "",
         _ => s.Target ?? "",
     };
@@ -270,7 +270,7 @@ public sealed partial class KioskPage : UserControl, INavigationAware
     {
         button.IsEnabled = false;
         _detected.Children.Clear();
-        _detected.Children.Add(State("", L("Lecture de la configuration de Windows…"), busy: true));
+        _detected.Children.Add(State("", L("Reading the Windows configuration…"), busy: true));
         try
         {
             var outcome = await AppHost.Engine.RunActionAsync("kiosk.status");
@@ -285,10 +285,10 @@ public sealed partial class KioskPage : UserControl, INavigationAware
             _detectedAssigned = count > 0;
             var box = new StackPanel { Margin = new Thickness(0, 10, 0, 0) };
             if (count == 0)
-                box.Children.Add(PageScaffold.InfoBar(L("Windows : aucun accès attribué à application unique n'est configuré. Une configuration XML (multi-applications, MDM) n'est pas détectée par cette vérification."), ""));
+                box.Children.Add(PageScaffold.InfoBar(L("Windows: no single-app assigned access is configured. An XML configuration (multi-app, MDM) isn't detected by this check."), ""));
             for (var i = 0; i < count; i++)
                 box.Children.Add(PageScaffold.InfoBar(
-                    L("Windows : accès attribué actif pour « {0} » avec l'application {1} ({2}).", data.GetValueOrDefault($"aa{i}.user"), data.GetValueOrDefault($"aa{i}.app"), data.GetValueOrDefault($"aa{i}.aumid")),
+                    L("Windows: assigned access active for “{0}” with the app {1} ({2}).", data.GetValueOrDefault($"aa{i}.user"), data.GetValueOrDefault($"aa{i}.app"), data.GetValueOrDefault($"aa{i}.aumid")),
                     "", "Pp.InfoBar.Success"));
             _detected.Children.Add(box);
             if (_detectedAssigned) RenderStatus();
@@ -302,21 +302,21 @@ public sealed partial class KioskPage : UserControl, INavigationAware
         var al = _autologon;
         var content = new StackPanel();
         content.Children.Add(Text(s is { IsConfigured: true }
-            ? L("Le compte « {0} » retrouvera son Bureau Windows à sa prochaine connexion et les restrictions posées par Timonier seront retirées (les valeurs d'origine sont restaurées).", s.User)
-            : L("Timonier n'a pas de borne enregistrée : seules les options cochées ci-dessous seront appliquées.")));
+            ? L("The account “{0}” will get its Windows desktop back the next time it signs in, and the restrictions set by Timonier will be removed (the original values are restored).", s.User)
+            : L("Timonier has no saved kiosk: only the options checked below will be applied.")));
         var aa = new CheckBox
         {
-            Content = L("Supprimer aussi l'accès attribué (application unique) configuré dans Windows"),
+            Content = L("Also remove the assigned access (single app) configured in Windows"),
             IsChecked = s?.AssignedAccess == true || _detectedAssigned, Margin = new Thickness(0, 14, 0, 0),
         };
         var auto = new CheckBox
         {
-            Content = L("Désactiver l'ouverture de session automatique et effacer le mot de passe mémorisé"),
+            Content = L("Turn off automatic sign-in and erase the saved password"),
             IsChecked = al?.Enabled == true, Margin = new Thickness(0, 8, 0, 0),
         };
         content.Children.Add(aa);
         content.Children.Add(auto);
-        if (!await AppHost.Dialogs.ShowAsync(L("Désactiver le mode kiosque"), content, L("Désactiver"), L("Annuler"), danger: true)) return;
+        if (!await AppHost.Dialogs.ShowAsync(L("Turn off kiosk mode"), content, L("Disable"), L("Undo"), danger: true)) return;
 
         button.IsEnabled = false;
         try
@@ -362,6 +362,6 @@ public sealed partial class KioskPage : UserControl, INavigationAware
     private static void OpenAssignedAccessSettings()
     {
         try { ProcessRunner.OpenSettingsUri("ms-settings:assignedaccess"); }
-        catch (Exception ex) { AppHost.Toasts.Show(L("Impossible d'ouvrir les Paramètres : {0}", ex.Message), ToastKind.Error); }
+        catch (Exception ex) { AppHost.Toasts.Show(L("Couldn't open Settings: {0}", ex.Message), ToastKind.Error); }
     }
 }

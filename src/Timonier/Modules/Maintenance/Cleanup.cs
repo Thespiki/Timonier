@@ -46,27 +46,27 @@ internal static class CleanupCatalog
 
     public static readonly IReadOnlyList<CleanupCategory> All =
     [
-        new("usertemp", L("Fichiers temporaires de votre compte"),
-            L("Dossier %TEMP% : fichiers laissés par les installations et les applications, non modifiés depuis plus de 24 heures."),
+        new("usertemp", L("Your account's temporary files"),
+            L("%TEMP% folder: files left behind by installers and apps, not modified for more than 24 hours."),
             "\uE8B7", Admin: false, CleanupKind.Files)
         {
             Targets = () => UserTempDir() is { } temp ? [new CleanupTarget(temp, "*", true, Day)] : [],
         },
-        new("recyclebin", L("Corbeille"),
-            L("Fichiers supprimés de tous les lecteurs. Une fois vidée, la corbeille ne peut plus être restaurée."),
+        new("recyclebin", L("Recycle Bin"),
+            L("Deleted files from all drives. Once emptied, the Recycle Bin can't be restored."),
             "\uE74D", Admin: false, CleanupKind.RecycleBin)
         {
             DefaultSelected = false,
-            Note = L("Suppression définitive : vérifiez qu'elle ne contient rien d'important."),
+            Note = L("Permanent deletion: make sure it doesn't contain anything important."),
         },
-        new("thumbcache", L("Cache des miniatures"),
-            L("Aperçus d'images et de vidéos de l'Explorateur (thumbcache_*.db). Windows les recrée au besoin ; les fichiers utilisés par l'Explorateur sont ignorés."),
+        new("thumbcache", L("Thumbnail cache"),
+            L("Image and video previews in File Explorer (thumbcache_*.db). Windows recreates them as needed; files in use by File Explorer are skipped."),
             "\uE91B", Admin: false, CleanupKind.Files)
         {
             Targets = () => [new CleanupTarget(ExplorerCacheDir, "thumbcache_*.db", false, TimeSpan.Zero)],
         },
-        new("userdumps", L("Rapports de plantage de vos applications"),
-            L("Vidages mémoire (%LOCALAPPDATA%\\CrashDumps) et rapports d'erreurs Windows de votre compte, déjà envoyés ou archivés."),
+        new("userdumps", L("Your apps' crash reports"),
+            L("Memory dumps (%LOCALAPPDATA%\\CrashDumps) and Windows error reports for your account, already sent or archived."),
             "\uE7BA", Admin: false, CleanupKind.Files)
         {
             Targets = () =>
@@ -76,24 +76,24 @@ internal static class CleanupCatalog
                 new CleanupTarget(Path.Combine(LocalAppData, @"Microsoft\Windows\WER\ReportQueue"), "*", true, TimeSpan.Zero),
             ],
         },
-        new("wintemp", L("Fichiers temporaires de Windows"),
-            L("Dossier C:\\Windows\\Temp : fichiers de plus de 24 heures laissés par les installations et les services."),
+        new("wintemp", L("Windows temporary files"),
+            L("C:\\Windows\\Temp folder: files older than 24 hours left behind by installers and services."),
             "\uE8B7", Admin: true, CleanupKind.Files)
         {
             Targets = () => [new CleanupTarget(Path.Combine(Windows, "Temp"), "*", true, Day)],
         },
-        new("wucache", L("Téléchargements de Windows Update"),
-            L("Fichiers d'installation déjà téléchargés (SoftwareDistribution\\Download). Windows les télécharge à nouveau si nécessaire ; les fichiers en cours d'utilisation sont ignorés."),
+        new("wucache", L("Windows Update downloads"),
+            L("Already downloaded installation files (SoftwareDistribution\\Download). Windows downloads them again if needed; files in use are skipped."),
             "\uE896", Admin: true, CleanupKind.Files)
         {
             Targets = () => [new CleanupTarget(Path.Combine(Windows, @"SoftwareDistribution\Download"), "*", true, TimeSpan.Zero)],
-            Note = L("Ignoré tant qu'un redémarrage de mise à jour est en attente."),
+            Note = L("Skipped while an update restart is pending."),
         },
-        new("docache", L("Cache de l'Optimisation de la distribution"),
-            L("Copies de mises à jour conservées pour les partager avec d'autres PC. Vidé avec la commande officielle Delete-DeliveryOptimizationCache."),
+        new("docache", L("Delivery Optimization cache"),
+            L("Copies of updates kept to share with other PCs. Cleared with the official Delete-DeliveryOptimizationCache command."),
             "\uE895", Admin: true, CleanupKind.DeliveryOptimization),
-        new("sysdumps", L("Vidages mémoire du système"),
-            L("Fichiers créés après un écran bleu (C:\\Windows\\Minidump et MEMORY.DMP). Utiles uniquement pour diagnostiquer un plantage : gardez-les si vous enquêtez sur un écran bleu."),
+        new("sysdumps", L("System memory dumps"),
+            L("Files created after a blue screen (C:\\Windows\\Minidump and MEMORY.DMP). Only useful to diagnose a crash: keep them if you're investigating a blue screen."),
             "\uE7BA", Admin: true, CleanupKind.Files)
         {
             Targets = () =>
@@ -103,8 +103,8 @@ internal static class CleanupCatalog
             ],
             DefaultSelected = false,
         },
-        new("wer", L("Rapports d'erreurs Windows (système)"),
-            L("Rapports de problèmes archivés ou en attente (ProgramData\\Microsoft\\Windows\\WER). L'historique de fiabilité sera moins détaillé."),
+        new("wer", L("Windows Error Reporting (system)"),
+            L("Archived or queued problem reports (ProgramData\\Microsoft\\Windows\\WER). Reliability history will be less detailed."),
             "\uE9D9", Admin: true, CleanupKind.Files)
         {
             Targets = () =>
@@ -113,8 +113,8 @@ internal static class CleanupCatalog
                 new CleanupTarget(Path.Combine(ProgramData, @"Microsoft\Windows\WER\ReportQueue"), "*", true, TimeSpan.Zero),
             ],
         },
-        new("oldlogs", L("Anciens journaux de Windows"),
-            L("Archives de journaux de maintenance (CBS) et traces de Windows Update de plus de 7 jours. Les journaux en cours ne sont jamais touchés."),
+        new("oldlogs", L("Old Windows logs"),
+            L("Servicing log archives (CBS) and Windows Update traces older than 7 days. Current logs are never touched."),
             "\uE81C", Admin: true, CleanupKind.Files)
         {
             Targets = () =>
@@ -191,12 +191,12 @@ internal static class CleanupEngine
         {
             var before = RecycleBin.Query();
             if (before is { Items: 0 }) return stats; // déjà vide : SHEmptyRecycleBin signalerait une erreur
-            if (!RecycleBin.Empty()) { stats.Note = L("La corbeille n'a pas pu être vidée."); return stats; }
+            if (!RecycleBin.Empty()) { stats.Note = L("The Recycle Bin couldn't be emptied."); return stats; }
             stats.Bytes = before?.Bytes ?? 0;
             stats.Files = before?.Items ?? 0;
             return stats;
         }
-        if (category.Kind != CleanupKind.Files) throw new InvalidOperationException(L("Catégorie non prise en charge ici."));
+        if (category.Kind != CleanupKind.Files) throw new InvalidOperationException(L("Category not supported here."));
 
         var clock = Stopwatch.StartNew();
         foreach (var target in category.Targets())
@@ -256,7 +256,7 @@ internal static class CleanupEngine
             root = Path.GetFullPath(target.Root).TrimEnd('\\');
             var rootInfo = new DirectoryInfo(root);
             if (!rootInfo.Exists) return;
-            if ((rootInfo.Attributes & FileAttributes.ReparsePoint) != 0) { stats.Note = L("Dossier ignoré (lien)."); return; }
+            if ((rootInfo.Attributes & FileAttributes.ReparsePoint) != 0) { stats.Note = L("Folder skipped (link)."); return; }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException) { stats.AccessDenied = true; return; }
 

@@ -104,7 +104,7 @@ public static partial class BatteryService
             string? S(string n) => b.Element(ns + n)?.Value is { Length: > 0 } v ? v.Trim() : null;
             long Number(string n) => long.TryParse(S(n), out var v) ? v : 0;
             var cycles = int.TryParse(S("CycleCount"), out var c) ? c : (int?)null;
-            list.Add(new BatteryPack(L("Batterie {0}", i), S("Manufacturer"), Chemistry(S("Chemistry")), Number("DesignCapacity"), Number("FullChargeCapacity"), cycles));
+            list.Add(new BatteryPack(L("{0} battery", i), S("Manufacturer"), Chemistry(S("Chemistry")), Number("DesignCapacity"), Number("FullChargeCapacity"), cycles));
         }
         return list;
     }
@@ -113,9 +113,9 @@ public static partial class BatteryService
     {
         null or "" => null,
         "LION" or "LI-I" or "LI" => "Lithium-ion",
-        "LIP" or "LIPO" => L("Lithium-polymère"),
-        "NIMH" => L("Nickel-métal-hydrure"),
-        "PBAC" => L("Plomb-acide"),
+        "LIP" or "LIPO" => L("Lithium polymer"),
+        "NIMH" => L("Nickel-metal hydride"),
+        "PBAC" => L("Lead-acid"),
         _ => null, // valeur non standard (certains micrologiciels écrivent n'importe quoi) : on ne l'affiche pas
     };
 
@@ -129,15 +129,15 @@ public static partial class BatteryService
             File.Delete(file);
             var r = await ProcessRunner.RunAsync(SystemTool.PowerCfg, ["/batteryreport", "/output", file],
                 new RunOptions { Timeout = TimeSpan.FromSeconds(60) }).ConfigureAwait(true);
-            if (!r.Success || !File.Exists(file)) return (false, L("Windows n'a pas pu générer le rapport de batterie."));
+            if (!r.Success || !File.Exists(file)) return (false, L("Windows couldn't generate the battery report."));
             // Fichier créé par Timonier dans son propre cache : ouverture par l'application associée aux .html.
             Process.Start(new ProcessStartInfo(file) { UseShellExecute = true })?.Dispose();
-            return (true, L("Rapport de batterie ouvert dans le navigateur."));
+            return (true, L("Battery report opened in the browser."));
         }
         catch (Exception ex)
         {
             Log.Warn("Devices", "rapport HTML de batterie : " + ex.Message);
-            return (false, L("Impossible d'ouvrir le rapport de batterie."));
+            return (false, L("Couldn't open the battery report."));
         }
     }
 
@@ -146,16 +146,16 @@ public static partial class BatteryService
     public static HealthResult Health()
     {
         var caps = Capacities();
-        if (caps is null) return new HealthResult(HealthStatus.Good, L("Pas de batterie : rien à surveiller."));
+        if (caps is null) return new HealthResult(HealthStatus.Good, L("No battery: nothing to monitor."));
         var (design, full) = caps.Value;
-        if (design <= 0 || full <= 0) return new HealthResult(HealthStatus.Unknown, L("Capacité de la batterie non communiquée par le micrologiciel."));
+        if (design <= 0 || full <= 0) return new HealthResult(HealthStatus.Unknown, L("Battery capacity not reported by the firmware."));
         var wear = Math.Clamp(1 - (double)full / design, 0, 1);
-        var detail = L("Capacité actuelle {0:0.#} Wh sur {1:0.#} Wh d'origine.", full / 1000.0, design / 1000.0);
+        var detail = L("Current capacity {0:0.#} Wh out of {1:0.#} Wh originally.", full / 1000.0, design / 1000.0);
         return wear switch
         {
-            > 0.40 => new HealthResult(HealthStatus.Warning, L("Batterie usée à {0} : autonomie nettement réduite.", Format.Percent(wear)), L("Capacité actuelle {0:0.#} Wh sur {1:0.#} Wh d'origine. Un remplacement peut être envisagé.", full / 1000.0, design / 1000.0)),
-            > 0.20 => new HealthResult(HealthStatus.Info, L("Batterie usée à {0}.", Format.Percent(wear)), detail),
-            _ => new HealthResult(HealthStatus.Good, L("Batterie en bon état (usure {0}).", Format.Percent(wear)), detail),
+            > 0.40 => new HealthResult(HealthStatus.Warning, L("Battery worn by {0}: battery life significantly reduced.", Format.Percent(wear)), L("Current capacity {0:0.#} Wh out of {1:0.#} Wh originally. You may want to consider replacing it.", full / 1000.0, design / 1000.0)),
+            > 0.20 => new HealthResult(HealthStatus.Info, L("Battery worn by {0}.", Format.Percent(wear)), detail),
+            _ => new HealthResult(HealthStatus.Good, L("Battery in good condition ({0} wear).", Format.Percent(wear)), detail),
         };
     }
 

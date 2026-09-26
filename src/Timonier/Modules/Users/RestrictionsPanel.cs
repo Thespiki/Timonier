@@ -41,21 +41,21 @@ internal sealed class RestrictionsPanel : StackPanel
 
     public RestrictionsPanel()
     {
-        Children.Add(SectionHeader(L("Restrictions du compte"), out var heading));
+        Children.Add(SectionHeader(L("Account restrictions"), out var heading));
         Heading = heading;
         Children.Add(_empty);
 
         var content = new StackPanel();
         var top = new WrapPanel();
-        var who = Caption(L("Compte"));
+        var who = Caption(L("Account"));
         who.VerticalAlignment = VerticalAlignment.Center;
         who.Margin = new Thickness(0, 0, 10, 0);
         top.Children.Add(who);
         _account.SelectionChanged += async (_, _) => { if (!_suppress) await OnAccountChangedAsync(); };
-        System.Windows.Automation.AutomationProperties.SetName(_account, L("Compte à restreindre"));
+        System.Windows.Automation.AutomationProperties.SetName(_account, L("Account to restrict"));
         top.Children.Add(_account);
-        _read = MakeButton(L("Lire l'état actuel"), GlyphAdmin, "Pp.Button", async (_, _) => await ReadAsync());
-        _read.ToolTip = L("Lit les restrictions dans le profil de ce compte (droits administrateur requis)");
+        _read = MakeButton(L("Read current state"), GlyphAdmin, "Pp.Button", async (_, _) => await ReadAsync());
+        _read.ToolTip = L("Reads the restrictions from this account's profile (administrator rights required)");
         top.Children.Add(_read);
         top.Children.Add(_busyBar);
         _status.VerticalAlignment = VerticalAlignment.Center;
@@ -69,8 +69,8 @@ internal sealed class RestrictionsPanel : StackPanel
         BuildRows();
         content.Children.Add(_rows);
 
-        _save = MakeButton(L("Enregistrer les restrictions"), GlyphAdmin, "Pp.AccentButton", async (_, _) => await SaveAsync());
-        _revert = MakeButton(L("Rétablir"), null, "Pp.SubtleButton", (_, _) => ApplyLoaded());
+        _save = MakeButton(L("Save restrictions"), GlyphAdmin, "Pp.AccentButton", async (_, _) => await SaveAsync());
+        _revert = MakeButton(L("Restore"), null, "Pp.SubtleButton", (_, _) => ApplyLoaded());
         _revert.Margin = new Thickness(8, 0, 0, 0);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 0) };
         actions.Children.Add(_save);
@@ -80,7 +80,7 @@ internal sealed class RestrictionsPanel : StackPanel
         _card = Card(content, new Thickness(18, 14, 18, 14));
         Children.Add(_card);
         Children.Add(PageScaffold.InfoBar(
-            L("Ces restrictions sont des stratégies Windows appliquées à l'ouverture de session du compte. Elles complètent un compte standard (qui ne peut déjà ni installer de logiciels ni modifier le système) mais ne remplacent pas une supervision : un utilisateur averti peut contourner la liste d'applications interdites. Le compte ne peut pas les retirer lui-même."),
+            L("These restrictions are Windows policies applied when the account signs in. They complement a standard account (which already can't install software or change the system) but don't replace supervision: a savvy user can get around the list of blocked apps. The account can't remove them itself."),
             GlyphInfo));
         SetEditable(false);
     }
@@ -101,9 +101,9 @@ internal sealed class RestrictionsPanel : StackPanel
             }
             if (d.Key == "DisableCMD")
             {
-                _cmd.Items.Add(new ComboBoxItem { Content = L("Autorisée"), Tag = "0" });
-                _cmd.Items.Add(new ComboBoxItem { Content = L("Bloquée (scripts .bat autorisés)"), Tag = "2" });
-                _cmd.Items.Add(new ComboBoxItem { Content = L("Bloquée, scripts compris"), Tag = "1" });
+                _cmd.Items.Add(new ComboBoxItem { Content = LC("feminine", "Allowed"), Tag = "0" });
+                _cmd.Items.Add(new ComboBoxItem { Content = L("Blocked (.bat scripts allowed)"), Tag = "2" });
+                _cmd.Items.Add(new ComboBoxItem { Content = L("Blocked, including scripts"), Tag = "1" });
                 _cmd.SelectedIndex = 0;
                 _cmd.SelectionChanged += (_, _) => UpdateDirty();
                 System.Windows.Automation.AutomationProperties.SetName(_cmd, d.Title);
@@ -114,11 +114,11 @@ internal sealed class RestrictionsPanel : StackPanel
             System.Windows.Automation.AutomationProperties.SetName(toggle, d.Title);
             toggle.Checked += (_, _) => UpdateDirty();
             toggle.Unchecked += (_, _) => UpdateDirty();
-            toggle.ToolTip = L("Activé = restriction appliquée (fonction bloquée pour ce compte)");
+            toggle.ToolTip = L("On = restriction applied (feature blocked for this account)");
             _toggles[d.Key] = toggle;
             var note = d.Note;
             if (d.EnterpriseOrEducationOnly && !SupportsStorePolicy(profile))
-                note = L("{0} Votre édition ({1}) l'ignore.", d.Note, profile.EditionLabel);
+                note = L("{0} Your edition ({1}) ignores it.", d.Note, profile.EditionLabel);
             _rows.Children.Add(SettingRow(d.Glyph, d.Title, d.Description, toggle, note));
         }
     }
@@ -130,14 +130,14 @@ internal sealed class RestrictionsPanel : StackPanel
     {
         var s = new StackPanel { Margin = new Thickness(0, 0, 0, 6) };
         var input = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(32, 2, 0, 0) };
-        var prompt = Caption(L("Programme (ex. jeu.exe)"));
+        var prompt = Caption(L("Program (e.g. game.exe)"));
         prompt.VerticalAlignment = VerticalAlignment.Center;
         prompt.Margin = new Thickness(0, 0, 10, 0);
         input.Children.Add(prompt);
         _appInput.KeyDown += (_, e) => { if (e.Key == Key.Enter) { AddApp(_appInput.Text); e.Handled = true; } };
-        System.Windows.Automation.AutomationProperties.SetName(_appInput, L("Nom du programme à interdire"));
+        System.Windows.Automation.AutomationProperties.SetName(_appInput, L("Name of the program to block"));
         input.Children.Add(_appInput);
-        var add = MakeButton(L("Ajouter"), GlyphAdd, "Pp.Button", (_, _) => AddApp(_appInput.Text));
+        var add = MakeButton(L("Add"), GlyphAdd, "Pp.Button", (_, _) => AddApp(_appInput.Text));
         add.Margin = new Thickness(8, 0, 0, 0);
         input.Children.Add(add);
         _appError.VerticalAlignment = VerticalAlignment.Center;
@@ -147,14 +147,14 @@ internal sealed class RestrictionsPanel : StackPanel
         s.Children.Add(input);
 
         var suggest = new WrapPanel { Margin = new Thickness(24, 6, 0, 0) };
-        var label = Caption(L("Suggestions :"));
+        var label = Caption(L("Suggestions:"));
         label.VerticalAlignment = VerticalAlignment.Center;
         label.Margin = new Thickness(8, 0, 4, 0);
         suggest.Children.Add(label);
         foreach (var name in Suggestions)
         {
             var b = MakeButton(name, null, "Pp.SubtleButton", (_, _) => AddApp(name));
-            b.ToolTip = L("Ajouter {0}", name);
+            b.ToolTip = L("Add {0}", name);
             suggest.Children.Add(b);
         }
         s.Children.Add(suggest);
@@ -167,16 +167,16 @@ internal sealed class RestrictionsPanel : StackPanel
         _apps.Children.Clear();
         if (_appList.Count == 0)
         {
-            var none = Caption(L("Aucun programme interdit."));
+            var none = Caption(L("No blocked programs."));
             none.Margin = new Thickness(0, 4, 0, 0);
             _apps.Children.Add(none);
             return;
         }
         foreach (var app in _appList)
         {
-            var remove = new Button { ToolTip = L("Retirer {0}", app), Padding = new Thickness(4, 0, 2, 0), Margin = new Thickness(4, 0, 0, 0) }.Styled("Pp.SubtleButton");
+            var remove = new Button { ToolTip = L("Remove {0}", app), Padding = new Thickness(4, 0, 2, 0), Margin = new Thickness(4, 0, 0, 0) }.Styled("Pp.SubtleButton");
             remove.Content = Icon("", 10);
-            System.Windows.Automation.AutomationProperties.SetName(remove, L("Retirer {0}", app));
+            System.Windows.Automation.AutomationProperties.SetName(remove, L("Remove {0}", app));
             var captured = app;
             remove.Click += (_, _) => { _appList.Remove(captured); RenderApps(); UpdateDirty(); };
             var chip = new StackPanel { Orientation = Orientation.Horizontal };
@@ -193,8 +193,8 @@ internal sealed class RestrictionsPanel : StackPanel
     {
         var name = raw.Trim().Trim('"');
         if (name.Length > 0 && !name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) name += ".exe";
-        if (!UserRestrictions.IsValidExeName(name)) { _appError.Text = L("Nom invalide : indiquez seulement le fichier, par exemple jeu.exe."); return; }
-        if (_appList.Count >= UserRestrictions.MaxBlockedApps) { _appError.Text = LP(UserRestrictions.MaxBlockedApps, "{0} programme au maximum.", "{0} programmes au maximum."); return; }
+        if (!UserRestrictions.IsValidExeName(name)) { _appError.Text = L("Invalid name: enter only the file, for example game.exe."); return; }
+        if (_appList.Count >= UserRestrictions.MaxBlockedApps) { _appError.Text = LP(UserRestrictions.MaxBlockedApps, "{0} program maximum.", "{0} programs maximum."); return; }
         _appError.Text = "";
         if (!_appList.Contains(name, StringComparer.OrdinalIgnoreCase)) _appList.Add(name);
         _appInput.Text = "";
@@ -218,8 +218,8 @@ internal sealed class RestrictionsPanel : StackPanel
 
         if (accounts is not null && _eligible.Count == 0)
         {
-            _empty.Content = EmptyState(GlyphBlock, L("Aucun compte standard à restreindre"),
-                L("Les restrictions s'appliquent à un compte standard autre que le vôtre. Un administrateur pourrait les retirer lui-même."));
+            _empty.Content = EmptyState(GlyphBlock, L("No standard account to restrict"),
+                L("Restrictions apply to a standard account other than yours. An administrator could remove them themselves."));
             _card.Visibility = Visibility.Collapsed;
             return;
         }
@@ -251,14 +251,14 @@ internal sealed class RestrictionsPanel : StackPanel
         }
         _status.Text = "";
         _banner.Content = PageScaffold.InfoBar(
-            L("Les restrictions sont stockées dans le profil de ce compte, que seul un administrateur peut lire. Cliquez sur « Lire l'état actuel » pour les afficher et les modifier."), GlyphAdmin);
+            L("Restrictions are stored in this account's profile, which only an administrator can read. Click “Read current state” to show and change them."), GlyphAdmin);
     }
 
     private async Task ReadAsync()
     {
         if (Selected is not { } a || _busy) return;
         SetBusy(true);
-        _status.Text = L("Lecture du profil…");
+        _status.Text = L("Reading profile…");
         try
         {
             var outcome = await UsersUi.RunAsync("users.restrictions.get", new() { ["sid"] = a.Sid }, toast: false);
@@ -294,8 +294,8 @@ internal sealed class RestrictionsPanel : StackPanel
         var active = UserRestrictions.All.Count(d => d.Key != UserRestrictions.DisallowRunKey && data.GetValueOrDefault(d.Key, "0") != "0");
         var apps = UserRestrictions.ParseAppListSafe(data.GetValueOrDefault("DisallowRunList"));
         var count = active + (apps.Count > 0 ? 1 : 0);
-        _status.Text = (count == 0 ? L("Aucune restriction active") : LP(count, "{0} restriction active", "{0} restrictions actives"))
-                       + (data.GetValueOrDefault("profile") == "loaded" ? " · " + L("session ouverte") : "");
+        _status.Text = (count == 0 ? L("No active restrictions") : LP(count, "{0} active restriction", "{0} active restrictions"))
+                       + (data.GetValueOrDefault("profile") == "loaded" ? " · " + L("signed in") : "");
         ApplyLoaded();
         SetEditable(true);
     }
@@ -356,7 +356,7 @@ internal sealed class RestrictionsPanel : StackPanel
         var p = Current();
         p["sid"] = a.Sid;
         SetBusy(true);
-        _status.Text = L("Enregistrement…");
+        _status.Text = L("Saving…");
         try
         {
             var outcome = await UsersUi.RunAsync("users.restrictions.set", p);

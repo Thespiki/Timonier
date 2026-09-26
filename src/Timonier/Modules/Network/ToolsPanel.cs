@@ -14,34 +14,34 @@ internal sealed class ToolsPanel : UserControl
         Focusable = false;
         var root = new StackPanel();
 
-        root.Children.Add(NetUi.Text(L("Du plus doux au plus radical : essayez les outils dans l'ordre si un site ou la connexion ne répond plus."),
+        root.Children.Add(NetUi.Text(L("From gentlest to most drastic: try the tools in order if a site or the connection stops responding."),
             "Pp.Caption", new Thickness(2, 0, 0, 4)));
-        root.Children.Add(NetUi.Section(L("Dépannage")));
+        root.Children.Add(NetUi.Section(L("Troubleshooting")));
         var repair = new UniformGrid { Columns = 3, Margin = new Thickness(0, 0, -8, 0) };
-        repair.Children.Add(ToolCard("", L("Vider le cache DNS"),
-            L("Oublie les adresses mémorisées des sites. Utile quand un site a changé de serveur ou après une modification des DNS ou du fichier hosts."),
-            L("Vider"), false, "Pp.Button", FlushAsync));
-        repair.Children.Add(ToolCard("", L("Renouveler l'adresse IP"),
-            L("Rend l'adresse IP puis en redemande une à la box (DHCP). La connexion est coupée quelques secondes. Sans effet sur une adresse fixe."),
-            L("Renouveler"), true, "Pp.Button", RenewAsync));
-        repair.Children.Add(ToolCard("", L("Réinitialiser la pile réseau"),
-            L("Dernier recours en cas de corruption (Winsock, TCP/IP) : efface les réglages IP et DNS manuels. Redémarrage requis."),
-            L("Réinitialiser…"), true, "Pp.DangerButton", ResetAsync));
+        repair.Children.Add(ToolCard("", L("Flush DNS cache"),
+            L("Forgets saved site addresses. Useful when a site has moved to a different server, or after a change to DNS or the hosts file."),
+            L("Clear"), false, "Pp.Button", FlushAsync));
+        repair.Children.Add(ToolCard("", L("Renew IP address"),
+            L("Releases the IP address, then requests a new one from the router (DHCP). The connection drops for a few seconds. No effect on a static address."),
+            L("Renew"), true, "Pp.Button", RenewAsync));
+        repair.Children.Add(ToolCard("", L("Reset network stack"),
+            L("Last resort for corruption (Winsock, TCP/IP): erases manual IP and DNS settings. Restart required."),
+            L("Reset…"), true, "Pp.DangerButton", ResetAsync));
         root.Children.Add(repair);
 
-        root.Children.Add(NetUi.Section(L("Paramètres de Windows")));
+        root.Children.Add(NetUi.Section(LC("section header", "Windows Settings")));
         var links = new UniformGrid { Columns = 3, Margin = new Thickness(0, 0, -8, 0) };
-        links.Children.Add(LinkCard("", L("État du réseau"), L("Vue d'ensemble, utilisation des données et Réinitialisation du réseau de Windows."),
+        links.Children.Add(LinkCard("", L("Network status"), L("Overview, data usage and Windows Network reset."),
             () => ConnectionsPanel.OpenSettings("ms-settings:network-status")));
-        links.Children.Add(LinkCard("", "Wi-Fi", L("Réseaux disponibles, adresses matérielles aléatoires, réseaux connus."),
+        links.Children.Add(LinkCard("", "Wi-Fi", L("Available networks, random hardware addresses, known networks."),
             () => ConnectionsPanel.OpenSettings("ms-settings:network-wifi")));
-        links.Children.Add(LinkCard("", L("Connexions réseau"), L("Panneau classique des cartes (ncpa.cpl) : propriétés IPv4/IPv6, désactivation d'une carte."),
+        links.Children.Add(LinkCard("", L("Network Connections"), L("Classic adapter panel (ncpa.cpl): IPv4/IPv6 properties, disabling an adapter."),
             OpenNcpa));
-        links.Children.Add(LinkCard("", "Proxy", L("Adresse du proxy manuel, script de configuration automatique."),
+        links.Children.Add(LinkCard("", "Proxy", L("Manual proxy address, automatic setup script."),
             () => ConnectionsPanel.OpenSettings("ms-settings:network-proxy")));
-        links.Children.Add(LinkCard("", "VPN", L("Ajouter ou gérer les connexions VPN intégrées à Windows."),
+        links.Children.Add(LinkCard("", "VPN", L("Add or manage the VPN connections built into Windows."),
             () => ConnectionsPanel.OpenSettings("ms-settings:network-vpn")));
-        links.Children.Add(LinkCard("", L("Point d'accès sans fil mobile"), L("Partager la connexion de ce PC avec d'autres appareils."),
+        links.Children.Add(LinkCard("", L("Mobile hotspot"), L("Share this PC's connection with other devices."),
             () => ConnectionsPanel.OpenSettings("ms-settings:network-mobilehotspot")));
         root.Children.Add(links);
 
@@ -59,7 +59,7 @@ internal sealed class ToolsPanel : UserControl
         titleStack.Children.Add(new TextBlock { Text = title, FontWeight = FontWeights.SemiBold }.Styled("Pp.CardTitle"));
         if (admin)
         {
-            var adminRow = NetUi.Row(NetUi.Icon("", 11, "Pp.TextSecondary"), NetUi.Text(L("Administrateur"), "Pp.Caption", new Thickness(4, 0, 0, 0)));
+            var adminRow = NetUi.Row(NetUi.Icon("", 11, "Pp.TextSecondary"), NetUi.Text(L("Administrator"), "Pp.Caption", new Thickness(4, 0, 0, 0)));
             titleStack.Children.Add(adminRow);
         }
         head.Children.Add(titleStack);
@@ -105,17 +105,17 @@ internal sealed class ToolsPanel : UserControl
 
     private static async Task RenewAsync(Button b)
     {
-        if (!await AppHost.Dialogs.ConfirmAsync(L("Renouveler l'adresse IP"),
-                L("Toutes les cartes réseau vont rendre leur adresse IP puis en redemander une. La connexion (et un éventuel appel vidéo ou téléchargement) sera interrompue quelques secondes. Une autorisation administrateur est demandée."), L("Renouveler")))
+        if (!await AppHost.Dialogs.ConfirmAsync(L("Renew IP address"),
+                L("All network adapters will release their IP address and then request a new one. The connection (and any video call or download in progress) will be interrupted for a few seconds. Administrator permission is requested."), L("Renew")))
             return;
         await NetworkUiActions.RunAsync(NetworkActionIds.RenewIp, null, [b]);
     }
 
     internal static async Task ResetAsync(Button? b)
     {
-        if (!await AppHost.Dialogs.ConfirmAsync(L("Réinitialiser la pile réseau"),
-                L("À n'utiliser que si Internet ne fonctionne plus malgré les autres outils (erreurs Winsock, « aucune connexion » persistante).\n\n• Le catalogue Winsock et la configuration TCP/IP sont remis à zéro (netsh winsock reset, netsh int ip reset).\n• Les adresses IP et DNS saisies manuellement sont effacées : notez-les avant si vous en utilisez.\n• Certains VPN, pare-feu tiers ou logiciels de filtrage devront peut-être être réinstallés.\n• Les réseaux Wi-Fi enregistrés et leurs mots de passe sont conservés.\n\nUn redémarrage est nécessaire. Une seconde confirmation s'affichera dans la fenêtre administrateur de Timonier."),
-                L("Réinitialiser"), danger: true))
+        if (!await AppHost.Dialogs.ConfirmAsync(L("Reset network stack"),
+                L("Only use this if the internet still doesn't work after trying the other tools (Winsock errors, persistent “no connection”).\n\n• The Winsock catalog and TCP/IP configuration are reset (netsh winsock reset, netsh int ip reset).\n• Manually entered IP and DNS addresses are erased: write them down first if you use any.\n• Some VPNs, third-party firewalls or filtering software may need to be reinstalled.\n• Saved Wi-Fi networks and their passwords are kept.\n\nA restart is required. A second confirmation will appear in Timonier's administrator window."),
+                L("Reset"), danger: true))
             return;
         await NetworkUiActions.RunAsync(NetworkActionIds.Reset, null, b is null ? [] : [b]);
     }
@@ -126,7 +126,7 @@ internal sealed class ToolsPanel : UserControl
         catch (Exception ex)
         {
             Log.Warn("Network", "ncpa.cpl : " + ex.Message);
-            AppHost.Toasts.Show(L("Impossible d'ouvrir les connexions réseau."), ToastKind.Error);
+            AppHost.Toasts.Show(L("Couldn't open Network Connections."), ToastKind.Error);
         }
     }
 }

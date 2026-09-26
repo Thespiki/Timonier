@@ -16,7 +16,7 @@ public sealed partial class RenameComputerAction : IActionHandler
     public const string ActionId = "profiles.computer.rename";
 
     public string Id => ActionId;
-    public string Title => L("Renommer ce PC");
+    public string Title => L("Rename this PC");
     public bool RequiresAdmin => true;
     public bool RequiresElevatedConfirmation => true;
 
@@ -26,10 +26,10 @@ public sealed partial class RenameComputerAction : IActionHandler
     public static string? Check(string? name)
     {
         var v = (name ?? "").Trim();
-        if (v.Length == 0) return L("Indiquez un nom.");
-        if (!NameRx().IsMatch(v)) return L("De 1 à 15 caractères : lettres sans accent, chiffres et trait d'union uniquement.");
-        if (v.All(char.IsAsciiDigit)) return L("Le nom ne peut pas être composé uniquement de chiffres.");
-        if (v.StartsWith('-') || v.EndsWith('-')) return L("Le nom ne peut ni commencer ni se terminer par un trait d'union.");
+        if (v.Length == 0) return L("Enter a name.");
+        if (!NameRx().IsMatch(v)) return L("1 to 15 characters: letters without accents, numbers and hyphens only.");
+        if (v.All(char.IsAsciiDigit)) return L("The name can't consist of numbers only.");
+        if (v.StartsWith('-') || v.EndsWith('-')) return L("The name can't start or end with a hyphen.");
         return null;
     }
 
@@ -37,12 +37,12 @@ public sealed partial class RenameComputerAction : IActionHandler
     {
         var name = Validate.Required(p, "name", 15);
         // Strict côté broker : le nom transmis doit être exactement celui qui a été vérifié (aucun espace autour).
-        if (!NameRx().IsMatch(name)) throw new ValidationException(L("De 1 à 15 caractères : lettres sans accent, chiffres et trait d'union uniquement."));
+        if (!NameRx().IsMatch(name)) throw new ValidationException(L("1 to 15 characters: letters without accents, numbers and hyphens only."));
         if (Check(name) is { } error) throw new ValidationException(error);
     }
 
     public string DescribeForConfirmation(IReadOnlyDictionary<string, string> parameters) =>
-        L("Timonier va renommer cet ordinateur en « {0} ».\n\nLe nouveau nom sera pris en compte au prochain redémarrage. Les appareils qui accèdent à ce PC par son nom (partages, imprimantes partagées) devront peut-être être reconfigurés. Ce changement n'est pas inscrit au Journal : pour revenir en arrière, renommez de nouveau le PC.", Validate.Required(parameters, "name", 15));
+        L("Timonier will rename this computer to “{0}”.\n\nThe new name will take effect at the next restart. Devices that access this PC by its name (shares, shared printers) may need to be reconfigured. This change isn't recorded in History: to revert it, rename the PC again.", Validate.Required(parameters, "name", 15));
 
     public Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
     {
@@ -52,14 +52,14 @@ public sealed partial class RenameComputerAction : IActionHandler
         // la relation d'approbation serait rompue au redémarrage. On refuse et on oriente vers les outils du domaine.
         if (IsDomainMember())
             return Task.FromResult(ActionResult.Fail(
-                L("Ce PC est membre d'un domaine : il doit être renommé avec un compte du domaine (Paramètres > Système > Informations système), sinon il ne pourrait plus se connecter au domaine. Demandez à votre service informatique.")));
-        ctx.Progress?.Report(L("Changement du nom de l'ordinateur…"));
+                L("This PC is a member of a domain: it must be renamed with a domain account (Settings > System > About), otherwise it could no longer connect to the domain. Ask your IT department.")));
+        ctx.Progress?.Report(L("Changing the computer name…"));
         if (!SetComputerNameEx(ComputerNamePhysicalDnsHostname, name))
         {
             var error = new Win32Exception(Marshal.GetLastPInvokeError());
-            return Task.FromResult(ActionResult.Fail(L("Windows a refusé le nouveau nom : {0}", error.Message)));
+            return Task.FromResult(ActionResult.Fail(L("Windows rejected the new name: {0}", error.Message)));
         }
-        return Task.FromResult(ActionResult.Ok(L("Le PC s'appellera « {0} » après le redémarrage. Pour revenir en arrière, renommez-le de nouveau.", name))
+        return Task.FromResult(ActionResult.Ok(L("The PC will be named “{0}” after the restart. To revert, rename it again.", name))
             with { Effect = ApplyEffect.Reboot });
     }
 

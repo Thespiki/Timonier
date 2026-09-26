@@ -39,17 +39,17 @@ public sealed record CatalogApp(string WingetId, string Name, string Category, s
 public static class AppsCatalog
 {
     // Noms affichés des catégories (déclarés avant Categories et All : initialisation statique dans l'ordre du texte).
-    public static readonly string Browsers = L("Navigateurs");
-    public static readonly string Office = L("Bureautique et PDF");
-    public static readonly string Media = L("Multimédia");
-    public static readonly string Creation = L("Création");
-    public static readonly string Utilities = L("Utilitaires");
-    public static readonly string Security = L("Sécurité et mots de passe");
+    public static readonly string Browsers = L("Browsers");
+    public static readonly string Office = L("Office & PDF");
+    public static readonly string Media = L("Multimedia");
+    public static readonly string Creation = L("Creative");
+    public static readonly string Utilities = L("Utilities");
+    public static readonly string Security = L("Security & passwords");
     public static readonly string Communication = L("Communication");
-    public static readonly string Development = L("Développement");
-    public static readonly string Games = L("Jeux");
-    public static readonly string Vendor = L("Outils constructeur");
-    public static readonly string Drivers = L("Pilotes graphiques");
+    public static readonly string Development = L("Development");
+    public static readonly string Games = L("Games");
+    public static readonly string Vendor = LC("app category", "Manufacturer tools");
+    public static readonly string Drivers = L("Graphics drivers");
     public static readonly string Runtimes = L("Runtimes");
 
     /// <summary>Catégories dans l'ordre d'affichage, avec leur icône (Segoe Fluent Icons).</summary>
@@ -82,356 +82,356 @@ public static class AppsCatalog
     [
         // ------------------------------------------------------------------ Navigateurs
         A("Mozilla.Firefox.fr", "Firefox", Browsers,
-            L("Navigateur libre de la fondation Mozilla, attentif à la vie privée. Version française."), "essentials", "family")
+            L("Open-source browser from the Mozilla Foundation, focused on privacy. French-language version."), "essentials", "family")
             with { Match = ["Mozilla Firefox"] },
         A("Google.Chrome", "Google Chrome", Browsers,
-            L("Le navigateur de Google, synchronisé avec votre compte Google."), "essentials"),
+            L("Google's browser, synced with your Google account."), "essentials"),
         A("Brave.Brave", "Brave", Browsers,
-            L("Navigateur basé sur Chromium avec bloqueur de publicités et de pisteurs intégré."), "security"),
+            L("Chromium-based browser with a built-in ad and tracker blocker."), "security"),
         A("Opera.Opera", "Opera", Browsers,
-            L("Navigateur basé sur Chromium avec VPN de navigation intégré et messageries dans la barre latérale."))
+            L("Chromium-based browser with a built-in browser VPN and messaging apps in the sidebar."))
             with { Match = ["Opera Stable"] },
         A("Opera.OperaGX", "Opera GX", Browsers,
-            L("Variante d'Opera pour les joueurs : limites de mémoire, de processeur et de bande passante réglables."), "gaming"),
+            L("Opera variant for gamers: adjustable memory, CPU, and bandwidth limits."), "gaming"),
         A("Vivaldi.Vivaldi", "Vivaldi", Browsers,
-            L("Navigateur très personnalisable : onglets empilés, panneaux latéraux, messagerie et agenda intégrés.")),
+            L("Highly customizable browser: tab stacking, side panels, built-in email and calendar.")),
         A("LibreWolf.LibreWolf", "LibreWolf", Browsers,
-            L("Variante de Firefox orientée confidentialité : sans télémétrie, avec uBlock Origin préinstallé."), "security"),
+            L("Privacy-focused Firefox variant: no telemetry, with uBlock Origin preinstalled."), "security"),
 
         // ------------------------------------------------------------------ Bureautique et PDF
         A("TheDocumentFoundation.LibreOffice", "LibreOffice", Office,
-            L("Suite bureautique libre et gratuite (texte, tableur, présentations), compatible avec les fichiers Word, Excel et PowerPoint."),
+            L("Free, open-source office suite (documents, spreadsheets, presentations), compatible with Word, Excel, and PowerPoint files."),
             "essentials", "office", "family"),
         A("ONLYOFFICE.DesktopEditors", "ONLYOFFICE", Office,
-            L("Suite bureautique gratuite à l'interface proche de Microsoft Office, très fidèle aux formats DOCX, XLSX et PPTX."), "office"),
+            L("Free office suite with an interface close to Microsoft Office, very faithful to DOCX, XLSX, and PPTX formats."), "office"),
         A("SumatraPDF.SumatraPDF", "SumatraPDF", Office,
-            L("Lecteur PDF, ePub et bandes dessinées ultra léger et rapide : idéal sur les PC modestes."), "essentials", "office", "lowend"),
+            L("Ultra-light, fast PDF, ePub, and comic book reader: ideal for low-end PCs."), "essentials", "office", "lowend"),
         A("Adobe.Acrobat.Reader.64-bit", "Adobe Acrobat Reader", Office,
-            L("Le lecteur PDF d'Adobe : lecture, annotations, remplissage et signature de formulaires."), "office")
+            L("Adobe's PDF reader: read, annotate, fill in, and sign forms."), "office")
             with { Match = ["Adobe Acrobat"] },
         A("geeksoftwareGmbH.PDF24Creator", "PDF24 Creator", Office,
-            L("Boîte à outils PDF gratuite et hors ligne : fusionner, compresser, convertir, imprimante PDF."), "office"),
+            L("Free, offline PDF toolbox: merge, compress, convert, PDF printer."), "office"),
         A("PDFsam.PDFsam", "PDFsam Basic", Office,
-            L("Fusionner, découper, extraire ou faire pivoter des pages PDF, gratuitement et hors ligne."), "office"),
+            L("Merge, split, extract, or rotate PDF pages, free and offline."), "office"),
         A("Obsidian.Obsidian", "Obsidian", Office,
-            L("Prise de notes en Markdown dans des fichiers locaux, avec liens entre les notes."), "office"),
+            L("Markdown note-taking in local files, with links between notes."), "office"),
         A("Notion.Notion", "Notion", Office,
-            L("Espace de travail en ligne : notes, bases de données, wikis et projets (compte requis)."), "office"),
+            L("Online workspace: notes, databases, wikis, and projects (account required)."), "office"),
         A("Joplin.Joplin", "Joplin", Office,
-            L("Application de notes libre, chiffrée de bout en bout, synchronisable (Nextcloud, Dropbox, OneDrive…)."), "office"),
+            L("Open-source, end-to-end encrypted note-taking app with sync (Nextcloud, Dropbox, OneDrive…)."), "office"),
         A("DigitalScholar.Zotero", "Zotero", Office,
-            L("Gestionnaire de références bibliographiques pour les étudiants et les chercheurs."), "office", "family"),
+            L("Reference manager for students and researchers."), "office", "family"),
         A("calibre.calibre", "calibre", Office,
-            L("Gérer une bibliothèque de livres numériques, convertir les formats et les envoyer vers une liseuse."), "family"),
+            L("Manage an e-book library, convert formats, and send them to an e-reader."), "family"),
         A("Anki.Anki", "Anki", Office,
-            L("Cartes de révision à répétition espacée pour mémoriser durablement (langues, examens…)."), "family"),
+            L("Spaced-repetition flashcards for long-term memorization (languages, exams…)."), "family"),
         A("GeoGebra.Classic", "GeoGebra Classic", Office,
-            L("Mathématiques dynamiques : géométrie, fonctions, tableur et calcul formel. Très utilisé au collège et au lycée."), "family"),
+            L("Dynamic mathematics: geometry, functions, spreadsheet, and computer algebra. Widely used in middle and high school."), "family"),
 
         // ------------------------------------------------------------------ Multimédia
         A("VideoLAN.VLC", "VLC", Media,
-            L("Lecteur multimédia libre qui lit presque tous les formats audio et vidéo, sans codec supplémentaire."),
+            L("Free, open-source media player that plays almost every audio and video format, with no extra codecs."),
             "essentials", "media", "family")
             with { Match = ["VLC media player"] },
         A("clsid2.mpc-hc", "MPC-HC", Media,
-            L("Lecteur vidéo léger et rapide, parfait pour les PC modestes."), "media", "lowend")
+            L("Light, fast video player, perfect for low-end PCs."), "media", "lowend")
             with { Match = ["MPC-HC"] },
         A("Daum.PotPlayer", "PotPlayer", Media,
-            L("Lecteur vidéo très complet, avec accélération matérielle poussée et nombreux réglages."), "media")
+            L("Full-featured video player with advanced hardware acceleration and many settings."), "media")
             with { Match = ["PotPlayer"] },
         A("CodecGuide.K-LiteCodecPack.Standard", "K-Lite Codec Pack Standard", Media,
-            L("Codecs et filtres pour lire dans les anciens lecteurs les formats que Windows ne gère pas (inclut MPC-HC)."), "media")
+            L("Codecs and filters so older players can play formats Windows doesn't support (includes MPC-HC)."), "media")
             with { Match = ["K-Lite"] },
         A("PeterPawlowski.foobar2000", "foobar2000", Media,
-            L("Lecteur audio léger et puissant pour les grandes bibliothèques musicales."), "media", "lowend"),
+            L("Light, powerful audio player for large music libraries."), "media", "lowend"),
         A("AIMP.AIMP", "AIMP", Media,
-            L("Lecteur audio gratuit à l'interface soignée, avec égaliseur et radios en ligne."), "media"),
+            L("Free audio player with a polished interface, equalizer, and online radio."), "media"),
         A("Audacity.Audacity", "Audacity", Media,
-            L("Enregistrer et éditer du son : couper, mixer, réduire le bruit."), "media"),
+            L("Record and edit audio: cut, mix, reduce noise."), "media"),
         A("HandBrake.HandBrake", "HandBrake", Media,
-            L("Convertir et compresser des vidéos (MP4, MKV) avec des préréglages simples."), "media"),
+            L("Convert and compress videos (MP4, MKV) with simple presets."), "media"),
         A("OBSProject.OBSStudio", "OBS Studio", Media,
-            L("Enregistrer l'écran et diffuser en direct (Twitch, YouTube) avec scènes et sources multiples."), "media", "gaming"),
+            L("Record your screen and stream live (Twitch, YouTube) with multiple scenes and sources."), "media", "gaming"),
         A("XBMCFoundation.Kodi", "Kodi", Media,
-            L("Centre multimédia pour films, séries, musique et photos, idéal sur un PC relié au téléviseur."), "media", "family"),
+            L("Media center for movies, TV shows, music, and photos, ideal on a PC connected to a TV."), "media", "family"),
         A("MusicBrainz.Picard", "MusicBrainz Picard", Media,
-            L("Identifier et étiqueter automatiquement vos fichiers musicaux (titres, albums, pochettes)."), "media"),
+            L("Automatically identify and tag your music files (titles, albums, cover art)."), "media"),
         A("IrfanSkiljan.IrfanView", "IrfanView", Media,
-            L("Visionneuse d'images ultra rapide, avec retouches simples et conversion par lots."), "media", "lowend"),
+            L("Ultra-fast image viewer with simple editing and batch conversion."), "media", "lowend"),
         A("DuongDieuPhap.ImageGlass", "ImageGlass", Media,
-            L("Visionneuse d'images moderne et légère, compatible WebP, HEIC, AVIF, RAW…"), "media"),
+            L("Modern, light image viewer that supports WebP, HEIC, AVIF, RAW…"), "media"),
         A("Stellarium.Stellarium", "Stellarium", Media,
-            L("Planétarium : le ciel en temps réel depuis votre position, étoiles, planètes et constellations."), "family"),
+            L("Planetarium: the real-time sky from your location, with stars, planets, and constellations."), "family"),
 
         // ------------------------------------------------------------------ Création
         A("GIMP.GIMP.3", "GIMP", Creation,
-            L("Retouche photo et création graphique avancées, alternative libre à Photoshop."), "media"),
+            L("Advanced photo editing and graphic design, an open-source alternative to Photoshop."), "media"),
         A("KDE.Krita", "Krita", Creation,
-            L("Peinture numérique et illustration, très apprécié avec une tablette graphique."), "media", "family"),
+            L("Digital painting and illustration, popular with graphics tablet users."), "media", "family"),
         A("Inkscape.Inkscape", "Inkscape", Creation,
-            L("Dessin vectoriel (SVG) : logos, illustrations, schémas."), "media"),
+            L("Vector drawing (SVG): logos, illustrations, diagrams."), "media"),
         A("dotPDN.PaintDotNet", "Paint.NET", Creation,
-            L("Retouche d'images simple et rapide, avec calques et effets."), "media")
+            L("Simple, fast image editing, with layers and effects."), "media")
             with { Match = ["paint.net"] },
         A("darktable.darktable", "darktable", Creation,
-            L("Développement de photos RAW et photothèque, alternative libre à Lightroom."), "media"),
+            L("RAW photo processing and photo library, an open-source alternative to Lightroom."), "media"),
         A("BlenderFoundation.Blender", "Blender", Creation,
-            L("Modélisation 3D, animation, rendu et montage vidéo. Exigeant pour la carte graphique."), "media", "heavy"),
+            L("3D modeling, animation, rendering, and video editing. Demanding on the graphics card."), "media", "heavy"),
         A("KDE.Kdenlive", "Kdenlive", Creation,
-            L("Montage vidéo multipiste libre, avec effets et transitions."), "media", "heavy"),
+            L("Open-source multitrack video editor with effects and transitions."), "media", "heavy"),
         A("Meltytech.Shotcut", "Shotcut", Creation,
-            L("Montage vidéo libre, simple à prendre en main."), "media"),
+            L("Open-source video editor that's easy to learn."), "media"),
         A("Figma.Figma", "Figma", Creation,
-            L("Conception d'interfaces collaborative (compte requis)."), "dev"),
+            L("Collaborative interface design (account required)."), "dev"),
 
         // ------------------------------------------------------------------ Utilitaires
         A("7zip.7zip", "7-Zip", Utilities,
-            L("Compresser et extraire les archives (ZIP, 7z, RAR…), libre et léger."), "essentials", "lowend"),
+            L("Compress and extract archives (ZIP, 7z, RAR…), open-source and light."), "essentials", "lowend"),
         A("RARLab.WinRAR", "WinRAR", Utilities,
-            L("Archiveur RAR et ZIP. Version d'essai : une licence payante est prévue pour un usage prolongé.")),
+            L("RAR and ZIP archiver. Trial version: a paid license is expected for extended use.")),
         A("voidtools.Everything", "Everything", Utilities,
-            L("Recherche instantanée de fichiers par leur nom sur tous les disques."), "essentials", "lowend"),
+            L("Instant file search by name across all drives."), "essentials", "lowend"),
         A("Microsoft.PowerToys", "PowerToys", Utilities,
-            L("Utilitaires de Microsoft : disposition des fenêtres, renommage en masse, pipette de couleur, lanceur…"), "essentials", "dev"),
+            L("Microsoft utilities: window layouts, bulk renaming, color picker, launcher…"), "essentials", "dev"),
         A("ShareX.ShareX", "ShareX", Utilities,
-            L("Captures d'écran, enregistrements GIF ou vidéo, annotations et partage."), "media"),
+            L("Screenshots, GIF or video recordings, annotations, and sharing."), "media"),
         A("Greenshot.Greenshot", "Greenshot", Utilities,
-            L("Captures d'écran rapides avec annotations et masquage de zones."), "office", "lowend"),
+            L("Quick screenshots with annotations and area masking."), "office", "lowend"),
         A("CPUID.CPU-Z", "CPU-Z", Utilities,
-            L("Informations détaillées sur le processeur, la carte mère et la mémoire."))
+            L("Detailed information about the processor, motherboard, and memory."))
             with { Match = ["CPUID CPU-Z"] },
         A("TechPowerUp.GPU-Z", "GPU-Z", Utilities,
-            L("Informations et capteurs de la carte graphique."), "gaming")
+            L("Graphics card information and sensors."), "gaming")
             with { Match = ["TechPowerUp GPU-Z", "GPU-Z"] },
         A("REALiX.HWiNFO", "HWiNFO", Utilities,
-            L("Inventaire matériel complet et surveillance des capteurs (températures, tensions, ventilateurs).")),
+            L("Complete hardware inventory and sensor monitoring (temperatures, voltages, fans).")),
         A("CrystalDewWorld.CrystalDiskInfo", "CrystalDiskInfo", Utilities,
-            L("Santé (S.M.A.R.T.) et température des disques durs et SSD.")),
+            L("Health (S.M.A.R.T.) and temperature of hard drives and SSDs.")),
         A("CrystalDewWorld.CrystalDiskMark", "CrystalDiskMark", Utilities,
-            L("Mesure des débits de lecture et d'écriture des disques.")),
+            L("Measures drive read and write speeds.")),
         A("AntibodySoftware.WizTree", "WizTree", Utilities,
-            L("Voir en quelques secondes ce qui occupe l'espace disque."), "lowend"),
+            L("See what's taking up disk space in seconds."), "lowend"),
         A("WinDirStat.WinDirStat", "WinDirStat", Utilities,
-            L("Carte visuelle de l'occupation du disque, libre.")),
+            L("Visual map of disk usage, open-source.")),
         A("Rufus.Rufus", "Rufus", Utilities,
-            L("Créer une clé USB amorçable pour installer Windows ou Linux.")),
+            L("Create a bootable USB drive to install Windows or Linux.")),
         A("Ventoy.Ventoy", "Ventoy", Utilities,
-            L("Clé USB multi-démarrage : il suffit d'y copier des fichiers ISO.")),
+            L("Multiboot USB drive: just copy ISO files onto it.")),
         A("BleachBit.BleachBit", "BleachBit", Utilities,
-            L("Supprimer les fichiers temporaires et les traces de navigation, libre.")),
+            L("Delete temporary files and browsing traces, open-source.")),
         A("Klocman.BulkCrapUninstaller", "Bulk Crap Uninstaller", Utilities,
-            L("Désinstaller de nombreux programmes à la fois et supprimer leurs restes."))
+            L("Uninstall many programs at once and remove their leftovers."))
             with { Match = ["BCUninstaller"] },
         A("File-New-Project.EarTrumpet", "EarTrumpet", Utilities,
-            L("Volume de chaque application depuis la zone de notification.")),
+            L("Per-app volume from the notification area.")),
         A("Microsoft.Sysinternals.Autoruns", "Autoruns", Utilities,
-            L("Tout ce qui démarre avec Windows, en détail (outil Sysinternals de Microsoft)."), "dev"),
+            L("Everything that starts with Windows, in detail (Microsoft Sysinternals tool)."), "dev"),
         A("Microsoft.Sysinternals.ProcessExplorer", "Process Explorer", Utilities,
-            L("Gestionnaire des tâches avancé (outil Sysinternals de Microsoft)."), "dev"),
+            L("Advanced Task Manager (Microsoft Sysinternals tool)."), "dev"),
         A("AutoHotkey.AutoHotkey", "AutoHotkey", Utilities,
-            L("Automatiser des tâches et créer des raccourcis clavier à l'aide de scripts."), "dev"),
+            L("Automate tasks and create keyboard shortcuts with scripts."), "dev"),
         A("Flow-Launcher.Flow-Launcher", "Flow Launcher", Utilities,
-            L("Lanceur au clavier : applications, fichiers, calculs, recherche web."))
+            L("Keyboard launcher: apps, files, calculations, web search."))
             with { Match = ["Flow Launcher", "Flow-Launcher"] },
         A("QL-Win.QuickLook", "QuickLook", Utilities,
-            L("Aperçu d'un fichier en appuyant sur Espace dans l'Explorateur, comme sur macOS.")),
+            L("Preview a file by pressing Space in File Explorer, like on macOS.")),
         A("FilesCommunity.Files", "Files", Utilities,
-            L("Gestionnaire de fichiers moderne avec onglets et volets, alternative à l'Explorateur."))
+            L("Modern file manager with tabs and panes, an alternative to File Explorer."))
             with { Match = ["Files - Stable", "Files App"] },
         A("LocalSend.LocalSend", "LocalSend", Utilities,
-            L("Envoyer des fichiers entre appareils du même réseau local, sans Internet ni compte."), "family"),
+            L("Send files between devices on the same local network, without internet or an account."), "family"),
         A("TeamViewer.TeamViewer", "TeamViewer", Utilities,
-            L("Assistance et prise de main à distance (gratuit pour un usage personnel)."), "family"),
+            L("Remote support and remote control (free for personal use)."), "family"),
         A("AnyDesk.AnyDesk", "AnyDesk", Utilities,
-            L("Prise de main à distance légère et rapide.")),
+            L("Light, fast remote control.")),
         A("Google.GoogleDrive", "Google Drive", Utilities,
-            L("Accéder à vos fichiers Google Drive depuis l'Explorateur et les synchroniser.")),
+            L("Access your Google Drive files from File Explorer and sync them.")),
         A("Dropbox.Dropbox", "Dropbox", Utilities,
-            L("Synchroniser vos fichiers Dropbox avec ce PC.")),
+            L("Sync your Dropbox files with this PC.")),
         A("Nextcloud.NextcloudDesktop", "Nextcloud", Utilities,
-            L("Client de synchronisation pour un serveur Nextcloud (personnel ou hébergé).")),
+            L("Sync client for a Nextcloud server (self-hosted or hosted).")),
         A("qBittorrent.qBittorrent", "qBittorrent", Utilities,
-            L("Client BitTorrent libre et sans publicité.")),
+            L("Open-source, ad-free BitTorrent client.")),
         A("Logitech.OptionsPlus", "Logi Options+", Utilities,
-            L("Personnaliser les boutons et gestes des souris et claviers Logitech."))
+            L("Customize the buttons and gestures of Logitech mice and keyboards."))
             with { Match = ["Logi Options+", "Logitech Options+"] },
 
         // ------------------------------------------------------------------ Sécurité et mots de passe
         A("Bitwarden.Bitwarden", "Bitwarden", Security,
-            L("Gestionnaire de mots de passe libre et chiffré, synchronisé sur tous vos appareils."), "essentials", "security", "family"),
+            L("Open-source, encrypted password manager, synced across all your devices."), "essentials", "security", "family"),
         A("KeePassXCTeam.KeePassXC", "KeePassXC", Security,
-            L("Gestionnaire de mots de passe hors ligne : un fichier chiffré qui reste chez vous."), "security"),
+            L("Offline password manager: an encrypted file that stays with you."), "security"),
         A("DominikReichl.KeePass", "KeePass", Security,
-            L("Gestionnaire de mots de passe hors ligne historique, extensible par greffons."), "security"),
+            L("Long-standing offline password manager, extensible with plugins."), "security"),
         A("AgileBits.1Password", "1Password", Security,
-            L("Gestionnaire de mots de passe familial et professionnel (abonnement)."), "security"),
+            L("Password manager for families and businesses (subscription)."), "security"),
         A("Proton.ProtonPass", "Proton Pass", Security,
-            L("Gestionnaire de mots de passe et d'alias de messagerie chiffré, par Proton."), "security"),
+            L("Encrypted password and email alias manager, by Proton."), "security"),
         A("Proton.ProtonVPN", "Proton VPN", Security,
-            L("VPN avec offre gratuite sans limite de données, sans journalisation."), "security"),
+            L("VPN with a free plan with no data limit and no logging."), "security"),
         A("WireGuard.WireGuard", "WireGuard", Security,
-            L("Client VPN WireGuard pour votre propre serveur ou votre fournisseur de VPN."), "security", "dev"),
+            L("WireGuard VPN client for your own server or your VPN provider."), "security", "dev"),
         A("Malwarebytes.Malwarebytes", "Malwarebytes", Security,
-            L("Analyse anti-logiciels malveillants à la demande, en complément de Microsoft Defender. L'essai Premium peut s'inscrire comme antivirus principal : vérifiez ensuite dans Sécurité Windows que la protection reste active."), "security"),
+            L("On-demand anti-malware scan, alongside Microsoft Defender. The Premium trial may register itself as the main antivirus: afterward, check in Windows Security that protection is still on."), "security"),
         A("IDRIX.VeraCrypt", "VeraCrypt", Security,
-            L("Chiffrer des disques, des clés USB ou des conteneurs de fichiers."), "security"),
+            L("Encrypt drives, USB drives, or file containers."), "security"),
         A("Cryptomator.Cryptomator", "Cryptomator", Security,
-            L("Chiffrer vos fichiers avant de les déposer dans le cloud (OneDrive, Google Drive, Dropbox…)."), "security"),
+            L("Encrypt your files before uploading them to the cloud (OneDrive, Google Drive, Dropbox…)."), "security"),
 
         // ------------------------------------------------------------------ Communication
         A("Mozilla.Thunderbird.fr", "Thunderbird", Communication,
-            L("Client de messagerie libre : plusieurs comptes, agenda et contacts. Version française."), "essentials", "office", "family")
+            L("Open-source email client: multiple accounts, calendar, and contacts. French-language version."), "essentials", "office", "family")
             with { Match = ["Mozilla Thunderbird"] },
         A("Discord.Discord", "Discord", Communication,
-            L("Discussions vocales, vidéo et texte, très utilisé par les joueurs et les communautés."), "gaming"),
+            L("Voice, video, and text chat, widely used by gamers and communities."), "gaming"),
         A("Zoom.Zoom", "Zoom Workplace", Communication,
-            L("Visioconférences et réunions en ligne."), "office")
+            L("Video conferencing and online meetings."), "office")
             with { Match = ["Zoom"] },
         A("Microsoft.Teams", "Microsoft Teams", Communication,
-            L("Réunions et messagerie d'équipe pour comptes professionnels, scolaires et personnels."), "office"),
+            L("Meetings and team chat for work, school, and personal accounts."), "office"),
         A("SlackTechnologies.Slack", "Slack", Communication,
-            L("Messagerie d'équipe organisée en canaux."), "office"),
+            L("Team messaging organized into channels."), "office"),
         A("OpenWhisperSystems.Signal", "Signal", Communication,
-            L("Messagerie chiffrée de bout en bout ; nécessite Signal sur votre téléphone."), "security", "family"),
+            L("End-to-end encrypted messaging; requires Signal on your phone."), "security", "family"),
         A("Telegram.TelegramDesktop", "Telegram", Communication,
-            L("Messagerie rapide avec groupes, canaux et synchronisation dans le cloud."))
+            L("Fast messaging with groups, channels, and cloud sync."))
             with { Match = ["Telegram Desktop"] },
         A("Element.Element", "Element", Communication,
-            L("Messagerie décentralisée et chiffrée basée sur le protocole Matrix."), "security"),
+            L("Decentralized, encrypted messaging based on the Matrix protocol."), "security"),
 
         // ------------------------------------------------------------------ Développement
         A("Microsoft.VisualStudioCode", "Visual Studio Code", Development,
-            L("Éditeur de code léger et extensible de Microsoft."), "dev")
+            L("Light, extensible code editor from Microsoft."), "dev")
             with { Match = ["Microsoft Visual Studio Code"] },
         A("Notepad++.Notepad++", "Notepad++", Development,
-            L("Éditeur de texte et de code rapide, avec coloration syntaxique et onglets."), "dev", "essentials", "lowend"),
+            L("Fast text and code editor with syntax highlighting and tabs."), "dev", "essentials", "lowend"),
         A("Git.Git", "Git", Development,
-            L("Gestion de versions Git, avec Git Bash."), "dev"),
+            L("Git version control, with Git Bash."), "dev"),
         A("GitHub.GitHubDesktop", "GitHub Desktop", Development,
-            L("Interface graphique simple pour Git et GitHub."), "dev"),
+            L("Simple graphical interface for Git and GitHub."), "dev"),
         A("Python.Python.3.14", "Python 3.14", Development,
-            L("Langage Python et son lanceur « py »."), "dev", "family"),
+            L("The Python language and its “py” launcher."), "dev", "family"),
         A("OpenJS.NodeJS.LTS", "Node.js LTS", Development,
-            L("Environnement JavaScript côté serveur, version à support long."), "dev")
+            L("Server-side JavaScript runtime, long-term support (LTS) version."), "dev")
             with { Match = ["Node.js"] },
         A("Microsoft.DotNet.SDK.10", "SDK .NET 10", Development,
-            L("Outils pour développer des applications .NET 10 (C#, F#)."), "dev")
+            L("Tools for developing .NET 10 apps (C#, F#)."), "dev")
             with { Match = ["Microsoft .NET SDK 10"] },
         A("Microsoft.PowerShell", "PowerShell 7", Development,
-            L("Version moderne et multiplateforme de PowerShell, installée à côté de Windows PowerShell 5.1."), "dev")
+            L("Modern, cross-platform version of PowerShell, installed alongside Windows PowerShell 5.1."), "dev")
             with { Match = ["PowerShell 7"] },
-        A("Microsoft.WindowsTerminal", L("Terminal Windows"), Development,
-            L("Terminal à onglets pour PowerShell, l'invite de commandes et WSL. Déjà inclus dans Windows 11."), "dev"),
+        A("Microsoft.WindowsTerminal", L("Windows Terminal"), Development,
+            L("Tabbed terminal for PowerShell, Command Prompt, and WSL. Already included in Windows 11."), "dev"),
         A("Microsoft.VisualStudio.2022.Community", "Visual Studio Community 2022", Development,
-            L("Environnement de développement complet de Microsoft, installé sans charge de travail : ajoutez-les ensuite avec Visual Studio Installer. Gratuit pour les particuliers, l'enseignement et les petites équipes."), "dev", "heavy"),
+            L("Microsoft's full development environment, installed without any workloads: add them afterward with Visual Studio Installer. Free for individuals, education, and small teams."), "dev", "heavy"),
         A("JetBrains.Toolbox", "JetBrains Toolbox", Development,
-            L("Installe et met à jour les IDE JetBrains (IntelliJ IDEA, PyCharm, Rider…)."), "dev"),
+            L("Installs and updates JetBrains IDEs (IntelliJ IDEA, PyCharm, Rider…)."), "dev"),
         A("Docker.DockerDesktop", "Docker Desktop", Development,
-            L("Conteneurs Docker sous Windows ; nécessite WSL 2 et la virtualisation. Gratuit pour un usage personnel et les petites entreprises."),
+            L("Docker containers on Windows; requires WSL 2 and virtualization. Free for personal use and small businesses."),
             "dev", "heavy"),
         A("Oracle.VirtualBox", "VirtualBox", Development,
-            L("Machines virtuelles gratuites pour essayer d'autres systèmes."), "dev", "heavy")
+            L("Free virtual machines to try other operating systems."), "dev", "heavy")
             with { Match = ["Oracle VirtualBox", "Oracle VM VirtualBox"] },
         A("Postman.Postman", "Postman", Development,
-            L("Tester et documenter des API web."), "dev"),
+            L("Test and document web APIs."), "dev"),
         A("WinSCP.WinSCP", "WinSCP", Development,
-            L("Transferts de fichiers SFTP, FTP et SCP."), "dev"),
+            L("SFTP, FTP, and SCP file transfers."), "dev"),
         A("PuTTY.PuTTY", "PuTTY", Development,
-            L("Client SSH et Telnet historique."), "dev"),
+            L("Classic SSH and Telnet client."), "dev"),
         A("WinMerge.WinMerge", "WinMerge", Development,
-            L("Comparer et fusionner des fichiers et des dossiers."), "dev"),
+            L("Compare and merge files and folders."), "dev"),
         A("DBBrowserForSQLite.DBBrowserForSQLite", "DB Browser for SQLite", Development,
-            L("Explorer et modifier des bases de données SQLite."), "dev"),
+            L("Browse and edit SQLite databases."), "dev"),
         A("Rustlang.Rustup", "Rust (rustup)", Development,
-            L("Installateur de la chaîne d'outils Rust ; nécessite les outils de compilation C++ de Visual Studio."), "dev")
+            L("Rust toolchain installer; requires the Visual Studio C++ build tools."), "dev")
             with { Match = ["Rustup"] },
         A("GoLang.Go", "Go", Development,
-            L("Langage Go et ses outils."), "dev")
+            L("The Go language and its tools."), "dev")
             with { Match = ["Go Programming Language"] },
 
         // ------------------------------------------------------------------ Jeux
         A("Valve.Steam", "Steam", Games,
-            L("La plus grande boutique de jeux PC, avec bibliothèque, succès et jeu entre amis."), "gaming"),
+            L("The largest PC game store, with a library, achievements, and playing with friends."), "gaming"),
         A("EpicGames.EpicGamesLauncher", "Epic Games Launcher", Games,
-            L("Boutique d'Epic Games (Fortnite, jeux gratuits chaque semaine)."), "gaming")
+            L("Epic Games store (Fortnite, free games every week)."), "gaming")
             with { Match = ["Epic Games Launcher"] },
         A("GOG.Galaxy", "GOG Galaxy", Games,
-            L("Boutique de jeux sans DRM et bibliothèque unifiée de vos différentes plateformes."), "gaming")
+            L("DRM-free game store and unified library for your different platforms."), "gaming")
             with { Match = ["GOG GALAXY", "GOG Galaxy"] },
         A("Ubisoft.Connect", "Ubisoft Connect", Games,
-            L("Lanceur et boutique des jeux Ubisoft."), "gaming"),
+            L("Launcher and store for Ubisoft games."), "gaming"),
         A("ElectronicArts.EADesktop", "EA app", Games,
-            L("Lanceur et boutique des jeux Electronic Arts."), "gaming"),
+            L("Launcher and store for Electronic Arts games."), "gaming"),
         A("Playnite.Playnite", "Playnite", Games,
-            L("Bibliothèque unique pour tous vos jeux (Steam, Epic, GOG, émulateurs…), libre."), "gaming"),
+            L("A single library for all your games (Steam, Epic, GOG, emulators…), open-source."), "gaming"),
         A("Nvidia.GeForceNow", "GeForce NOW", Games,
-            L("Jeu en streaming dans le cloud : les jeux tournent sur les serveurs de NVIDIA, idéal pour un PC modeste avec une bonne connexion."),
+            L("Cloud game streaming: games run on NVIDIA's servers, ideal for a low-end PC with a good connection."),
             "gaming", "lowend")
             with { Match = ["NVIDIA GeForce NOW", "GeForce NOW"] },
         A("Parsec.Parsec", "Parsec", Games,
-            L("Jouer à distance sur un autre PC ou partager une partie avec des amis, avec une faible latence."), "gaming"),
+            L("Play remotely on another PC or share a game with friends, with low latency."), "gaming"),
         A("Mojang.MinecraftLauncher", "Minecraft Launcher", Games,
-            L("Lanceur officiel de Minecraft : Java Edition (compte Microsoft et jeu acheté requis)."), "gaming", "family"),
+            L("Official Minecraft: Java Edition launcher (Microsoft account and purchased game required)."), "gaming", "family"),
         A("PrismLauncher.PrismLauncher", "Prism Launcher", Games,
-            L("Lanceur Minecraft libre pour gérer plusieurs instances et modpacks (compte Minecraft requis)."), "gaming"),
+            L("Open-source Minecraft launcher to manage multiple instances and modpacks (Minecraft account required)."), "gaming"),
         A("Guru3D.Afterburner", "MSI Afterburner", Games,
-            L("Affichage en jeu (images par seconde, températures) et réglages de la carte graphique."), "gaming"),
+            L("In-game overlay (frames per second, temperatures) and graphics card settings."), "gaming"),
         A("Logitech.GHUB", "Logitech G HUB", Games,
-            L("Réglages, macros et éclairage des périphériques de jeu Logitech G."), "gaming"),
+            L("Settings, macros, and lighting for Logitech G gaming peripherals."), "gaming"),
 
         // ------------------------------------------------------------------ Outils constructeur
         A("Lenovo.SystemUpdate", "Lenovo System Update", Vendor,
-            L("Pilotes et BIOS à jour pour les ThinkPad, ThinkCentre et ThinkStation. Sur les IdeaPad, Yoga et Legion, préférez Lenovo Vantage (Microsoft Store)."), "vendor")
+            L("Up-to-date drivers and BIOS for ThinkPad, ThinkCentre, and ThinkStation PCs. On IdeaPad, Yoga, and Legion, use Lenovo Vantage (Microsoft Store) instead."), "vendor")
             with { Manufacturer = "Lenovo" },
         A("Dell.CommandUpdate.Universal", "Dell Command | Update", Vendor,
-            L("Pilotes, BIOS et micrologiciels à jour pour les PC Dell (Latitude, OptiPlex, Precision, Vostro, XPS)."), "vendor")
+            L("Up-to-date drivers, BIOS, and firmware for Dell PCs (Latitude, OptiPlex, Precision, Vostro, XPS)."), "vendor")
             with { Manufacturer = "Dell", Match = ["Dell Command | Update"] },
         A("HP.ImageAssistant", "HP Image Assistant", Vendor,
-            L("Outil HP pour les PC professionnels (EliteBook, ProBook, ZBook) : détecte et installe pilotes, BIOS et correctifs. Sur les PC grand public, utilisez HP Support Assistant."), "vendor")
+            L("HP tool for business PCs (EliteBook, ProBook, ZBook): detects and installs drivers, BIOS, and fixes. On consumer PCs, use HP Support Assistant."), "vendor")
             with { Manufacturer = "HP" },
         A("Asus.ArmouryCrate", "Armoury Crate", Vendor,
-            L("Centre de contrôle des PC ASUS ROG et TUF (modes de performance, éclairage, mises à jour). Inutile et lourd sur les autres modèles."),
+            L("Control center for ASUS ROG and TUF PCs (performance modes, lighting, updates). Useless and heavy on other models."),
             "vendor", "gaming")
             with { Manufacturer = "ASUS", Match = ["ARMOURY CRATE", "Armoury Crate"] },
         A("MSI.MSICenter", "MSI Center", Vendor,
-            L("Centre de contrôle des PC et cartes mères MSI : profils de performance, surveillance, mises à jour."), "vendor")
+            L("Control center for MSI PCs and motherboards: performance profiles, monitoring, updates."), "vendor")
             with { Manufacturer = "MSI" },
         A("Microsoft.SurfaceApp", "Surface", Vendor,
-            L("Application des appareils Surface : batterie, stylet, garantie et réglages."), "vendor")
+            L("App for Surface devices: battery, pen, warranty, and settings."), "vendor")
             with { Manufacturer = "Microsoft" },
 
         // ------------------------------------------------------------------ Pilotes graphiques
         A("Intel.IntelDriverAndSupportAssistant", "Intel Driver & Support Assistant", Drivers,
-            L("Détecte et installe les derniers pilotes Intel (graphiques, Wi-Fi, Bluetooth). Sur un portable, les pilotes du constructeur restent parfois préférables."), "vendor")
+            L("Detects and installs the latest Intel drivers (graphics, Wi-Fi, Bluetooth). On a laptop, the manufacturer's drivers are sometimes still preferable."), "vendor")
             with { GpuVendor = HardwareVendor.Intel, Match = ["Intel® Driver & Support Assistant", "Intel(R) Driver & Support Assistant", "Intel Driver"] },
         A("TechPowerUp.NVCleanstall", "NVCleanstall", Drivers,
-            L("Télécharge le pilote officiel NVIDIA et l'installe sans les composants superflus. Outil tiers de TechPowerUp : l'application NVIDIA officielle n'est pas disponible via winget."), "vendor", "gaming")
+            L("Downloads the official NVIDIA driver and installs it without unnecessary components. Third-party tool from TechPowerUp: the official NVIDIA app isn't available through winget."), "vendor", "gaming")
             with { GpuVendor = HardwareVendor.Nvidia },
 
         // ------------------------------------------------------------------ Runtimes
         A("Microsoft.VCRedist.2015+.x64", "Visual C++ 2015-2022 (x64)", Runtimes,
-            L("Bibliothèques Visual C++ requises par un grand nombre de programmes et de jeux 64 bits."), "essentials", "gaming")
+            L("Visual C++ libraries required by many 64-bit programs and games."), "essentials", "gaming")
             with { Match = ["Microsoft Visual C++ 2015-2022 Redistributable (x64)", "Microsoft Visual C++ v14 Redistributable (x64)"] },
         A("Microsoft.VCRedist.2015+.x86", "Visual C++ 2015-2022 (x86)", Runtimes,
-            L("Les mêmes bibliothèques pour les programmes 32 bits, encore nombreux."), "essentials", "gaming")
+            L("The same libraries for 32-bit programs, which are still common."), "essentials", "gaming")
             with { Match = ["Microsoft Visual C++ 2015-2022 Redistributable (x86)", "Microsoft Visual C++ v14 Redistributable (x86)"] },
         A("Microsoft.DotNet.DesktopRuntime.8", ".NET Desktop Runtime 8", Runtimes,
-            L("Environnement d'exécution des applications de bureau .NET 8."), "essentials")
+            L("Runtime for .NET 8 desktop apps."), "essentials")
             with { Match = ["Microsoft Windows Desktop Runtime - 8", "Microsoft .NET Windows Desktop Runtime 8"] },
         A("Microsoft.DotNet.DesktopRuntime.10", ".NET Desktop Runtime 10", Runtimes,
-            L("Environnement d'exécution des applications de bureau .NET 10."))
+            L("Runtime for .NET 10 desktop apps."))
             with { Match = ["Microsoft Windows Desktop Runtime - 10", "Microsoft .NET Windows Desktop Runtime 10"] },
-        A("Microsoft.DirectX", L("DirectX (bibliothèques d'origine)"), Runtimes,
-            L("Anciennes bibliothèques DirectX 9 à 11 (d3dx9, XAudio 2.7…) requises par de nombreux jeux anciens."), "gaming")
+        A("Microsoft.DirectX", L("DirectX (legacy libraries)"), Runtimes,
+            L("Legacy DirectX 9 to 11 libraries (d3dx9, XAudio 2.7…) required by many older games."), "gaming")
             with { Match = ["Microsoft DirectX"] },
         A("Microsoft.XNARedist", "XNA Framework 4.0", Runtimes,
-            L("Requis par certains jeux indépendants anciens (Terraria, Stardew Valley avant 1.5…)."), "gaming")
+            L("Required by some older indie games (Terraria, Stardew Valley before 1.5…)."), "gaming")
             with { Match = ["Microsoft XNA Framework Redistributable"] },
         A("EclipseAdoptium.Temurin.21.JRE", "Java 21 (Temurin)", Runtimes,
-            L("Environnement d'exécution Java libre, pour les programmes qui en ont besoin."))
+            L("Open-source Java runtime, for programs that need it."))
             with { Match = ["Eclipse Temurin JRE"] },
         A("Microsoft.EdgeWebView2Runtime", "WebView2", Runtimes,
-            L("Composant web utilisé par de nombreuses applications modernes ; déjà présent sur Windows 11."))
+            L("Web component used by many modern apps; already included in Windows 11."))
             with { Match = ["Microsoft Edge WebView2"] },
     ];
 }

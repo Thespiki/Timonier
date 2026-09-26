@@ -170,10 +170,10 @@ internal static partial class WlanApi
 
     public static string Describe(uint error) => error switch
     {
-        ErrorAccessDenied => L("accès refusé par Windows"),
-        ErrorServiceNotActive => L("service Wi-Fi (WLAN AutoConfig) inactif ou absent"),
-        ErrorNotFound => L("élément introuvable"),
-        _ => L("erreur {0}", error),
+        ErrorAccessDenied => L("access denied by Windows"),
+        ErrorServiceNotActive => L("Wi-Fi service (WLAN AutoConfig) inactive or missing"),
+        ErrorNotFound => L("item not found"),
+        _ => L("error {0}", error),
     };
 }
 

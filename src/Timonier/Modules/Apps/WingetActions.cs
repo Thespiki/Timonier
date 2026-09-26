@@ -16,7 +16,7 @@ internal static class WingetIds
             .Select(Validate.WingetId)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
-        if (ids.Count is < 1 or > Max) throw new ValidationException(L("Indiquez entre 1 et {0} identifiants winget.", Max));
+        if (ids.Count is < 1 or > Max) throw new ValidationException(L("Specify between 1 and {0} winget IDs.", Max));
         return ids;
     }
 
@@ -34,7 +34,7 @@ public sealed class WingetInstallAction : IActionHandler
     public const string ActionId = "apps.winget.install";
 
     public string Id => ActionId;
-    public string Title => L("Installer des applications (winget)");
+    public string Title => L("Install apps (winget)");
     public bool RequiresAdmin => true;
 
     /// <summary>Le broker affiche sa confirmation dès qu'un identifiant sort du catalogue vérifié.</summary>
@@ -47,10 +47,10 @@ public sealed class WingetInstallAction : IActionHandler
         var list = string.Join("\n", outside.Select(i => "• " + i));
         return ids.Count > outside.Count
             ? LP(ids.Count - outside.Count,
-                "Timonier va installer avec winget des logiciels qui ne font pas partie de son catalogue vérifié :\n\n{1}\n\n(et {0} application du catalogue)\n\nN'acceptez que si vous connaissez ces logiciels. Installer vaut acceptation de la licence de chaque éditeur.",
-                "Timonier va installer avec winget des logiciels qui ne font pas partie de son catalogue vérifié :\n\n{1}\n\n(et {0} applications du catalogue)\n\nN'acceptez que si vous connaissez ces logiciels. Installer vaut acceptation de la licence de chaque éditeur.",
+                "Timonier is about to use winget to install software that isn't in its verified catalog:\n\n{1}\n\n(and {0} app from the catalog)\n\nOnly accept if you know this software. Installing means you accept each publisher's license.",
+                "Timonier is about to use winget to install software that isn't in its verified catalog:\n\n{1}\n\n(and {0} apps from the catalog)\n\nOnly accept if you know this software. Installing means you accept each publisher's license.",
                 list)
-            : L("Timonier va installer avec winget des logiciels qui ne font pas partie de son catalogue vérifié :\n\n{0}\n\nN'acceptez que si vous connaissez ces logiciels. Installer vaut acceptation de la licence de chaque éditeur.", list);
+            : L("Timonier is about to use winget to install software that isn't in its verified catalog:\n\n{0}\n\nOnly accept if you know this software. Installing means you accept each publisher's license.", list);
     }
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) => WingetIds.Parse(p);
@@ -59,7 +59,7 @@ public sealed class WingetInstallAction : IActionHandler
     {
         ValidateParameters(p);
         var ids = WingetIds.Parse(p);
-        if (!Winget.IsAvailable) return ActionResult.Fail(L("winget (Programme d'installation d'application) est introuvable sur ce PC."));
+        if (!Winget.IsAvailable) return ActionResult.Fail(L("winget (App Installer) wasn't found on this PC."));
 
         return await WingetBatch.RunAsync(ctx, ids, upgrade: false, id =>
             ["install", "--id", id, "--exact", "--source", "winget", "--silent",
@@ -75,7 +75,7 @@ public sealed class WingetUpgradeAction : IActionHandler
 {
     public const string ActionId = "apps.winget.upgrade";
     public string Id => ActionId;
-    public string Title => L("Mettre à jour des applications (winget)");
+    public string Title => L("Update apps (winget)");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) => WingetIds.Parse(p);
@@ -84,7 +84,7 @@ public sealed class WingetUpgradeAction : IActionHandler
     {
         ValidateParameters(p);
         var ids = WingetIds.Parse(p);
-        if (!Winget.IsAvailable) return ActionResult.Fail(L("winget est introuvable sur ce PC."));
+        if (!Winget.IsAvailable) return ActionResult.Fail(L("winget wasn't found on this PC."));
         return await WingetBatch.RunAsync(ctx, ids, upgrade: true, id =>
             ["upgrade", "--id", id, "--exact", "--source", "winget", "--silent",
              "--accept-package-agreements", "--accept-source-agreements", "--disable-interactivity"]).ConfigureAwait(false);
@@ -107,8 +107,8 @@ internal static class WingetBatch
                 ctx.Cancellation.ThrowIfCancellationRequested();
                 var id = ids[i];
                 ctx.Progress?.Report(upgrade
-                    ? L("[{0}/{1}] Mise à jour de {2}…", i + 1, ids.Count, WingetIds.Label(id))
-                    : L("[{0}/{1}] Installation de {2}…", i + 1, ids.Count, WingetIds.Label(id)));
+                    ? L("[{0}/{1}] Updating {2}…", i + 1, ids.Count, WingetIds.Label(id))
+                    : L("[{0}/{1}] Installing {2}…", i + 1, ids.Count, WingetIds.Label(id)));
                 var r = await Winget.RunAsync(args(id), TimeSpan.FromMinutes(30), ctx.Progress, ctx.Cancellation).ConfigureAwait(false);
                 var meaning = Winget.Describe(r.ExitCode, r.TimedOut);
                 var ok = !r.TimedOut && (Winget.IsSuccess(r.ExitCode) || (upgrade && unchecked((uint)r.ExitCode) == 0x8A15002B));
@@ -117,26 +117,26 @@ internal static class WingetBatch
                 Log.Info("Apps", $"winget {args(id)[0]} {id} → {r.ExitCode} ({meaning})");
                 if (ok) done++;
                 else failures.Add($"{AppsCatalog.Find(id)?.Name ?? id} ({meaning})");
-                ctx.Progress?.Report((ok ? "✓ " : "✗ ") + L("{0} : {1}", AppsCatalog.Find(id)?.Name ?? id, meaning));
+                ctx.Progress?.Report((ok ? "✓ " : "✗ ") + L("{0}: {1}", AppsCatalog.Find(id)?.Name ?? id, meaning));
             }
         }
         catch (OperationCanceledException)
         {
-            foreach (var id in ids.Where(i => !data.ContainsKey(i))) data[id] = "erreur : " + L("annulé");
+            foreach (var id in ids.Where(i => !data.ContainsKey(i))) data[id] = "erreur : " + L("canceled");
             return new ActionResult(false, upgrade
-                ? LP(done, "Mise à jour interrompue : {0} sur {1} terminée.", "Mise à jour interrompue : {0} sur {1} terminées.", ids.Count)
-                : LP(done, "Installation interrompue : {0} sur {1} terminée.", "Installation interrompue : {0} sur {1} terminées.", ids.Count)) { Data = data };
+                ? LP(done, "Update stopped: {0} of {1} completed.", "Update stopped: {0} of {1} completed.", ids.Count)
+                : LP(done, "Installation stopped: {0} of {1} completed.", "Installation stopped: {0} of {1} completed.", ids.Count)) { Data = data };
         }
 
         if (failures.Count == 0)
-            return ActionResult.Ok(ids.Count == 1 ? L("{0} : {1}.", AppsCatalog.Find(ids[0])?.Name ?? ids[0], data[ids[0]]["ok : ".Length..])
-                : upgrade ? LP(ids.Count, "{0} application mise à jour.", "{0} applications mises à jour.")
-                : LP(ids.Count, "{0} application installée.", "{0} applications installées."), data);
+            return ActionResult.Ok(ids.Count == 1 ? L("{0}: {1}.", AppsCatalog.Find(ids[0])?.Name ?? ids[0], data[ids[0]]["ok : ".Length..])
+                : upgrade ? LP(ids.Count, "{0} app updated.", "{0} apps updated.")
+                : LP(ids.Count, "{0} app installed.", "{0} apps installed."), data);
         var message = done == 0
-            ? L("Échec : {0}.", string.Join(", ", failures))
-            : L("{0}, {1} : {2}.",
-                upgrade ? LP(done, "{0} mise à jour", "{0} mises à jour") : LP(done, "{0} installée", "{0} installées"),
-                LP(failures.Count, "{0} échec", "{0} échecs"), string.Join(", ", failures));
+            ? L("Failed: {0}.", string.Join(", ", failures))
+            : L("{0}, {1}: {2}.",
+                upgrade ? LP(done, "{0} updated", "{0} updated") : LP(done, "{0} installed", "{0} installed"),
+                LP(failures.Count, "{0} failed", "{0} failed"), string.Join(", ", failures));
         return new ActionResult(false, message) { Data = data };
     }
 }
@@ -146,19 +146,19 @@ public sealed class WingetUpgradeAllAction : IActionHandler
 {
     public const string ActionId = "apps.winget.upgradeall";
     public string Id => ActionId;
-    public string Title => L("Mettre à jour toutes les applications (winget)");
+    public string Title => L("Update all apps (winget)");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
     {
-        if (p.Count > 0) throw new ValidationException(L("Cette action ne prend aucun paramètre."));
+        if (p.Count > 0) throw new ValidationException(L("This action takes no parameters."));
     }
 
     public async Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
     {
         ValidateParameters(p);
-        if (!Winget.IsAvailable) return ActionResult.Fail(L("winget est introuvable sur ce PC."));
-        ctx.Progress?.Report(L("Recherche et installation des mises à jour…"));
+        if (!Winget.IsAvailable) return ActionResult.Fail(L("winget wasn't found on this PC."));
+        ctx.Progress?.Report(L("Checking for and installing updates…"));
         var r = await Winget.RunAsync(
             ["upgrade", "--all", "--silent", "--accept-package-agreements", "--accept-source-agreements", "--disable-interactivity"],
             TimeSpan.FromHours(3), ctx.Progress, ctx.Cancellation).ConfigureAwait(false);
@@ -166,8 +166,8 @@ public sealed class WingetUpgradeAllAction : IActionHandler
         var data = new Dictionary<string, string> { ["exitCode"] = r.ExitCode.ToString(), ["result"] = meaning };
         Log.Info("Apps", $"winget upgrade --all → {r.ExitCode} ({meaning})");
         return r.Success || unchecked((uint)r.ExitCode) == 0x8A15002B
-            ? ActionResult.Ok(L("Mises à jour terminées."), data)
-            : new ActionResult(false, L("Mises à jour terminées avec des erreurs : {0}.", meaning)) { Data = data };
+            ? ActionResult.Ok(L("Updates finished."), data)
+            : new ActionResult(false, L("Updates finished with errors: {0}.", meaning)) { Data = data };
     }
 }
 
@@ -184,7 +184,7 @@ public sealed class WingetUninstallAction : IActionHandler
 {
     public const string ActionId = "apps.winget.uninstall";
     public string Id => ActionId;
-    public string Title => L("Désinstaller un programme (winget)");
+    public string Title => L("Uninstall a program (winget)");
     public bool RequiresAdmin => true;
     public bool RequiresElevatedConfirmation => true;
 
@@ -192,9 +192,9 @@ public sealed class WingetUninstallAction : IActionHandler
     {
         var (name, code) = WingetUninstall.Read(p);
         return code is null
-            ? L("Désinstaller « {0} » avec winget ?\n\nLe programme et ses fichiers seront supprimés ; l'assistant de l'éditeur peut s'afficher.", name)
-            : name is null ? L("Désinstaller le programme MSI {0} avec winget ?", code)
-            : L("Désinstaller le programme MSI {0} (« {1} ») avec winget ?", code, name);
+            ? L("Uninstall “{0}” with winget?\n\nThe program and its files will be removed; the publisher's wizard may appear.", name)
+            : name is null ? L("Uninstall MSI program {0} with winget?", code)
+            : L("Uninstall MSI program {0} (“{1}”) with winget?", code, name);
     }
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) => WingetUninstall.Read(p);
@@ -215,7 +215,7 @@ public sealed class WingetUninstallUserAction : IActionHandler
 {
     public const string ActionId = "apps.winget.uninstall.user";
     public string Id => ActionId;
-    public string Title => L("Désinstaller un programme de votre compte (winget)");
+    public string Title => L("Uninstall a program from your account (winget)");
     public bool RequiresAdmin => false;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) => WingetUninstall.Read(p);
@@ -234,10 +234,10 @@ internal static class WingetUninstall
     {
         var code = Validate.Optional(p, "productCode", 38);
         var name = Validate.Optional(p, "name", 260);
-        if (code is null && name is null) throw new ValidationException(L("Indiquez le nom exact du programme ou son code produit."));
-        if (code is not null && !InstalledPrograms.IsProductCode(code)) throw new ValidationException(L("Code produit MSI invalide."));
+        if (code is null && name is null) throw new ValidationException(L("Enter the program's exact name or its product code."));
+        if (code is not null && !InstalledPrograms.IsProductCode(code)) throw new ValidationException(L("Invalid MSI product code."));
         if (name is not null && (name.StartsWith('-') || name.Any(char.IsControl)))
-            throw new ValidationException(L("Nom de programme invalide."));
+            throw new ValidationException(L("Invalid program name."));
         return (name, code?.ToUpperInvariant());
     }
 
@@ -250,13 +250,13 @@ internal static class WingetUninstall
         var match = code is not null
             ? installed.FirstOrDefault(x => x.PerUser == perUser && string.Equals(x.ProductCode, code, StringComparison.OrdinalIgnoreCase))
             : installed.FirstOrDefault(x => x.PerUser == perUser && string.Equals(x.DisplayName, name, StringComparison.Ordinal));
-        if (match is null) return ActionResult.Fail(L("Ce programme ne figure plus dans la liste des programmes installés."));
-        if (match.NoRemove) return ActionResult.Fail(L("« {0} » ne peut pas être désinstallé (protégé par son éditeur).", match.DisplayName));
+        if (match is null) return ActionResult.Fail(L("This program is no longer in the list of installed programs."));
+        if (match.NoRemove) return ActionResult.Fail(L("“{0}” can't be uninstalled (protected by its publisher).", match.DisplayName));
         if (!perUser && await Task.Run(() => InstalledPrograms.UserHiveHasEntry(ctx.UserSid, match.DisplayName, code)).ConfigureAwait(false))
-            return ActionResult.Fail(L("Un programme « {0} » est aussi inscrit pour votre compte seulement : par sécurité, Timonier ne le désinstalle pas avec les droits administrateur. Utilisez les Paramètres de Windows (Applications installées).", match.DisplayName));
-        if (!Winget.IsAvailable) return ActionResult.Fail(L("winget est introuvable sur ce PC."));
+            return ActionResult.Fail(L("A program named “{0}” is also registered for your account only: for safety, Timonier doesn't uninstall it with administrator rights. Use Windows Settings (Installed apps).", match.DisplayName));
+        if (!Winget.IsAvailable) return ActionResult.Fail(L("winget wasn't found on this PC."));
 
-        ctx.Progress?.Report(L("Désinstallation de {0}…", match.DisplayName));
+        ctx.Progress?.Report(L("Uninstalling {0}…", match.DisplayName));
         var scope = perUser ? "user" : "machine";
         string[] args = code is not null
             ? ["uninstall", "--product-code", code, "--scope", scope, "--silent", "--accept-source-agreements", "--disable-interactivity"]
@@ -265,9 +265,9 @@ internal static class WingetUninstall
         var meaning = Winget.Describe(r.ExitCode, r.TimedOut);
         Log.Info("Apps", $"winget uninstall → {r.ExitCode} ({meaning})");
         var data = new Dictionary<string, string> { ["name"] = match.DisplayName, ["result"] = meaning };
-        if (r.Success) return ActionResult.Ok(L("« {0} » a été désinstallé.", match.DisplayName), data);
+        if (r.Success) return ActionResult.Ok(L("“{0}” was uninstalled.", match.DisplayName), data);
         if (unchecked((uint)r.ExitCode) == 0x8A150109)
-            return ActionResult.Ok(L("« {0} » est désinstallé ; redémarrez le PC pour terminer.", match.DisplayName), data) with { Effect = Core.Model.ApplyEffect.Reboot };
-        return new ActionResult(false, L("Désinstallation de « {0} » : {1}.", match.DisplayName, meaning)) { Data = data };
+            return ActionResult.Ok(L("“{0}” is uninstalled; restart the PC to finish.", match.DisplayName), data) with { Effect = Core.Model.ApplyEffect.Reboot };
+        return new ActionResult(false, L("Uninstalling “{0}”: {1}.", match.DisplayName, meaning)) { Data = data };
     }
 }

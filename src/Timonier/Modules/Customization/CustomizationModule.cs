@@ -17,8 +17,8 @@ public sealed class CustomizationModule : IModule
 
     public void Register(ModuleRegistry r)
     {
-        r.AddCategory(new CategoryInfo(Category, L("Personnalisation"), Glyph,
-            L("Apparence de Windows, fond d'écran, barre des tâches, menu Démarrer, Explorateur de fichiers et ouverture de session.")));
+        r.AddCategory(new CategoryInfo(Category, L("Personalization"), Glyph,
+            L("Windows appearance, wallpaper, taskbar, Start menu, File Explorer and sign-in.")));
 
         r.AddTweaks(CustomizationTweaks.All());
 
@@ -26,12 +26,12 @@ public sealed class CustomizationModule : IModule
         r.AddAction(new SetSolidColorAction());
         r.AddAction(new SetLockScreenImageAction());
 
-        r.AddPage(new PageInfo(PageId, L("Personnalisation"), Glyph, NavSection.Settings, 20, () => new CustomizationPage())
+        r.AddPage(new PageInfo(PageId, L("Personalization"), Glyph, NavSection.Settings, 20, () => new CustomizationPage())
         {
             CategoryId = Category,
-            Description = L("Thème clair ou sombre, couleurs, fond d'écran, barre des tâches, Démarrer, Explorateur."),
+            Description = L("Light or dark theme, colors, wallpaper, taskbar, Start, File Explorer."),
             Keywords =
-            [L("personnalisation, apparence, theme, mode sombre, fond d'ecran, barre des taches, menu demarrer, explorateur, bureau, ecran de verrouillage, personalization, customize, look")],
+            [L("personalization, appearance, theme, dark mode, wallpaper, taskbar, start menu, file explorer, desktop, lock screen, customize, look")],
         });
 
         r.AddQuickAction(ThemeSwitcher.CreateQuickAction());
@@ -44,60 +44,60 @@ public sealed class CustomizationModule : IModule
         // Fonctions de la page.
         yield return new SearchEntry
         {
-            Id = "custom.section.wallpaper", Title = L("Changer le fond d'écran"),
-            Subtitle = L("Image ou couleur unie, position (remplir, ajuster, mosaïque…), retour au fond précédent"),
+            Id = "custom.section.wallpaper", Title = L("Change the wallpaper"),
+            Subtitle = L("Picture or solid color, position (fill, fit, tile…), go back to the previous wallpaper"),
             Glyph = "", PageId = PageId, PageParameter = "section:wallpaper", Boost = 0.1,
-            Keywords = [L("fond d'ecran, wallpaper, image de fond, arriere plan, couleur unie, background, photo bureau")],
+            Keywords = [L("wallpaper, background, desktop background, background image, solid color, desktop picture")],
         };
         yield return new SearchEntry
         {
-            Id = "custom.section.lockscreen", Title = L("Image de l'écran de verrouillage"),
-            Subtitle = L("Choisir l'image affichée quand la session est verrouillée"),
+            Id = "custom.section.lockscreen", Title = L("Lock screen picture"),
+            Subtitle = L("Choose the picture shown when your PC is locked"),
             Glyph = "", PageId = PageId, PageParameter = "section:lockscreen",
-            Keywords = [L("ecran de verrouillage, lock screen, image verrouillage, windows a la une, spotlight")],
+            Keywords = [L("lock screen, lock screen picture, windows spotlight, spotlight")],
         };
         yield return new SearchEntry
         {
-            Id = "custom.section.appearance", Title = L("Mode clair, sombre ou mixte"),
-            Subtitle = L("Changer le thème de Windows et des applications en un clic"),
+            Id = "custom.section.appearance", Title = L("Light, dark or mixed mode"),
+            Subtitle = L("Change the Windows and app theme in one click"),
             Glyph = "", PageId = PageId, PageParameter = "section:appearance", Boost = 0.1,
-            Keywords = [L("mode sombre, mode clair, dark mode, light mode, theme, couleur d'accent, accent")],
+            Keywords = [L("dark mode, light mode, theme, accent color, accent, night mode")],
         };
 
         // Pages des Paramètres de Windows (ouvertes directement).
-        yield return Settings("custom.settings.colors", L("Couleurs (Paramètres Windows)"), L("Couleur d'accent précise, mode, transparence"),
-            "ms-settings:colors", L("couleur d'accent, accent color, couleurs"));
-        yield return Settings("custom.settings.themes", L("Thèmes (Paramètres Windows)"), L("Thèmes complets, sons, pointeurs, icônes du bureau"),
-            "ms-settings:themes", L("themes, theme windows, pack de themes"));
-        yield return Settings("custom.settings.background", L("Arrière-plan (Paramètres Windows)"), L("Image, diaporama, Windows à la une"),
-            "ms-settings:personalization-background", L("diaporama, slideshow, windows a la une, spotlight"));
-        yield return Settings("custom.settings.lockscreen", L("Écran de verrouillage (Paramètres Windows)"), L("Image, état détaillé, widgets"),
-            "ms-settings:lockscreen", L("ecran de verrouillage, lock screen"));
-        yield return Settings("custom.settings.taskbar", L("Barre des tâches (Paramètres Windows)"), L("Icônes de la zone de notification, comportements"),
-            "ms-settings:taskbar", L("zone de notification, icones systeme, system tray, masquer automatiquement"));
-        yield return Settings("custom.settings.start", L("Démarrer (Paramètres Windows)"), L("Dossiers à côté du bouton Marche/Arrêt, disposition"),
-            "ms-settings:personalization-start", L("dossiers demarrer, start folders, menu demarrer"));
-        yield return Settings("custom.settings.fonts", L("Polices (Paramètres Windows)"), L("Polices installées, ajout de polices"),
-            "ms-settings:fonts", L("police, fonts, typographie"));
-        yield return Settings("custom.settings.mouse", L("Souris (Paramètres Windows)"), L("Vitesse du pointeur, bouton principal, défilement"),
-            "ms-settings:mousetouchpad", L("vitesse souris, defilement, bouton principal, mouse speed"));
-        yield return Settings("custom.settings.keyboard", L("Clavier et accessibilité (Paramètres Windows)"), L("Touches rémanentes, filtres, bascules"),
-            "ms-settings:easeofaccess-keyboard", L("touches remanentes, sticky keys, clavier visuel"));
+        yield return Settings("custom.settings.colors", L("Colors (Windows Settings)"), L("Precise accent color, mode, transparency"),
+            "ms-settings:colors", L("accent color, accent, colors"));
+        yield return Settings("custom.settings.themes", L("Themes (Windows Settings)"), L("Full themes, sounds, mouse pointers, desktop icons"),
+            "ms-settings:themes", L("themes, windows theme, theme pack"));
+        yield return Settings("custom.settings.background", L("Background (Windows Settings)"), L("Picture, slideshow, Windows spotlight"),
+            "ms-settings:personalization-background", L("slideshow, windows spotlight, spotlight"));
+        yield return Settings("custom.settings.lockscreen", L("Lock screen (Windows Settings)"), L("Picture, detailed status, widgets"),
+            "ms-settings:lockscreen", L("lock screen"));
+        yield return Settings("custom.settings.taskbar", L("Taskbar (Windows Settings)"), L("Notification area icons, behaviors"),
+            "ms-settings:taskbar", L("notification area, system icons, system tray, tray icons, automatically hide, auto-hide"));
+        yield return Settings("custom.settings.start", L("Start (Windows Settings)"), L("Folders next to the Power button, layout"),
+            "ms-settings:personalization-start", L("start folders, start menu"));
+        yield return Settings("custom.settings.fonts", L("Fonts (Windows Settings)"), L("Installed fonts, add fonts"),
+            "ms-settings:fonts", L("font, fonts, typography, typeface"));
+        yield return Settings("custom.settings.mouse", L("Mouse (Windows Settings)"), L("Pointer speed, primary button, scrolling"),
+            "ms-settings:mousetouchpad", L("mouse speed, pointer speed, scrolling, primary button"));
+        yield return Settings("custom.settings.keyboard", L("Keyboard and accessibility (Windows Settings)"), L("Sticky keys, filter keys, toggle keys"),
+            "ms-settings:easeofaccess-keyboard", L("sticky keys, on-screen keyboard"));
 
         yield return new SearchEntry
         {
-            Id = "custom.tool.desktopicons", Title = L("Paramètres des icônes du bureau"),
-            Subtitle = L("Fenêtre classique : icônes Ce PC, Corbeille, Réseau… et leur apparence"),
+            Id = "custom.tool.desktopicons", Title = L("Desktop icon settings"),
+            Subtitle = L("Classic window: This PC, Recycle Bin, Network… icons and their appearance"),
             Glyph = "", Kind = SearchEntryKind.Tool,
-            Keywords = [L("icones du bureau, desktop icons, desk.cpl, corbeille, ce pc")],
+            Keywords = [L("desktop icons, desk.cpl, recycle bin, this pc")],
             Execute = () => ProcessRunner.Launch(SystemTool.Rundll32, "shell32.dll,Control_RunDLL", "desk.cpl,,0"),
         };
         yield return new SearchEntry
         {
-            Id = "custom.tool.folderoptions", Title = L("Options des dossiers de l'Explorateur"),
-            Subtitle = L("Fenêtre classique : affichage, fichiers cachés, navigation"),
+            Id = "custom.tool.folderoptions", Title = L("File Explorer folder options"),
+            Subtitle = L("Classic window: view, hidden files, navigation"),
             Glyph = "", Kind = SearchEntryKind.Tool,
-            Keywords = [L("options des dossiers, folder options, options de l'explorateur, affichage dossiers")],
+            Keywords = [L("folder options, explorer options, folder view, file explorer options, view settings")],
             Execute = () => ProcessRunner.Launch(SystemTool.Control, "folders"),
         };
     }

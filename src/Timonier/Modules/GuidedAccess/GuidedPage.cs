@@ -45,38 +45,38 @@ public sealed class GuidedPage : UserControl, INavigationAware
 
     public GuidedPage()
     {
-        var stack = PageScaffold.Create(this, L("Accès guidé"),
-            L("Verrouillez le PC sur une seule application jusqu'à la saisie d'un code, comme l'accès guidé de l'iPhone."),
+        var stack = PageScaffold.Create(this, L("Guided access"),
+            L("Lock the PC to a single app until a code is entered, like Guided Access on the iPhone."),
             GuidedAccessModule.Glyph);
 
-        _refresh = Button(L("Actualiser"), "", "Pp.SubtleButton", (_, _) => _ = RefreshAsync());
-        _launch = Button(L("Lancer une application…"), "", "Pp.Button", (_, _) => _ = LaunchAsync(null));
+        _refresh = Button(L("Refresh"), "", "Pp.SubtleButton", (_, _) => _ = RefreshAsync());
+        _launch = Button(L("Launch an app…"), "", "Pp.Button", (_, _) => _ = LaunchAsync(null));
         _relaunchLast = Button("", "", "Pp.SubtleButton", (_, _) => _ = LaunchAsync(LastExe()));
-        _start = Button(L("Démarrer l'accès guidé"), "", "Pp.AccentButton", (_, _) => _ = StartAsync());
+        _start = Button(L("Start guided access"), "", "Pp.AccentButton", (_, _) => _ = StartAsync());
         _start.MinWidth = 200;
-        _pinSet = Button(L("Définir le code"), "", "Pp.Button", (_, _) => _ = SetPinAsync());
-        _pinRemove = Button(L("Supprimer"), "", "Pp.SubtleButton", (_, _) => _ = RemovePinAsync());
+        _pinSet = Button(L("Set the code"), "", "Pp.Button", (_, _) => _ = SetPinAsync());
+        _pinRemove = Button(L("Remove"), "", "Pp.SubtleButton", (_, _) => _ = RemovePinAsync());
 
         stack.Children.Add(BuildHero());
         stack.Children.Add(BuildStartCard());
 
-        stack.Children.Add(PageScaffold.Section(L("1. Application à verrouiller")));
+        stack.Children.Add(PageScaffold.Section(L("1. App to lock")));
         stack.Children.Add(BuildToolbar());
         stack.Children.Add(_list);
 
         stack.Children.Add(PageScaffold.Section(L("2. Restrictions")));
         stack.Children.Add(BuildOptions());
 
-        stack.Children.Add(PageScaffold.Section(L("3. Code de sortie")));
+        stack.Children.Add(PageScaffold.Section(L("3. Exit code")));
         _pinCard = BuildPinCard();
         stack.Children.Add(_pinCard);
 
-        stack.Children.Add(PageScaffold.Section(L("Confidentialité")));
+        stack.Children.Add(PageScaffold.Section(L("Privacy")));
         stack.Children.Add(PageScaffold.InfoBar(
-            L("Le filtre clavier se contente d'ignorer les combinaisons bloquées : aucune frappe n'est enregistrée, conservée ni transmise. Aucun réglage de Windows n'est modifié : la barre des tâches et les raccourcis retrouvent leur état normal dès la fin de la session."),
+            L("The keyboard filter simply ignores blocked key combinations: no keystrokes are recorded, stored or sent. No Windows settings are changed: the taskbar and shortcuts return to normal as soon as the session ends."),
             "", "Pp.InfoBar.Success"));
 
-        stack.Children.Add(PageScaffold.Section(L("Limites")));
+        stack.Children.Add(PageScaffold.Section(L("Limits")));
         stack.Children.Add(BuildLimits());
 
         UpdatePin();
@@ -100,7 +100,7 @@ public sealed class GuidedPage : UserControl, INavigationAware
         try
         {
             if (TaskbarGuard.RecoverIfNeeded())
-                AppHost.Toasts.Show(L("La barre des tâches, restée masquée après une session interrompue, a été réaffichée."), ToastKind.Info);
+                AppHost.Toasts.Show(L("The taskbar, which stayed hidden after an interrupted session, has been shown again."), ToastKind.Info);
         }
         catch (Exception ex) { Log.Warn("GuidedAccess", "restauration de la barre des tâches : " + ex.Message); }
         UpdatePin();
@@ -118,29 +118,29 @@ public sealed class GuidedPage : UserControl, INavigationAware
     private Border BuildHero()
     {
         var root = new StackPanel();
-        root.Children.Add(Text(L("Prêtez votre PC en toute sérénité"), "Pp.CardTitle").Also(t => t.FontWeight = FontWeights.SemiBold));
-        root.Children.Add(Text(L("Idéal pour laisser un enfant sur un jeu éducatif, faire une démonstration ou proposer une borne de consultation : seule l'application choisie reste utilisable, la touche Windows et les changements d'application sont bloqués."), "Pp.Caption")
+        root.Children.Add(Text(L("Lend your PC with peace of mind"), "Pp.CardTitle").Also(t => t.FontWeight = FontWeights.SemiBold));
+        root.Children.Add(Text(L("Ideal for leaving a child on an educational game, giving a demo or setting up an information kiosk: only the chosen app stays usable, and the Windows key and app switching are blocked."), "Pp.Caption")
             .Also(t => t.Margin = new Thickness(0, 4, 0, 14)));
 
         var steps = new UniformGrid { Columns = 3 };
-        steps.Children.Add(Step("1", L("Choisissez l'application"),L("Une fenêtre déjà ouverte, ou lancez-la depuis cette page.")));
-        steps.Children.Add(Step("2", L("Réglez les restrictions"), L("Raccourcis bloqués, barre des tâches masquée, limite de temps…")));
-        steps.Children.Add(Step("3", L("Démarrez"), L("Timonier se retire ; l'application reste seule à l'écran.")));
+        steps.Children.Add(Step("1", L("Choose the app"),L("A window that's already open, or launch it from this page.")));
+        steps.Children.Add(Step("2", L("Set the restrictions"), L("Blocked shortcuts, hidden taskbar, time limit…")));
+        steps.Children.Add(Step("3", LC("step title", "Start"), L("Timonier steps aside; the app is left alone on the screen.")));
         root.Children.Add(steps);
 
         root.Children.Add(Divider(14, 12));
         var exit = new WrapPanel { VerticalAlignment = VerticalAlignment.Center };
         exit.Children.Add(Icon("", 14, "Pp.AccentText").Also(i => i.Margin = new Thickness(0, 0, 8, 0)));
         // Phrase entière traduite d'un bloc ; {0} et {1} sont remplacés par les touches dessinées.
-        var sentence = L("Pour quitter : {0} × 3 en moins de 1,5 s ou {1} puis saisissez votre code.");
+        var sentence = L("To exit: {0} × 3 within 1.5 s or {1}, then enter your code.");
         var pieces = System.Text.RegularExpressions.Regex.Split(sentence, @"(\{[01]\})");
         var firstText = true;
         foreach (var piece in pieces)
         {
-            if (piece == "{0}") exit.Children.Add(KeyCap(LC("key", "Échap")));
+            if (piece == "{0}") exit.Children.Add(KeyCap(LC("key", "Esc")));
             else if (piece == "{1}")
             {
-                foreach (var k in new[] { LC("key", "Ctrl"), "Alt", LC("key", "Maj"), "P" }) exit.Children.Add(KeyCap(k));
+                foreach (var k in new[] { LC("key", "Ctrl"), "Alt", LC("key", "Shift"), "P" }) exit.Children.Add(KeyCap(k));
             }
             else if (piece.Trim().Length > 0)
             {
@@ -178,7 +178,7 @@ public sealed class GuidedPage : UserControl, INavigationAware
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.Children.Add(_startTile);
         var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        text.Children.Add(Text(L("Application verrouillée"), "Pp.Caption"));
+        text.Children.Add(Text(L("Locked app"), "Pp.Caption"));
         _startTitle.FontWeight = FontWeights.SemiBold;
         _startTitle.TextTrimming = TextTrimming.CharacterEllipsis;
         _startTitle.TextWrapping = TextWrapping.NoWrap;
@@ -205,7 +205,7 @@ public sealed class GuidedPage : UserControl, INavigationAware
         DockPanel.SetDock(right, Dock.Right);
         dock.Children.Add(right);
         var left = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        left.Children.Add(Text(L("Fenêtres ouvertes"), "Pp.Body", wrap: false).Also(t => t.FontWeight = FontWeights.SemiBold));
+        left.Children.Add(Text(L("Open windows"), "Pp.Body", wrap: false).Also(t => t.FontWeight = FontWeights.SemiBold));
         left.Children.Add(_listCount);
         dock.Children.Add(left);
         UpdateRelaunchLast();
@@ -217,26 +217,26 @@ public sealed class GuidedPage : UserControl, INavigationAware
         var stack = new StackPanel();
         var laptop = AppHost.Profile?.IsLaptopLike == true;
 
-        AddOption(stack, "", L("Bloquer la touche Windows et les raccourcis système"),
-            L("Touche Windows (menu Démarrer, Win+D, Win+R, Win+Tab…), Alt+Tab, Alt+Échap, Ctrl+Échap, Ctrl+Maj+Échap (Gestionnaire des tâches), Alt+Espace et touches de lancement du clavier (courrier, navigateur, calculatrice)."),
+        AddOption(stack, "", L("Block the Windows key and system shortcuts"),
+            L("Windows key (Start menu, Win+D, Win+R, Win+Tab…), Alt+Tab, Alt+Esc, Ctrl+Esc, Ctrl+Shift+Esc (Task Manager), Alt+Space and keyboard launch keys (mail, browser, calculator)."),
             () => _options.BlockShortcuts, v => _options.BlockShortcuts = v);
-        AddOption(stack, "", L("Bloquer aussi Alt+F4"),
-            L("Empêche de fermer l'application au clavier. Sa croix reste utilisable à la souris : si l'application se ferme, un écran propose de la relancer ou de saisir le code."),
+        AddOption(stack, "", L("Also block Alt+F4"),
+            L("Prevents closing the app from the keyboard. Its close button still works with the mouse: if the app closes, a screen offers to relaunch it or to enter the code."),
             () => _options.BlockAltF4, v => _options.BlockAltF4 = v, indent: true);
-        AddOption(stack, "", L("Garder l'application au premier plan"),
-            L("Si une autre fenêtre prend la main (clic ailleurs, notification, fenêtre surgissante), l'application est ramenée devant ; sa réduction est annulée. Les boîtes de dialogue de l'application elle-même restent autorisées."),
+        AddOption(stack, "", L("Keep the app in the foreground"),
+            L("If another window takes over (click elsewhere, notification, pop-up window), the app is brought back to the front; minimizing it is undone. The app's own dialog boxes are still allowed."),
             () => _options.KeepForeground, v => _options.KeepForeground = v);
-        AddOption(stack, "", L("Masquer la barre des tâches"),
-            L("Masque temporairement la barre des tâches (et celles des écrans secondaires). Elle réapparaît à la fin de la session, même en cas d'erreur ; si Timonier était arrêté de force, elle est réaffichée à son prochain lancement."),
+        AddOption(stack, "", L("Hide the taskbar"),
+            L("Temporarily hides the taskbar (and those on secondary displays). It reappears at the end of the session, even if an error occurs; if Timonier was force-closed, it's shown again the next time Timonier starts."),
             () => _options.HideTaskbar, v => _options.HideTaskbar = v);
-        AddOption(stack, "", L("Agrandir l'application"),
-            L("La fenêtre est maximisée au démarrage et après chaque réduction. L'emplacement de la barre des tâches reste réservé par Windows : pour un vrai plein écran, utilisez celui de l'application (F11 dans un navigateur)."),
+        AddOption(stack, "", L("Maximize the app"),
+            L("The window is maximized at startup and after each minimize. Windows still reserves the taskbar area: for true full screen, use the app's own full-screen mode (F11 in a browser)."),
             () => _options.Maximize, v => _options.Maximize = v);
-        AddOption(stack, "", L("Autoriser les touches de volume et multimédia"),
-            L("Volume, muet, lecture/pause, piste suivante.") + " "
+        AddOption(stack, "", L("Allow volume and media keys"),
+            L("Volume, mute, play/pause, next track.") + " "
             + (laptop
-                ? L("Sur ce portable, les touches de luminosité sont gérées par le matériel : elles restent toujours actives.")
-                : L("Les touches de luminosité, gérées par le matériel, ne sont jamais bloquées.")),
+                ? L("On this laptop, the brightness keys are handled by the hardware: they always stay active.")
+                : L("Brightness keys, handled by the hardware, are never blocked.")),
             () => _options.AllowMediaKeys, v => _options.AllowMediaKeys = v);
         stack.Children.Add(BuildTimeLimit());
         return PageScaffold.Card(stack).Also(c => c.Padding = new Thickness(18, 6, 18, 8));
@@ -278,9 +278,9 @@ public sealed class GuidedPage : UserControl, INavigationAware
         var combo = new ComboBox { Width = 130, Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
         foreach (var m in GuidedOptions.TimeChoices)
             combo.Items.Add(new ComboBoxItem { Content = m < 60 ? LP(m, "{0} minute", "{0} minutes") : DurationLabel(m), Tag = m });
-        System.Windows.Automation.AutomationProperties.SetName(combo, L("Durée de la limite de temps"));
+        System.Windows.Automation.AutomationProperties.SetName(combo, L("Time limit duration"));
         var box = new CheckBox { IsChecked = _options.TimeLimitMinutes > 0, Margin = new Thickness(16, 0, 0, 0) }.Styled("Pp.ToggleSwitch");
-        System.Windows.Automation.AutomationProperties.SetName(box, L("Limite de temps"));
+        System.Windows.Automation.AutomationProperties.SetName(box, L("Time limit"));
         var selected = _options.TimeLimitMinutes > 0 ? _options.TimeLimitMinutes : 30;
         combo.SelectedIndex = Math.Max(0, Array.IndexOf(GuidedOptions.TimeChoices, selected));
         combo.Visibility = box.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
@@ -304,10 +304,10 @@ public sealed class GuidedPage : UserControl, INavigationAware
         DockPanel.SetDock(tile, Dock.Left);
         dock.Children.Add(tile);
         var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        text.Children.Add(Text(L("Limite de temps"), "Pp.CardTitle"));
+        text.Children.Add(Text(L("Time limit"), "Pp.CardTitle"));
         text.Children.Add(Text(LP(GuidedOverlay.ExtendMinutes,
-                "À l'échéance, un écran recouvre l'application : le code permet de quitter ou de prolonger de {0} minute.",
-                "À l'échéance, un écran recouvre l'application : le code permet de quitter ou de prolonger de {0} minutes."), "Pp.Caption").Also(t => t.Margin = new Thickness(0, 2, 0, 0)));
+                "When time is up, a screen covers the app: the code lets you exit or extend by {0} minute.",
+                "When time is up, a screen covers the app: the code lets you exit or extend by {0} minutes."), "Pp.Caption").Also(t => t.Margin = new Thickness(0, 2, 0, 0)));
         text.Children.Add(combo);
         dock.Children.Add(text);
         host.Children.Add(dock);
@@ -341,14 +341,14 @@ public sealed class GuidedPage : UserControl, INavigationAware
         var stack = new StackPanel();
         var items = new List<string>
         {
-            L("Ctrl+Alt+Suppr et Win+L ne peuvent pas être bloqués (séquence sécurisée de Windows) : verrouiller le PC, fermer la session ou ouvrir le Gestionnaire des tâches restent possibles depuis cet écran."),
-            L("Un administrateur peut mettre fin à l'accès guidé en arrêtant Timonier depuis le Gestionnaire des tâches."),
-            L("Les demandes d'autorisation (UAC) s'affichent sur le bureau sécurisé, au-dessus de tout, et les notifications système peuvent apparaître."),
-            L("Si l'application choisie s'exécute en tant qu'administrateur, le filtre clavier ne s'applique pas à elle (isolation des privilèges de Windows)."),
-            L("Les fonctions de l'application restent disponibles (liens, boîte « Ouvrir un fichier »…) : choisissez une application adaptée à la personne."),
+            L("Ctrl+Alt+Del and Win+L can't be blocked (Windows secure attention sequence): locking the PC, signing out or opening Task Manager remain possible from that screen."),
+            L("An administrator can end guided access by stopping Timonier from Task Manager."),
+            L("Permission requests (UAC) appear on the secure desktop, above everything, and system notifications may appear."),
+            L("If the chosen app runs as administrator, the keyboard filter doesn't apply to it (Windows privilege isolation)."),
+            L("The app's features remain available (links, “Open file” dialog…): choose an app suited to the person."),
         };
         if (AppHost.Profile?.HasTouch == true)
-            items.Add(L("Écran tactile : les balayages depuis les bords de l'écran (notifications, widgets) ne sont pas bloqués."));
+            items.Add(L("Touchscreen: swipes from the screen edges (notifications, widgets) aren't blocked."));
         var first = true;
         foreach (var item in items)
         {
@@ -365,14 +365,14 @@ public sealed class GuidedPage : UserControl, INavigationAware
 
         stack.Children.Add(Divider(14, 12));
         var kiosk = new DockPanel();
-        var open = Button(L("Ouvrir le mode kiosque"), "", "Pp.Button", (_, _) => OpenKiosk());
+        var open = Button(L("Open Kiosk mode"), "", "Pp.Button", (_, _) => OpenKiosk());
         open.VerticalAlignment = VerticalAlignment.Center;
         open.Margin = new Thickness(16, 0, 0, 0);
         DockPanel.SetDock(open, Dock.Right);
         kiosk.Children.Add(open);
         var kt = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        kt.Children.Add(Text(L("Besoin d'un verrouillage plus solide ?"), "Pp.CardTitle").Also(t => t.FontWeight = FontWeights.SemiBold));
-        kt.Children.Add(Text(L("Le mode kiosque de Windows (accès affecté) réserve un compte à une seule application, y compris après un redémarrage."), "Pp.Caption"));
+        kt.Children.Add(Text(L("Need a stronger lock?"), "Pp.CardTitle").Also(t => t.FontWeight = FontWeights.SemiBold));
+        kt.Children.Add(Text(L("Windows kiosk mode (assigned access) dedicates an account to a single app, even after a restart."), "Pp.Caption"));
         kiosk.Children.Add(kt);
         stack.Children.Add(kiosk);
         return PageScaffold.Card(stack).Also(c => c.Padding = new Thickness(18, 14, 18, 14));
@@ -382,7 +382,7 @@ public sealed class GuidedPage : UserControl, INavigationAware
     {
         if (AppHost.Registry.GetPage("kiosk") is null)
         {
-            AppHost.Toasts.Show(L("La page Mode kiosque n'est pas disponible dans cette version."), ToastKind.Warning);
+            AppHost.Toasts.Show(L("The Kiosk mode page isn't available in this version."), ToastKind.Warning);
             return;
         }
         AppHost.Navigator.Navigate("kiosk");
@@ -432,24 +432,24 @@ public sealed class GuidedPage : UserControl, INavigationAware
         _list.Children.Clear();
         if (_lastError is not null)
         {
-            _list.Children.Add(StateBlock("", L("Impossible de lister les fenêtres"), _lastError));
+            _list.Children.Add(StateBlock("", L("Couldn't list the windows"), _lastError));
             _listCount.Text = "";
             return;
         }
         if (_loading && _windows.Count == 0)
         {
-            _list.Children.Add(StateBlock("", L("Recherche des fenêtres ouvertes…"), null, busy: true));
+            _list.Children.Add(StateBlock("", L("Looking for open windows…"), null, busy: true));
             _listCount.Text = "";
             return;
         }
         if (_windows.Count == 0)
         {
-            _list.Children.Add(StateBlock("", L("Aucune fenêtre d'application ouverte"),
-                L("Ouvrez l'application voulue puis cliquez sur « Actualiser », ou utilisez « Lancer une application… ».")));
+            _list.Children.Add(StateBlock("", L("No app windows open"),
+                L("Open the app you want, then click “Refresh”, or use “Launch an app…”.")));
             _listCount.Text = "";
             return;
         }
-        _listCount.Text = LP(_windows.Count, "{0} fenêtre · cliquez pour choisir", "{0} fenêtres · cliquez pour choisir");
+        _listCount.Text = LP(_windows.Count, "{0} window · click to choose", "{0} windows · click to choose");
         foreach (var w in _windows) _list.Children.Add(WindowRow(w));
     }
 
@@ -474,8 +474,8 @@ public sealed class GuidedPage : UserControl, INavigationAware
         grid.Children.Add(text);
 
         var right = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
-        if (w.LaunchedPath is not null) right.Children.Add(Badge(L("Lancée par Timonier"), "Info", ""));
-        if (selected) right.Children.Add(Badge(L("Choisie"),"Accent", ""));
+        if (w.LaunchedPath is not null) right.Children.Add(Badge(L("Launched by Timonier"), "Info", ""));
+        if (selected) right.Children.Add(Badge(LC("feminine", "Selected"),"Accent", ""));
         else right.Children.Add(Icon("", 12, "Pp.TextTertiary").Also(i => i.Margin = new Thickness(4, 0, 4, 0)));
         Grid.SetColumn(right, 2);
         grid.Children.Add(right);
@@ -488,7 +488,7 @@ public sealed class GuidedPage : UserControl, INavigationAware
             row.BorderThickness = new Thickness(1.5);
         }
         var rowName = w.Title.Length > 0 ? w.Title : w.ProcessName;
-        System.Windows.Automation.AutomationProperties.SetName(row, selected ? L("{0} (choisie)", rowName) : rowName);
+        System.Windows.Automation.AutomationProperties.SetName(row, selected ? L("{0} (selected)", rowName) : rowName);
         row.MouseLeftButtonUp += (_, _) => Select(w);
         row.KeyDown += (_, e) =>
         {
@@ -517,7 +517,7 @@ public sealed class GuidedPage : UserControl, INavigationAware
     {
         if (LastExe() is { } path)
         {
-            SetContent(_relaunchLast, L("Relancer {0}", Path.GetFileNameWithoutExtension(path)), "");
+            SetContent(_relaunchLast, L("Relaunch {0}", Path.GetFileNameWithoutExtension(path)), "");
             _relaunchLast.ToolTip = path;
             _relaunchLast.Visibility = Visibility.Visible;
         }
@@ -531,7 +531,7 @@ public sealed class GuidedPage : UserControl, INavigationAware
         {
             var dialog = new Microsoft.Win32.OpenFileDialog
             {
-                Title = L("Choisir l'application à verrouiller"),
+                Title = L("Choose the app to lock"),
                 Filter = L("Applications (*.exe)") + "|*.exe",
                 CheckFileExists = true,
                 Multiselect = false,
@@ -557,14 +557,14 @@ public sealed class GuidedPage : UserControl, INavigationAware
             _selected = window;
             SettingsStore.Current.ModuleData[LastExeKey] = exe;
             SettingsStore.Save();
-            AppHost.Toasts.Show(L("« {0} » est lancée et choisie pour l'accès guidé.", Path.GetFileNameWithoutExtension(exe)), ToastKind.Success);
+            AppHost.Toasts.Show(L("“{0}” is launched and selected for guided access.", Path.GetFileNameWithoutExtension(exe)), ToastKind.Success);
             // Revenir sur Timonier pour démarrer la session.
             Window.GetWindow(this)?.Activate();
         }
         catch (Exception ex)
         {
             Log.Warn("GuidedAccess", "lancement : " + ex.Message);
-            AppHost.Toasts.Show(ex is InvalidOperationException ? ex.Message : L("Impossible de lancer l'application : {0}", ex.Message), ToastKind.Error);
+            AppHost.Toasts.Show(ex is InvalidOperationException ? ex.Message : L("Couldn't launch the app: {0}", ex.Message), ToastKind.Error);
         }
         finally
         {
@@ -587,40 +587,40 @@ public sealed class GuidedPage : UserControl, INavigationAware
         else
         {
             _startTile.Content = GlyphTile(GuidedAccessModule.Glyph, 44, "Pp.CardSecondary", "Pp.TextTertiary");
-            _startTitle.Text = L("Aucune application choisie");
+            _startTitle.Text = L("No app selected");
             _startTitle.ToolTip = null;
         }
-        _startChips.Children.Add(GuidedPin.IsSet ? Badge(L("Code défini"), "Success", "") : Badge(L("Code à définir"), "Warning", ""));
-        if (_options.BlockShortcuts) _startChips.Children.Add(Badge(L("Raccourcis bloqués"), "Neutral", ""));
-        if (_options.HideTaskbar) _startChips.Children.Add(Badge(L("Barre des tâches masquée"), "Neutral", ""));
-        if (_options.TimeLimitMinutes > 0) _startChips.Children.Add(Badge(L("Limite : {0}", DurationLabel(_options.TimeLimitMinutes)),"Info", ""));
+        _startChips.Children.Add(GuidedPin.IsSet ? Badge(L("Code set"), "Success", "") : Badge(L("Code not set"), "Warning", ""));
+        if (_options.BlockShortcuts) _startChips.Children.Add(Badge(L("Blocked shortcuts"), "Neutral", ""));
+        if (_options.HideTaskbar) _startChips.Children.Add(Badge(L("Taskbar hidden"), "Neutral", ""));
+        if (_options.TimeLimitMinutes > 0) _startChips.Children.Add(Badge(L("Limit: {0}", DurationLabel(_options.TimeLimitMinutes)),"Info", ""));
         foreach (FrameworkElement chip in _startChips.Children) chip.Margin = new Thickness(0, 0, 6, 4);
 
         _start.IsEnabled = !_busy && _selected is not null && GuidedSession.Current is null;
-        _start.ToolTip = _selected is null ? L("Choisissez d'abord une application dans la liste.") : null;
+        _start.ToolTip = _selected is null ? L("Choose an app from the list first.") : null;
         ToolTipService.SetShowOnDisabled(_start, true);
     }
 
     private static string DurationLabel(int minutes) =>
-        minutes < 60 ? L("{0} min", minutes) : minutes % 60 == 0 ? L("{0} h", minutes / 60) : L("{0} h {1:00}", minutes / 60, minutes % 60);
+        minutes < 60 ? L("{0} min", minutes) : minutes % 60 == 0 ? L("{0} h", minutes / 60) : L("{0} h {1:00} min", minutes / 60, minutes % 60);
 
     private async Task StartAsync()
     {
         if (_busy || _selected is not { } target) return;
         if (GuidedSession.Current is not null)
         {
-            AppHost.Toasts.Show(L("Un accès guidé est déjà actif."), ToastKind.Warning);
+            AppHost.Toasts.Show(L("A guided access session is already active."), ToastKind.Warning);
             return;
         }
         if (!GuidedPin.IsSet)
         {
-            await AppHost.Dialogs.AlertAsync(L("Définissez d'abord un code"),
-                L("Un code de sortie est obligatoire : c'est lui qui permettra de quitter l'accès guidé."));
+            await AppHost.Dialogs.AlertAsync(L("Set a code first"),
+                L("An exit code is required: it's what lets you leave guided access."));
             if (!await SetPinAsync() || !GuidedPin.IsSet) return;
         }
         if (!GuidedNative.IsWindow(target.Handle))
         {
-            AppHost.Toasts.Show(L("Cette fenêtre a été fermée entre-temps. La liste est actualisée."), ToastKind.Warning);
+            AppHost.Toasts.Show(L("This window was closed in the meantime. The list has been refreshed."), ToastKind.Warning);
             _selected = null;
             await RefreshAsync();
             return;
@@ -628,14 +628,14 @@ public sealed class GuidedPage : UserControl, INavigationAware
 
         var name = string.IsNullOrWhiteSpace(target.Title) ? target.ProcessName : target.Title;
         var details = new List<string>();
-        if (_options.BlockShortcuts) details.Add(L("touche Windows et raccourcis système bloqués"));
-        if (_options.KeepForeground) details.Add(L("application maintenue au premier plan"));
-        if (_options.HideTaskbar) details.Add(L("barre des tâches masquée"));
-        if (_options.TimeLimitMinutes > 0) details.Add(L("limite de {0}", DurationLabel(_options.TimeLimitMinutes)));
+        if (_options.BlockShortcuts) details.Add(L("Windows key and system shortcuts blocked"));
+        if (_options.KeepForeground) details.Add(L("app kept in the foreground"));
+        if (_options.HideTaskbar) details.Add(L("taskbar hidden"));
+        if (_options.TimeLimitMinutes > 0) details.Add(L("{0} limit", DurationLabel(_options.TimeLimitMinutes)));
         var message = details.Count > 0
-            ? L("« {0} » sera la seule application utilisable ({1}).\n\nPour quitter : appuyez 3 fois sur Échap en moins de 1,5 seconde, ou sur Ctrl+Alt+Maj+P, puis saisissez votre code.\n\nTimonier se masque pendant la session et réapparaît à la fin.", name, string.Join(", ", details))
-            : L("« {0} » sera la seule application utilisable.\n\nPour quitter : appuyez 3 fois sur Échap en moins de 1,5 seconde, ou sur Ctrl+Alt+Maj+P, puis saisissez votre code.\n\nTimonier se masque pendant la session et réapparaît à la fin.", name);
-        if (!await AppHost.Dialogs.ConfirmAsync(L("Démarrer l'accès guidé ?"), message, L("Démarrer"))) return;
+            ? L("“{0}” will be the only usable app ({1}).\n\nTo exit: press Esc 3 times within 1.5 seconds, or press Ctrl+Alt+Shift+P, then enter your code.\n\nTimonier hides during the session and reappears at the end.", name, string.Join(", ", details))
+            : L("“{0}” will be the only usable app.\n\nTo exit: press Esc 3 times within 1.5 seconds, or press Ctrl+Alt+Shift+P, then enter your code.\n\nTimonier hides during the session and reappears at the end.", name);
+        if (!await AppHost.Dialogs.ConfirmAsync(L("Start guided access?"), message, L("Start"))) return;
 
         try
         {
@@ -644,7 +644,7 @@ public sealed class GuidedPage : UserControl, INavigationAware
         catch (Exception ex)
         {
             Log.Error("GuidedAccess", "démarrage de la session", ex);
-            AppHost.Toasts.Show(L("L'accès guidé n'a pas pu démarrer : {0}", ex.Message), ToastKind.Error);
+            AppHost.Toasts.Show(L("Guided access couldn't start: {0}", ex.Message), ToastKind.Error);
         }
     }
 
@@ -654,11 +654,11 @@ public sealed class GuidedPage : UserControl, INavigationAware
     {
         var set = GuidedPin.IsSet;
         _pinTile.Content = set ? GlyphTile("", 40, "Pp.SuccessBackground", "Pp.Success") : GlyphTile("", 40, "Pp.WarningBackground", "Pp.Warning");
-        _pinTitle.Text = set ? L("Code de sortie défini") : L("Aucun code de sortie");
+        _pinTitle.Text = set ? L("Exit code set") : L("No exit code");
         _pinDetail.Text = set
-            ? L("Demandé pour quitter l'accès guidé. Il est conservé uniquement sous forme hachée (PBKDF2) dans vos préférences Timonier, indépendamment du code de verrouillage de Timonier.")
-            : L("Obligatoire pour démarrer : choisissez un code de {0} à {1} chiffres, facile à retenir pour vous et difficile à deviner.", GuidedPin.MinLength, GuidedPin.MaxLength);
-        SetContent(_pinSet, set ? L("Modifier le code") : L("Définir le code"), "");
+            ? L("Required to exit guided access. It's stored only in hashed form (PBKDF2) in your Timonier preferences, separately from Timonier's lock code.")
+            : L("Required to start: choose a {0}- to {1}-digit code that's easy for you to remember and hard to guess.", GuidedPin.MinLength, GuidedPin.MaxLength);
+        SetContent(_pinSet, set ? L("Change code") : L("Set the code"), "");
         _pinSet.SetResourceReference(StyleProperty, set ? "Pp.Button" : "Pp.AccentButton");
         _pinRemove.Visibility = set ? Visibility.Visible : Visibility.Collapsed;
         UpdateStart();
@@ -668,27 +668,27 @@ public sealed class GuidedPage : UserControl, INavigationAware
     private async Task<bool> SetPinAsync()
     {
         if (_busy) return false;
-        if (GuidedPin.IsSet && !await AskCurrentPinAsync(L("Modifier le code"))) return false;
+        if (GuidedPin.IsSet && !await AskCurrentPinAsync(L("Change code"))) return false;
 
-        var first = await AppHost.Dialogs.PromptAsync(L("Nouveau code"),
-            L("Choisissez un code de {0} à {1} chiffres. Il sera demandé pour quitter l'accès guidé.", GuidedPin.MinLength, GuidedPin.MaxLength),
+        var first = await AppHost.Dialogs.PromptAsync(L("New code"),
+            L("Choose a {0}- to {1}-digit code. You'll need it to exit guided access.", GuidedPin.MinLength, GuidedPin.MaxLength),
             password: true, validate: GuidedPin.FormatError);
         if (first is null) return false;
-        var second = await AppHost.Dialogs.PromptAsync(L("Confirmer le code"), L("Saisissez le même code une seconde fois."),
-            password: true, validate: s => s == first ? null : L("Les deux codes ne correspondent pas."));
+        var second = await AppHost.Dialogs.PromptAsync(L("Confirm code"), L("Enter the same code again."),
+            password: true, validate: s => s == first ? null : L("The two PINs don't match."));
         if (second is null) return false;
 
         SetBusy(true);
         try
         {
             await GuidedPin.SetAsync(first);
-            AppHost.Toasts.Show(L("Code de l'accès guidé enregistré."), ToastKind.Success);
+            AppHost.Toasts.Show(L("Guided access code saved."), ToastKind.Success);
             return true;
         }
         catch (Exception ex)
         {
             Log.Error("GuidedAccess", "enregistrement du code", ex);
-            AppHost.Toasts.Show(L("Le code n'a pas pu être enregistré : {0}", ex.Message), ToastKind.Error);
+            AppHost.Toasts.Show(L("The code couldn't be saved: {0}", ex.Message), ToastKind.Error);
             return false;
         }
         finally
@@ -701,26 +701,26 @@ public sealed class GuidedPage : UserControl, INavigationAware
     private async Task RemovePinAsync()
     {
         if (_busy || !GuidedPin.IsSet) return;
-        if (!await AskCurrentPinAsync(L("Supprimer le code"))) return;
+        if (!await AskCurrentPinAsync(L("Remove code"))) return;
         GuidedPin.Clear();
         UpdatePin();
-        AppHost.Toasts.Show(L("Code supprimé : un nouveau code sera demandé avant le prochain accès guidé."), ToastKind.Info);
+        AppHost.Toasts.Show(L("Code removed: you'll be asked for a new code before the next guided access session."), ToastKind.Info);
     }
 
     private static async Task<bool> AskCurrentPinAsync(string title)
     {
         if (GuidedPin.LockRemaining > TimeSpan.Zero)
         {
-            AppHost.Toasts.Show(L("Trop d'essais incorrects. Réessayez dans {0} s.", (int)Math.Ceiling(GuidedPin.LockRemaining.TotalSeconds)), ToastKind.Warning);
+            AppHost.Toasts.Show(L("Too many incorrect attempts. Try again in {0} s.", (int)Math.Ceiling(GuidedPin.LockRemaining.TotalSeconds)), ToastKind.Warning);
             return false;
         }
-        var result = await AppHost.Dialogs.PromptAsync(title, L("Saisissez le code actuel de l'accès guidé."), password: true, validate: s =>
+        var result = await AppHost.Dialogs.PromptAsync(title, L("Enter the current guided access code."), password: true, validate: s =>
         {
             if (GuidedPin.LockRemaining > TimeSpan.Zero)
-                return L("Trop d'essais incorrects. Réessayez dans {0} s.", (int)Math.Ceiling(GuidedPin.LockRemaining.TotalSeconds));
+                return L("Too many incorrect attempts. Try again in {0} s.", (int)Math.Ceiling(GuidedPin.LockRemaining.TotalSeconds));
             return GuidedPin.Verify(s) ? null : GuidedPin.LockRemaining > TimeSpan.Zero
-                ? L("Trop d'essais incorrects. Réessayez dans {0} s.", (int)Math.Ceiling(GuidedPin.LockRemaining.TotalSeconds))
-                : L("Code incorrect.");
+                ? L("Too many incorrect attempts. Try again in {0} s.", (int)Math.Ceiling(GuidedPin.LockRemaining.TotalSeconds))
+                : L("Incorrect code.");
         });
         return result is not null;
     }

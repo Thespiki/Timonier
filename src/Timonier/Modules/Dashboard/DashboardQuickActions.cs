@@ -10,19 +10,19 @@ internal static class DashboardQuickActions
 {
     public static async Task RestartExplorerAsync()
     {
-        var ok = await AppHost.Dialogs.ConfirmAsync(L("Redémarrer l'Explorateur Windows ?"),
-            L("La barre des tâches et le bureau disparaissent une ou deux secondes puis reviennent. Les fenêtres de l'Explorateur de fichiers ouvertes seront fermées ; vos applications et documents ne sont pas touchés."),
-            L("Redémarrer l'Explorateur"));
+        var ok = await AppHost.Dialogs.ConfirmAsync(L("Restart Windows Explorer?"),
+            L("The taskbar and desktop disappear for a second or two, then come back. Open File Explorer windows will be closed; your apps and documents aren't affected."),
+            LC("quick action", "Restart Explorer"));
         if (!ok) return;
         try
         {
             await SystemEffects.RestartExplorerAsync();
-            AppHost.Toasts.Show(L("Explorateur Windows redémarré."), ToastKind.Success);
+            AppHost.Toasts.Show(LC("quick action", "Windows Explorer restarted."), ToastKind.Success);
         }
         catch (Exception ex)
         {
             Log.Error("Dashboard", "redémarrage de l'Explorateur", ex);
-            AppHost.Toasts.Show(L("Impossible de redémarrer l'Explorateur : {0}", ex.Message), ToastKind.Error);
+            AppHost.Toasts.Show(LC("quick action", "Couldn't restart Explorer: {0}", ex.Message), ToastKind.Error);
         }
     }
 
@@ -37,23 +37,23 @@ internal static class DashboardQuickActions
             // Le Gestionnaire des tâches demande le niveau « le plus élevé disponible » : sur un compte administrateur,
             // Windows exige alors un lancement via le shell (chemin absolu résolu, aucun argument).
             try { Process.Start(new ProcessStartInfo(SystemTools.Resolve(SystemTool.Taskmgr)) { UseShellExecute = true })?.Dispose(); }
-            catch (Exception inner) { Fail("taskmgr", L("Impossible d'ouvrir le Gestionnaire des tâches : {0}", inner.Message), inner); }
+            catch (Exception inner) { Fail("taskmgr", L("Couldn't open Task Manager: {0}", inner.Message), inner); }
         }
-        catch (Exception ex) { Fail("taskmgr", L("Impossible d'ouvrir le Gestionnaire des tâches : {0}", ex.Message), ex); }
+        catch (Exception ex) { Fail("taskmgr", L("Couldn't open Task Manager: {0}", ex.Message), ex); }
         return Task.CompletedTask;
     }
 
     public static Task OpenSettingsAsync()
     {
         try { ProcessRunner.OpenSettingsUri("ms-settings:"); }
-        catch (Exception ex) { Fail("ms-settings", L("Impossible d'ouvrir les Paramètres Windows : {0}", ex.Message), ex); }
+        catch (Exception ex) { Fail("ms-settings", L("Couldn't open Windows Settings: {0}", ex.Message), ex); }
         return Task.CompletedTask;
     }
 
     public static Task LockAsync()
     {
         if (!DashNative.LockWorkStation())
-            AppHost.Toasts.Show(L("Windows a refusé le verrouillage de la session."), ToastKind.Warning);
+            AppHost.Toasts.Show(L("Windows refused to lock the session."), ToastKind.Warning);
         return Task.CompletedTask;
     }
 

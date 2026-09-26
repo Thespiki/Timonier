@@ -14,45 +14,45 @@ public sealed class DashboardModule : IModule
 
     public void Register(ModuleRegistry r)
     {
-        r.AddPage(new PageInfo(PageId, L("Accueil"), Glyph, NavSection.Overview, 0, () => new DashboardPage())
+        r.AddPage(new PageInfo(PageId, L("Home"), Glyph, NavSection.Overview, 0, () => new DashboardPage())
         {
-            Description = L("Vue d'ensemble : état de santé, mesures en direct, recommandations et actions rapides."),
-            Keywords = [L("accueil, tableau de bord, dashboard, vue d'ensemble, résumé, mon pc, informations système, état du pc, santé")],
+            Description = L("Overview: health status, live metrics, recommendations and quick actions."),
+            Keywords = [L("home, dashboard, overview, summary, my pc, system information, pc status, health, status")],
         });
 
         // Contrôles de santé (lecture seule, exécutés par la page hors du thread UI).
-        r.AddHealthCheck(HealthCheck.Sync("dashboard.disk-space", L("Espace disque"), "", "maintenance", DashboardHealth.DiskSpace));
-        r.AddHealthCheck(HealthCheck.Sync("dashboard.uptime", L("Temps depuis le dernier redémarrage"), "", null, DashboardHealth.Uptime));
-        r.AddHealthCheck(HealthCheck.Sync("dashboard.pending-reboot", L("Redémarrage en attente"), "", null, DashboardHealth.PendingReboot));
-        r.AddHealthCheck(HealthCheck.Sync("dashboard.disk-health", L("Santé des disques"), "", null, DashboardHealth.DiskHealth));
+        r.AddHealthCheck(HealthCheck.Sync("dashboard.disk-space", L("Disk space"), "", "maintenance", DashboardHealth.DiskSpace));
+        r.AddHealthCheck(HealthCheck.Sync("dashboard.uptime", L("Time since last restart"), "", null, DashboardHealth.Uptime));
+        r.AddHealthCheck(HealthCheck.Sync("dashboard.pending-reboot", L("Restart pending"), "", null, DashboardHealth.PendingReboot));
+        r.AddHealthCheck(HealthCheck.Sync("dashboard.disk-health", L("Disk health"), "", null, DashboardHealth.DiskHealth));
 
         // Actions rapides (sans élévation).
-        r.AddQuickAction(new QuickAction("dashboard.restart-explorer", L("Redémarrer l'Explorateur"), "",
-            L("Relance la barre des tâches et le bureau quand ils ne répondent plus ou après un réglage d'apparence."),
+        r.AddQuickAction(new QuickAction("dashboard.restart-explorer", LC("quick action", "Restart Explorer"), "",
+            L("Restarts the taskbar and desktop when they stop responding or after an appearance setting."),
             DashboardQuickActions.RestartExplorerAsync)
         {
-            Keywords = [L("explorateur, explorer.exe, redemarrer explorateur, barre des taches bloquee, bureau fige, restart explorer")],
+            Keywords = [L("explorer, explorer.exe, restart explorer, taskbar frozen, taskbar not responding, desktop frozen, file explorer")],
             Order = 20,
         });
-        r.AddQuickAction(new QuickAction("dashboard.task-manager", L("Gestionnaire des tâches"), "",
-            L("Voir les applications et processus ouverts, leur consommation, et fermer celles qui ne répondent plus."),
+        r.AddQuickAction(new QuickAction("dashboard.task-manager", L("Task Manager"), "",
+            L("See open apps and processes and their resource usage, and close the ones that stop responding."),
             DashboardQuickActions.OpenTaskManagerAsync)
         {
-            Keywords = [L("gestionnaire des taches, task manager, taskmgr, processus, application bloquee, ctrl alt suppr")],
+            Keywords = [L("task manager, taskmgr, processes, frozen app, not responding, end task, ctrl alt del")],
             Order = 10,
         });
-        r.AddQuickAction(new QuickAction("dashboard.windows-settings", L("Paramètres Windows"), "",
-            L("Ouvre l'application Paramètres de Windows."),
+        r.AddQuickAction(new QuickAction("dashboard.windows-settings", L("Windows Settings"), "",
+            L("Opens the Windows Settings app."),
             DashboardQuickActions.OpenSettingsAsync)
         {
-            Keywords = [L("parametres, settings, ms-settings, reglages windows, panneau de configuration")],
+            Keywords = [L("settings, ms-settings, windows settings, control panel, preferences")],
             Order = 90,
         });
-        r.AddQuickAction(new QuickAction("dashboard.lock", L("Verrouiller le PC"), "",
-            L("Verrouille immédiatement la session (comme Windows + L). Vos applications restent ouvertes."),
+        r.AddQuickAction(new QuickAction("dashboard.lock", L("Lock the PC"), "",
+            L("Locks the session immediately (like Windows + L). Your apps stay open."),
             DashboardQuickActions.LockAsync)
         {
-            Keywords = [L("verrouiller, lock, verrouillage, windows l, ecran de verrouillage, quitter le poste")],
+            Keywords = [L("lock, lock pc, lock screen, windows l, win+l, lock computer, step away")],
             Order = 15,
         });
 
@@ -60,38 +60,38 @@ public sealed class DashboardModule : IModule
         [
             new SearchEntry
             {
-                Id = "dashboard.section.health", Title = L("Santé du PC"),
-                Subtitle = L("Espace disque, redémarrage en attente, sécurité, disques… tous les contrôles en un coup d'œil"),
+                Id = "dashboard.section.health", Title = L("PC health"),
+                Subtitle = L("Disk space, pending restart, security, disks… every check at a glance"),
                 Glyph = "", PageId = PageId, PageParameter = "section:health", Boost = 0.1,
-                Keywords = [L("sante, etat du pc, diagnostic, verification, probleme, check-up, bilan")],
+                Keywords = [L("health, pc status, diagnostics, check, problem, checkup, health check")],
             },
             new SearchEntry
             {
-                Id = "dashboard.section.live", Title = L("Utilisation du processeur et de la mémoire"),
-                Subtitle = L("Processeur, mémoire, disque, batterie et réseau en direct"),
+                Id = "dashboard.section.live", Title = L("Processor and memory usage"),
+                Subtitle = L("Processor, memory, disk, battery and network, live"),
                 Glyph = "", PageId = PageId, PageParameter = "section:live",
-                Keywords = [L("cpu, processeur, ram, memoire, utilisation, charge, batterie, temps de fonctionnement, uptime")],
+                Keywords = [L("cpu, processor, ram, memory, usage, load, battery, uptime")],
             },
             new SearchEntry
             {
-                Id = "dashboard.section.reco", Title = L("Recommandations pour ce PC"),
-                Subtitle = L("Réglages qui diffèrent de la recommandation de Timonier, par catégorie"),
+                Id = "dashboard.section.reco", Title = L("Recommendations for this PC"),
+                Subtitle = L("Settings that differ from Timonier's recommendation, by category"),
                 Glyph = "", PageId = PageId, PageParameter = "section:reco",
-                Keywords = [L("recommandations, conseils, optimiser, ameliorer, suggestions")],
+                Keywords = [L("recommendations, tips, optimize, improve, suggestions, advice")],
             },
             new SearchEntry
             {
-                Id = "dashboard.section.pc", Title = L("Informations sur ce PC"),
-                Subtitle = L("Modèle, Windows, processeur, mémoire, carte graphique, disque, Secure Boot"),
+                Id = "dashboard.section.pc", Title = L("PC information"),
+                Subtitle = L("Model, Windows, processor, memory, graphics card, disk, Secure Boot"),
                 Glyph = "", PageId = PageId, PageParameter = "section:pc",
-                Keywords = [L("informations systeme, configuration, specifications, modele, version de windows, mon pc, fiche technique")],
+                Keywords = [L("system information, configuration, specs, specifications, model, windows version, my pc, about, hardware")],
             },
             new SearchEntry
             {
-                Id = "dashboard.section.vendor", Title = L("Outils du fabricant"),
-                Subtitle = L("Lenovo Vantage, HP Support Assistant, MyASUS, pilotes NVIDIA, AMD ou Intel…"),
+                Id = "dashboard.section.vendor", Title = L("Manufacturer tools"),
+                Subtitle = L("Lenovo Vantage, HP Support Assistant, MyASUS, NVIDIA, AMD or Intel drivers…"),
                 Glyph = "", PageId = PageId, PageParameter = "section:vendor",
-                Keywords = [L("fabricant, constructeur, vantage, myasus, support assistant, supportassist, pilotes graphiques, bios")],
+                Keywords = [L("manufacturer, oem, vantage, myasus, support assistant, supportassist, graphics drivers, bios")],
             },
         ]);
 

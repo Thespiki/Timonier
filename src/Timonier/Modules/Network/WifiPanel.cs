@@ -25,15 +25,15 @@ internal sealed class WifiPanel : UserControl
         Focusable = false;
         var root = new StackPanel();
         root.Children.Add(NetUi.InfoBar(
-            L("Timonier affiche uniquement le nom des réseaux mémorisés : les mots de passe ne sont jamais lus ni affichés. Oublier un réseau efface aussi son mot de passe ; Windows ne s'y reconnectera plus automatiquement."),
+            L("Timonier only shows the names of saved networks: passwords are never read or displayed. Forgetting a network also erases its password; Windows will no longer reconnect to it automatically."),
             "", "Pp.InfoBar"));
 
         var toolbar = new DockPanel { Margin = new Thickness(0, 4, 0, 10) };
-        System.Windows.Automation.AutomationProperties.SetName(_filter, L("Filtrer les réseaux"));
+        System.Windows.Automation.AutomationProperties.SetName(_filter, L("Filter networks"));
         _filter.SetResourceReference(StyleProperty, "Pp.SearchBox");
-        _filter.Tag = L("Filtrer par nom…");
+        _filter.Tag = L("Filter by name…");
         _filter.TextChanged += (_, _) => Render();
-        var refresh = NetUi.Button(L("Actualiser"), "", "Pp.Button", async (_, _) => await ReloadAsync());
+        var refresh = NetUi.Button(L("Refresh"), "", "Pp.Button", async (_, _) => await ReloadAsync());
         DockPanel.SetDock(refresh, Dock.Right);
         toolbar.Children.Add(refresh);
         DockPanel.SetDock(_filter, Dock.Left);
@@ -54,7 +54,7 @@ internal sealed class WifiPanel : UserControl
     private async Task ReloadAsync()
     {
         _list.Children.Clear();
-        _list.Children.Add(NetUi.EmptyState("", L("Lecture des réseaux enregistrés…")));
+        _list.Children.Add(NetUi.EmptyState("", L("Reading saved networks…")));
         var result = await Task.Run(WlanApi.Profiles);
         _profiles = result.Value ?? [];
         _error = result.Error;
@@ -68,14 +68,14 @@ internal sealed class WifiPanel : UserControl
         {
             _summary.Text = "";
             _list.Children.Add(_error == WlanApi.ErrorServiceNotActive || _page.Snapshot is { HasWifiAdapter: false }
-                ? NetUi.EmptyState("", L("Aucune carte Wi-Fi"), L("Ce PC n'a pas de carte Wi-Fi active, ou le service « Configuration automatique WLAN » est arrêté."))
-                : NetUi.EmptyState("", L("Liste des réseaux indisponible"), L("Windows a renvoyé : {0}.", WlanApi.Describe(_error))));
+                ? NetUi.EmptyState("", L("No Wi-Fi adapter"), L("This PC has no active Wi-Fi adapter, or the “WLAN AutoConfig” service is stopped."))
+                : NetUi.EmptyState("", L("Network list unavailable"), L("Windows returned: {0}.", WlanApi.Describe(_error))));
             return;
         }
         if (_profiles.Count == 0)
         {
             _summary.Text = "";
-            _list.Children.Add(NetUi.EmptyState("", L("Aucun réseau Wi-Fi enregistré"), L("Les réseaux auxquels vous vous connectez apparaîtront ici.")));
+            _list.Children.Add(NetUi.EmptyState("", L("No saved Wi-Fi networks"), L("Networks you connect to will appear here.")));
             return;
         }
 
@@ -84,10 +84,10 @@ internal sealed class WifiPanel : UserControl
             .Where(p => filter.Length == 0 || p.Name.Contains(filter, StringComparison.CurrentCultureIgnoreCase))
             .OrderBy(p => p.Name, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
-        _summary.Text = LP(_profiles.Count, "{0} réseau enregistré", "{0} réseaux enregistrés");
+        _summary.Text = LP(_profiles.Count, "{0} saved network", "{0} saved networks");
         if (shown.Count == 0)
         {
-            _list.Children.Add(NetUi.Text(L("Aucun réseau ne correspond au filtre."), "Pp.Caption", new Thickness(2, 4, 0, 0)));
+            _list.Children.Add(NetUi.Text(L("No networks match the filter."), "Pp.Caption", new Thickness(2, 4, 0, 0)));
             return;
         }
 
@@ -102,9 +102,9 @@ internal sealed class WifiPanel : UserControl
             var p = shown[i];
             if (i > 0) card.Children.Add(NetUi.Divider(new Thickness(0, 6, 0, 6)));
             var row = new DockPanel();
-            var forget = NetUi.Button(L("Oublier"), "", "Pp.SubtleButton", async (s, _) => await ForgetAsync(p, (Button)s!));
+            var forget = NetUi.Button(L("Forget"), "", "Pp.SubtleButton", async (s, _) => await ForgetAsync(p, (Button)s!));
             forget.IsEnabled = !p.IsGroupPolicy && !_busy;
-            if (p.IsGroupPolicy) forget.ToolTip = L("Réseau imposé par une stratégie de l'organisation");
+            if (p.IsGroupPolicy) forget.ToolTip = L("Network enforced by an organization policy");
             DockPanel.SetDock(forget, Dock.Right);
             row.Children.Add(forget);
 
@@ -116,10 +116,10 @@ internal sealed class WifiPanel : UserControl
             var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
             var head = new WrapPanel();
             head.Children.Add(new TextBlock { Text = p.Name, Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center }.Styled("Pp.Body"));
-            if (currentName is not null && (current is null || current.Interface.Id == p.InterfaceId) && currentName == p.Name) head.Children.Add(NetUi.Badge(L("Connecté"), "Success"));
-            head.Children.Add(p.IsGroupPolicy ? NetUi.Badge(L("Imposé par l'organisation"), "Warning")
-                : p.IsPerUser ? NetUi.Badge(L("Ce compte uniquement"), "Info")
-                : NetUi.Badge(L("Tous les utilisateurs")));
+            if (currentName is not null && (current is null || current.Interface.Id == p.InterfaceId) && currentName == p.Name) head.Children.Add(NetUi.Badge(L("Connected"), "Success"));
+            head.Children.Add(p.IsGroupPolicy ? NetUi.Badge(L("Enforced by organization"), "Warning")
+                : p.IsPerUser ? NetUi.Badge(L("This account only"), "Info")
+                : NetUi.Badge(L("All users")));
             text.Children.Add(head);
             if (multipleInterfaces) text.Children.Add(NetUi.Text(p.InterfaceDescription, "Pp.Caption"));
             row.Children.Add(text);
@@ -130,11 +130,11 @@ internal sealed class WifiPanel : UserControl
 
     private async Task ForgetAsync(WlanProfile profile, Button button)
     {
-        if (!await AppHost.Dialogs.ConfirmAsync(L("Oublier ce réseau"),
+        if (!await AppHost.Dialogs.ConfirmAsync(L("Forget this network"),
                 profile.IsPerUser
-                    ? L("Le réseau « {0} » et son mot de passe vont être supprimés de ce PC. Pour vous y reconnecter, il faudra saisir de nouveau le mot de passe.", profile.Name)
-                    : L("Le réseau « {0} » et son mot de passe vont être supprimés de ce PC pour tous les utilisateurs. Pour vous y reconnecter, il faudra saisir de nouveau le mot de passe.", profile.Name),
-                L("Oublier"), danger: true))
+                    ? L("The network “{0}” and its password will be removed from this PC. To reconnect to it, you'll need to enter the password again.", profile.Name)
+                    : L("The network “{0}” and its password will be removed from this PC for all users. To reconnect to it, you'll need to enter the password again.", profile.Name),
+                L("Forget"), danger: true))
             return;
 
         _busy = true;

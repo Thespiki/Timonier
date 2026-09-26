@@ -29,8 +29,12 @@ return command switch
     "extract" => Extract(),
     "check" => Check(),
     "rekey" when args.Length >= 2 => Rekey(args[1..]),
+    // chunks <taille> [dossier] [--refs N]
     "chunks" when args.Length >= 2 && int.TryParse(args[1], out var chunkSize) =>
-        Chunker.Split(catalogPath, args.Length > 2 ? args[2] : Path.Combine(root, "artifacts", "i18n", "chunks"), chunkSize),
+        Chunker.Split(catalogPath,
+            args.Length > 2 && !args[2].StartsWith("--", StringComparison.Ordinal) ? args[2] : Path.Combine(root, "artifacts", "i18n", "chunks"),
+            chunkSize,
+            int.TryParse(args.SkipWhile(a => a != "--refs").Skip(1).FirstOrDefault(), out var maxRefs) ? maxRefs : 3),
     // import <langue> <dossier des traductions> [--source-switch] [--chunks <dossier des lots>]
     "import" when args.Length >= 3 => Chunker.Import(args[1],
         args.SkipWhile(a => a != "--chunks").Skip(1).FirstOrDefault() ?? Path.Combine(root, "artifacts", "i18n", "chunks"),
@@ -218,7 +222,8 @@ int Rekey(string[] mapArgs)
 {
     var checkOnly = mapArgs.Contains("--check");
     var partial = mapArgs.Contains("--partial");   // accepte des textes sans correspondance (essais, migration par étapes)
-    var paths = mapArgs.Where(a => !a.StartsWith("--", StringComparison.Ordinal)).ToList();
+    var collisionsOut = mapArgs.SkipWhile(a => a != "--collisions").Skip(1).FirstOrDefault();
+    var paths = mapArgs.Where(a => !a.StartsWith("--", StringComparison.Ordinal) && a != collisionsOut).ToList();
     var simple = new Dictionary<string, (string? Ctx, string Text)>(StringComparer.Ordinal);
     var ctxMap = new Dictionary<string, string>(StringComparer.Ordinal);
     var plural = new Dictionary<string, (string One, string Other)>(StringComparer.Ordinal);
@@ -229,13 +234,15 @@ int Rekey(string[] mapArgs)
     {
         var map = JsonNode.Parse(File.ReadAllText(path))!;
         keepCode ??= map["keepOldAs"]?.GetValue<string>();
+        // "override": true — carte de corrections, placée après les autres : ses entrées remplacent les précédentes.
+        var isOverride = map["override"]?.GetValue<bool>() == true;
         if (map["strings"] is JsonObject s)
             foreach (var (k, v) in s)
             {
                 (string? Ctx, string Text) target = v is JsonObject o
                     ? (o["context"]?.GetValue<string>(), o["text"]!.GetValue<string>())
                     : (null, v!.GetValue<string>());
-                if (simple.TryGetValue(k, out var prev) && prev != target) problems.Add($"conflit entre cartes pour « {Short(k)} »");
+                if (!isOverride && simple.TryGetValue(k, out var prev) && prev != target) problems.Add($"conflit entre cartes pour « {Short(k)} »");
                 simple[k] = target;
             }
         if (map["contexts"] is JsonObject c)
@@ -280,6 +287,24 @@ int Rekey(string[] mapArgs)
         else if (e.Context is null && simple.TryGetValue(e.Key, out var st)) Target(st.Ctx is null ? st.Text : st.Ctx + '\u0004' + st.Text, e.Key);
     }
     var collisions = targets.Where(t => t.Value.Count > 1).ToList();
+    // --collisions <fichier> : liste complète (textes entiers, références) pour les résoudre avec des contextes.
+    if (mapArgs.SkipWhile(a => a != "--collisions").Skip(1).FirstOrDefault() is { } collisionsPath)
+    {
+        var arr = new JsonArray();
+        foreach (var (key, srcs) in collisions)
+            arr.Add(new JsonObject
+            {
+                ["target"] = key.Replace('\u0004', '/').TrimStart('\u0001'),
+                ["sources"] = new JsonArray([.. srcs.Select(id => (JsonNode)new JsonObject
+                {
+                    ["text"] = id.TrimStart('\u0001').Contains('\u0004') ? id[(id.IndexOf('\u0004') + 1)..] : id.TrimStart('\u0001'),
+                    ["context"] = id.Contains('\u0004') ? id[..id.IndexOf('\u0004')] : null,
+                    ["refs"] = new JsonArray([.. (entries.TryGetValue(id, out var en) ? en.Refs.Distinct().Take(4) : []).Select(r => (JsonNode)r!)]),
+                })]),
+            });
+        WriteJson(collisionsPath, arr);
+        Console.WriteLine($"Collisions écrites : {collisionsPath}");
+    }
     foreach (var (key, sources) in collisions)
         problems.Add($"collision : « {Short(key.Replace('\u0004', '/').TrimStart('\u0001'))} » ← {string.Join(" | ", sources.Select(x => "« " + Short(x.Replace('\u0004', '/').TrimStart('\u0001')) + " »"))}");
 

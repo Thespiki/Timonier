@@ -60,8 +60,8 @@ internal sealed class GuidedSession : IDisposable
     /// <summary>Démarre une session (thread UI). En cas d'échec, tout est restauré et l'exception est relancée.</summary>
     public static GuidedSession Start(AppWindow target, GuidedOptions options)
     {
-        if (Current is not null) throw new InvalidOperationException(L("Un accès guidé est déjà actif."));
-        if (!GuidedNative.IsWindow(target.Handle)) throw new InvalidOperationException(L("La fenêtre choisie n'existe plus. Actualisez la liste."));
+        if (Current is not null) throw new InvalidOperationException(L("A guided access session is already active."));
+        if (!GuidedNative.IsWindow(target.Handle)) throw new InvalidOperationException(L("The selected window no longer exists. Refresh the list."));
         var session = new GuidedSession(target, options);
         Current = session;
         try
@@ -80,7 +80,7 @@ internal sealed class GuidedSession : IDisposable
     private unsafe void Begin()
     {
         Log.Info("GuidedAccess", "début de session");
-        _background = AppHost.Background.Acquire(L("Accès guidé actif"));
+        _background = AppHost.Background.Acquire(L("Guided access active"));
         KeyboardGuard.Install(_options, () => _dispatcher.InvokeAsync(() => Guard(() => ShowOverlay(OverlayMode.Exit))));
         if (_options.HideTaskbar) TaskbarGuard.Hide();
         if (_options.KeepForeground)
@@ -125,7 +125,7 @@ internal sealed class GuidedSession : IDisposable
         var duration = DateTime.UtcNow - _startedAt;
         Log.Info("GuidedAccess", "fin de session (" + FormatDuration(duration) + ")");
         if (showSummary)
-            AppHost.Toasts?.Show(L("Accès guidé terminé après {0} sur « {1} ».", FormatDuration(duration), _targetTitle), ToastKind.Success);
+            AppHost.Toasts?.Show(L("Guided access ended after {0} on “{1}”.", FormatDuration(duration), _targetTitle), ToastKind.Success);
         StateChanged?.Invoke(null, EventArgs.Empty);
     }
 
@@ -272,7 +272,7 @@ internal sealed class GuidedSession : IDisposable
                 _deadline = DateTime.UtcNow.AddMinutes(GuidedOverlay.ExtendMinutes);
                 CloseOverlay();
                 BringToFront(_target);
-                AppHost.Toasts?.Show(LP(GuidedOverlay.ExtendMinutes, "Accès guidé prolongé de {0} minute.", "Accès guidé prolongé de {0} minutes."), ToastKind.Info);
+                AppHost.Toasts?.Show(LP(GuidedOverlay.ExtendMinutes, "Guided access extended by {0} minute.", "Guided access extended by {0} minutes."), ToastKind.Info);
                 break;
             case OverlayChoice.Relaunch:
                 _ = RelaunchAsync();
@@ -318,7 +318,7 @@ internal sealed class GuidedSession : IDisposable
         {
             Log.Error("GuidedAccess", "erreur pendant la session : fin de l'accès guidé", ex);
             End(showSummary: false);
-            AppHost.Toasts?.Show(L("L'accès guidé a été interrompu à cause d'une erreur : {0}", ex.Message), ToastKind.Error);
+            AppHost.Toasts?.Show(L("Guided access was interrupted by an error: {0}", ex.Message), ToastKind.Error);
         }
     }
 
@@ -326,6 +326,6 @@ internal sealed class GuidedSession : IDisposable
     {
         if (d.TotalMinutes < 1) return L("{0} s", Math.Max(1, (int)d.TotalSeconds));
         if (d.TotalHours < 1) return L("{0} min", (int)d.TotalMinutes);
-        return L("{0} h {1:00}", (int)d.TotalHours, d.Minutes);
+        return L("{0} h {1:00} min", (int)d.TotalHours, d.Minutes);
     }
 }

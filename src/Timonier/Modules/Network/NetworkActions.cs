@@ -58,7 +58,7 @@ internal sealed class SetDnsAction : IActionHandler
         """;
 
     public string Id => NetworkActionIds.SetDns;
-    public string Title => L("Changer les serveurs DNS");
+    public string Title => L("Change DNS servers");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
@@ -70,14 +70,14 @@ internal sealed class SetDnsAction : IActionHandler
         if (provider == DnsProviders.Custom)
         {
             DnsProviders.ParseCustom(Validate.Required(p, "servers", 200));
-            if (doh) throw new ValidationException(L("Le DNS chiffré n'est proposé que pour les fournisseurs connus."));
+            if (doh) throw new ValidationException(L("Encrypted DNS is only offered for known providers."));
         }
         else if (Validate.Optional(p, "servers", 200) is not null)
         {
-            throw new ValidationException(L("Paramètre « servers » réservé au mode personnalisé."));
+            throw new ValidationException(L("The “servers” parameter is only for custom mode."));
         }
-        if (doh && provider == DnsProviders.Auto) throw new ValidationException(L("Le DNS chiffré nécessite un fournisseur connu."));
-        if (doh && Environment.OSVersion.Version.Build < 22000) throw new ValidationException(L("Le DNS chiffré (DoH) nécessite Windows 11."));
+        if (doh && provider == DnsProviders.Auto) throw new ValidationException(L("Encrypted DNS requires a known provider."));
+        if (doh && Environment.OSVersion.Version.Build < 22000) throw new ValidationException(L("Encrypted DNS (DoH) requires Windows 11."));
     }
 
     public async Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
@@ -89,7 +89,7 @@ internal sealed class SetDnsAction : IActionHandler
 
         // L'index doit désigner une carte active existante (jamais une valeur arbitraire).
         var adapter = NetworkInfo.ReadAdapters(includeHidden: true).FirstOrDefault(a => a.IfIndex == ifIndex);
-        if (adapter is null || !adapter.CanSetDns) return ActionResult.Fail(L("Carte réseau introuvable ou inactive. Actualisez la liste et réessayez."));
+        if (adapter is null || !adapter.CanSetDns) return ActionResult.Fail(L("Network adapter not found or inactive. Refresh the list and try again."));
         var ipv6 = Validate.Bool(p, "ipv6", true) && adapter.SupportsIPv6;
 
         List<string> servers;
@@ -112,7 +112,7 @@ internal sealed class SetDnsAction : IActionHandler
         var previous = adapter.StaticDns4.Concat(adapter.StaticDns6).ToList();
         var previousProvider = previous.Count == 0 ? DnsProviders.Auto : DnsProviders.Identify(previous)?.Key ?? DnsProviders.Custom;
 
-        ctx.Progress?.Report(L("Configuration des DNS de « {0} »…", adapter.Name));
+        ctx.Progress?.Report(L("Configuring DNS for “{0}”…", adapter.Name));
         var env = new Dictionary<string, string>
         {
             ["IF"] = ifIndex.ToString(System.Globalization.CultureInfo.InvariantCulture),
@@ -127,17 +127,17 @@ internal sealed class SetDnsAction : IActionHandler
         if (!r.Success)
         {
             Log.Warn("Network", "dns.set : " + r.Error.Trim());
-            return ActionResult.Fail(L("Windows a refusé la modification des DNS : {0}", FirstLine(r.Error)));
+            return ActionResult.Fail(L("Windows refused the DNS change: {0}", FirstLine(r.Error)));
         }
 
         var label = providerKey switch
         {
-            DnsProviders.Auto => L("DNS automatiques (fournis par le réseau)"),
-            DnsProviders.Custom => L("DNS personnalisés : {0}", string.Join(", ", servers)),
-            _ => env["DOH"] == "1" ? L("{0} (chiffré)", provider!.Name) : provider!.Name,
+            DnsProviders.Auto => L("Automatic DNS (provided by the network)"),
+            DnsProviders.Custom => L("Custom DNS: {0}", string.Join(", ", servers)),
+            _ => env["DOH"] == "1" ? L("{0} (encrypted)", provider!.Name) : provider!.Name,
         };
         Log.Info("Network", $"DNS de l'interface {ifIndex} : {providerKey}");
-        return ActionResult.Ok(L("« {0} » utilise maintenant : {1}.", adapter.Name, label), new Dictionary<string, string>
+        return ActionResult.Ok(L("“{0}” now uses: {1}.", adapter.Name, label), new Dictionary<string, string>
         {
             ["ifIndex"] = env["IF"],
             ["prevProvider"] = previousProvider,
@@ -147,7 +147,7 @@ internal sealed class SetDnsAction : IActionHandler
 
     internal static string FirstLine(string text)
     {
-        var line = text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault() ?? L("erreur inconnue");
+        var line = text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault() ?? L("unknown error");
         return line.Length > 200 ? line[..200] + "…" : line;
     }
 }
@@ -156,21 +156,21 @@ internal sealed class SetDnsAction : IActionHandler
 internal sealed class FlushDnsAction : IActionHandler
 {
     public string Id => NetworkActionIds.FlushDns;
-    public string Title => L("Vider le cache DNS");
+    public string Title => L("Flush DNS cache");
     public bool RequiresAdmin => false;
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) { }
 
     public async Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p) =>
         await DnsCache.FlushAsync().ConfigureAwait(false)
-            ? ActionResult.Ok(L("Cache DNS vidé : les noms de sites seront de nouveau résolus."))
-            : ActionResult.Fail(L("Impossible de vider le cache DNS."));
+            ? ActionResult.Ok(L("DNS cache flushed: site names will be resolved again."))
+            : ActionResult.Fail(L("Couldn't flush the DNS cache."));
 }
 
 /// <summary>Bloque un site via la section Timonier du fichier hosts (admin).</summary>
 internal sealed class HostsAddAction : IActionHandler
 {
     public string Id => NetworkActionIds.HostsAdd;
-    public string Title => L("Bloquer un site (fichier hosts)");
+    public string Title => L("Block a site (hosts file)");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
@@ -185,19 +185,19 @@ internal sealed class HostsAddAction : IActionHandler
         var host = HostsFile.ValidateBlockHost(Validate.Required(p, "host", 260));
         var withWww = Validate.Bool(p, "www", true) && !host.StartsWith("www.", StringComparison.Ordinal);
         var snapshot = HostsFile.Read();
-        if (snapshot.Error is not null) return ActionResult.Fail(L("Fichier hosts illisible : {0}", snapshot.Error));
+        if (snapshot.Error is not null) return ActionResult.Fail(L("Hosts file unreadable: {0}", snapshot.Error));
 
         var managed = HostsWrite.ValidManaged(snapshot);
         var toAdd = new List<string> { host };
         if (withWww) toAdd.Add("www." + host);
         toAdd = [.. toAdd.Where(h => !managed.Contains(h))];
-        if (toAdd.Count == 0) return ActionResult.Ok(L("« {0} » est déjà bloqué.", host));
+        if (toAdd.Count == 0) return ActionResult.Ok(L("“{0}” is already blocked.", host));
         if (managed.Count + toAdd.Count > HostsFile.MaxManagedEntries)
-            return ActionResult.Fail(L("Limite de {0} entrées atteinte : retirez d'abord des sites bloqués.", HostsFile.MaxManagedEntries));
+            return ActionResult.Fail(L("Limit of {0} entries reached: remove some blocked sites first.", HostsFile.MaxManagedEntries));
 
         if (HostsWrite.Try([.. managed, .. toAdd]) is { } error) return error;
         await DnsCache.FlushAsync().ConfigureAwait(false);
-        return ActionResult.Ok(withWww ? L("« {0} » est bloqué sur ce PC (avec www).", host) : L("« {0} » est bloqué sur ce PC.", host));
+        return ActionResult.Ok(withWww ? L("“{0}” is blocked on this PC (with www).", host) : L("“{0}” is blocked on this PC.", host));
     }
 }
 
@@ -205,7 +205,7 @@ internal sealed class HostsAddAction : IActionHandler
 internal sealed class HostsRemoveAction : IActionHandler
 {
     public string Id => NetworkActionIds.HostsRemove;
-    public string Title => L("Débloquer un site (fichier hosts)");
+    public string Title => L("Unblock a site (hosts file)");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) =>
@@ -216,14 +216,14 @@ internal sealed class HostsRemoveAction : IActionHandler
         ValidateParameters(p);
         var host = Validate.HostName(Validate.Required(p, "host", 260));
         var snapshot = HostsFile.Read();
-        if (snapshot.Error is not null) return ActionResult.Fail(L("Fichier hosts illisible : {0}", snapshot.Error));
+        if (snapshot.Error is not null) return ActionResult.Fail(L("Hosts file unreadable: {0}", snapshot.Error));
         // Seules les entrées de la section Timonier peuvent être retirées.
-        if (!snapshot.Managed.Any(e => e.Host == host)) return ActionResult.Fail(L("« {0} » ne fait pas partie des sites bloqués par Timonier.", host));
+        if (!snapshot.Managed.Any(e => e.Host == host)) return ActionResult.Fail(L("“{0}” isn't one of the sites blocked by Timonier.", host));
         var managed = HostsWrite.ValidManaged(snapshot);
         managed.Remove(host);
         if (HostsWrite.Try(managed) is { } error) return error;
         await DnsCache.FlushAsync().ConfigureAwait(false);
-        return ActionResult.Ok(L("« {0} » est de nouveau accessible.", host));
+        return ActionResult.Ok(L("“{0}” is accessible again.", host));
     }
 }
 
@@ -231,19 +231,19 @@ internal sealed class HostsRemoveAction : IActionHandler
 internal sealed class HostsClearAction : IActionHandler
 {
     public string Id => NetworkActionIds.HostsClear;
-    public string Title => L("Retirer tous les blocages Timonier du fichier hosts");
+    public string Title => L("Remove all Timonier blocks from the hosts file");
     public bool RequiresAdmin => true;
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) { }
 
     public async Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
     {
         var snapshot = HostsFile.Read();
-        if (snapshot.Error is not null) return ActionResult.Fail(L("Fichier hosts illisible : {0}", snapshot.Error));
+        if (snapshot.Error is not null) return ActionResult.Fail(L("Hosts file unreadable: {0}", snapshot.Error));
         var count = snapshot.Managed.Count();
-        if (count == 0) return ActionResult.Ok(L("Aucun site bloqué par Timonier."));
+        if (count == 0) return ActionResult.Ok(L("No sites blocked by Timonier."));
         if (HostsWrite.Try([]) is { } error) return error;
         await DnsCache.FlushAsync().ConfigureAwait(false);
-        return ActionResult.Ok(LP(count, "{0} entrée retirée du fichier hosts. Les autres lignes n'ont pas été modifiées.", "{0} entrées retirées du fichier hosts. Les autres lignes n'ont pas été modifiées."));
+        return ActionResult.Ok(LP(count, "{0} entry removed from the hosts file. Other lines weren't modified.", "{0} entries removed from the hosts file. Other lines weren't modified."));
     }
 }
 
@@ -286,7 +286,7 @@ internal static class HostsWrite
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             Log.Warn("Network", "hosts : écriture impossible : " + ex.Message);
-            return ActionResult.Fail(L("Impossible de modifier le fichier hosts : il est peut-être verrouillé ou protégé par un logiciel de sécurité. Détail : {0}", ex.Message));
+            return ActionResult.Fail(L("Couldn't modify the hosts file: it may be locked or protected by security software. Details: {0}", ex.Message));
         }
     }
 }
@@ -295,21 +295,21 @@ internal static class HostsWrite
 internal sealed class RenewIpAction : IActionHandler
 {
     public string Id => NetworkActionIds.RenewIp;
-    public string Title => L("Renouveler l'adresse IP");
+    public string Title => L("Renew IP address");
     public bool RequiresAdmin => true;
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) { }
 
     public async Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
     {
-        ctx.Progress?.Report(L("Libération des adresses IP…"));
+        ctx.Progress?.Report(L("Releasing IP addresses…"));
         var release = await ProcessRunner.RunAsync(SystemTool.IpConfig, ["/release"], new RunOptions { Timeout = TimeSpan.FromSeconds(60) }, ctx.Cancellation).ConfigureAwait(false);
-        ctx.Progress?.Report(L("Demande de nouvelles adresses…"));
+        ctx.Progress?.Report(L("Requesting new addresses…"));
         var renew = await ProcessRunner.RunAsync(SystemTool.IpConfig, ["/renew"], new RunOptions { Timeout = TimeSpan.FromSeconds(120) }, ctx.Cancellation).ConfigureAwait(false);
         await DnsCache.FlushAsync().ConfigureAwait(false);
-        if (renew.Success) return ActionResult.Ok(L("Adresses IP renouvelées. La connexion peut mettre quelques secondes à revenir."));
-        if (renew.TimedOut) return ActionResult.Fail(L("Le serveur DHCP (box, routeur) n'a pas répondu à temps. Vérifiez la connexion puis réessayez."));
+        if (renew.Success) return ActionResult.Ok(L("IP addresses renewed. The connection may take a few seconds to come back."));
+        if (renew.TimedOut) return ActionResult.Fail(L("The DHCP server (router) didn't respond in time. Check the connection, then try again."));
         var detail = SetDnsAction.FirstLine(string.IsNullOrWhiteSpace(renew.Error) ? renew.Output : renew.Error);
-        return ActionResult.Fail(release.Success ? L("Renouvellement impossible : {0}", detail) : L("Libération incomplète. Renouvellement impossible : {0}", detail));
+        return ActionResult.Fail(release.Success ? L("Couldn't renew: {0}", detail) : L("Release incomplete. Couldn't renew: {0}", detail));
     }
 }
 
@@ -317,30 +317,30 @@ internal sealed class RenewIpAction : IActionHandler
 internal sealed class NetworkResetAction : IActionHandler
 {
     public string Id => NetworkActionIds.Reset;
-    public string Title => L("Réinitialiser la pile réseau");
+    public string Title => L("Reset network stack");
     public bool RequiresAdmin => true;
     public bool RequiresElevatedConfirmation => true;
 
     public string DescribeForConfirmation(IReadOnlyDictionary<string, string> parameters) =>
-        L("Timonier va réinitialiser le catalogue Winsock et la configuration TCP/IP de Windows (netsh winsock reset, netsh int ip reset).\n\nLes adresses IP et DNS saisies manuellement seront effacées et certains logiciels réseau (VPN, pare-feu tiers, proxy) devront peut-être être réinstallés ou reconfigurés. Un redémarrage est nécessaire.\n\nContinuer ?");
+        L("Timonier will reset the Winsock catalog and the Windows TCP/IP configuration (netsh winsock reset, netsh int ip reset).\n\nManually entered IP and DNS addresses will be erased, and some network software (VPN, third-party firewall, proxy) may need to be reinstalled or reconfigured. A restart is required.\n\nContinue?");
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) { }
 
     public async Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
     {
         var options = new RunOptions { Timeout = TimeSpan.FromSeconds(90) };
-        ctx.Progress?.Report(L("Réinitialisation de Winsock…"));
+        ctx.Progress?.Report(L("Resetting Winsock…"));
         var winsock = await ProcessRunner.RunAsync(SystemTool.Netsh, ["winsock", "reset"], options, ctx.Cancellation).ConfigureAwait(false);
-        ctx.Progress?.Report(L("Réinitialisation de TCP/IP…"));
+        ctx.Progress?.Report(L("Resetting TCP/IP…"));
         var ip = await ProcessRunner.RunAsync(SystemTool.Netsh, ["int", "ip", "reset"], options, ctx.Cancellation).ConfigureAwait(false);
         await DnsCache.FlushAsync().ConfigureAwait(false);
         Log.Info("Network", $"réinitialisation réseau : winsock={winsock.ExitCode} ip={ip.ExitCode}");
 
         if (!winsock.Success && !ip.Success)
-            return ActionResult.Fail(L("La réinitialisation a échoué : {0}", SetDnsAction.FirstLine(winsock.CombinedOutput)));
+            return ActionResult.Fail(L("The reset failed: {0}", SetDnsAction.FirstLine(winsock.CombinedOutput)));
         var message = winsock.Success && ip.Success
-            ? L("Pile réseau réinitialisée. Redémarrez le PC pour terminer.")
-            : L("Pile réseau réinitialisée (partielle : une des deux commandes a signalé une erreur). Redémarrez le PC pour terminer.");
+            ? L("Network stack reset. Restart the PC to finish.")
+            : L("Network stack reset (partial: one of the two commands reported an error). Restart the PC to finish.");
         return new ActionResult(true, message) { Effect = ApplyEffect.Reboot };
     }
 }
@@ -349,14 +349,14 @@ internal sealed class NetworkResetAction : IActionHandler
 internal class WifiForgetAction : IActionHandler
 {
     public virtual string Id => NetworkActionIds.WifiForget;
-    public string Title => L("Oublier un réseau Wi-Fi");
+    public string Title => L("Forget a Wi-Fi network");
     public virtual bool RequiresAdmin => false;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
     {
         Validate.Guid(p, "iface");
         var name = Validate.Required(p, "profile", 256);
-        if (name.Any(char.IsControl)) throw new ValidationException(L("Nom de profil invalide."));
+        if (name.Any(char.IsControl)) throw new ValidationException(L("Invalid profile name."));
     }
 
     public Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
@@ -366,14 +366,14 @@ internal class WifiForgetAction : IActionHandler
         // Nom exact (non « trimé ») : doit exister dans l'énumération actuelle.
         var name = p["profile"];
         var profiles = WlanApi.Profiles();
-        if (!profiles.Ok) return Task.FromResult(ActionResult.Fail(L("Liste des réseaux Wi-Fi indisponible : {0}", WlanApi.Describe(profiles.Error))));
+        if (!profiles.Ok) return Task.FromResult(ActionResult.Fail(L("Wi-Fi network list unavailable: {0}", WlanApi.Describe(profiles.Error))));
         var profile = profiles.Value!.FirstOrDefault(x => x.InterfaceId == iface && x.Name == name);
-        if (profile is null) return Task.FromResult(ActionResult.Fail(L("Ce réseau n'est plus enregistré sur ce PC.")));
-        if (profile.IsGroupPolicy) return Task.FromResult(ActionResult.Fail(L("Ce réseau est imposé par une stratégie de l'organisation : il ne peut pas être supprimé ici.")));
+        if (profile is null) return Task.FromResult(ActionResult.Fail(L("This network is no longer saved on this PC.")));
+        if (profile.IsGroupPolicy) return Task.FromResult(ActionResult.Fail(L("This network is enforced by an organization policy: it can't be removed here.")));
 
         var err = WlanApi.DeleteProfile(iface, name);
-        if (err == 0) return Task.FromResult(ActionResult.Ok(L("Réseau « {0} » oublié. Son mot de passe devra être saisi à la prochaine connexion.", name)));
-        return Task.FromResult(new ActionResult(false, L("Suppression impossible : {0}", WlanApi.Describe(err)))
+        if (err == 0) return Task.FromResult(ActionResult.Ok(L("Network “{0}” forgotten. Its password will need to be entered the next time you connect.", name)));
+        return Task.FromResult(new ActionResult(false, L("Couldn't remove: {0}", WlanApi.Describe(err)))
         {
             Data = new Dictionary<string, string> { ["error"] = err.ToString(System.Globalization.CultureInfo.InvariantCulture) },
         });

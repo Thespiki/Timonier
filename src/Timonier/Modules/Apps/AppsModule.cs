@@ -25,26 +25,26 @@ public sealed class AppsModule : IModule
         r.AddAction(new AppxRemoveAction());
         r.AddAction(new AppxDeprovisionAction());
 
-        r.AddPage(new PageInfo(PageId, L("Applications"), Glyph, NavSection.Tools, 10, () => new AppsPage())
+        r.AddPage(new PageInfo(PageId, L("Apps"), Glyph, NavSection.Tools, 10, () => new AppsPage())
         {
             CategoryId = Category,
-            Description = L("Installer des logiciels vérifiés en un clic, désinstaller des programmes, supprimer les applications préinstallées et tout mettre à jour."),
-            Keywords = [L("applications, logiciels, programmes, installer, désinstaller, winget, bloatware, mises à jour, apps, software, store, préinstallées")],
+            Description = L("Install verified software in one click, uninstall programs, remove preinstalled apps, and update everything."),
+            Keywords = [L("apps, applications, software, programs, install, uninstall, winget, bloatware, updates, store, preinstalled")],
         });
 
-        r.AddQuickAction(new QuickAction("apps.update-all", L("Mettre à jour toutes les applications"), "",
-            L("Installe toutes les mises à jour connues de winget (navigateurs, lecteurs, utilitaires…)."),
+        r.AddQuickAction(new QuickAction("apps.update-all", L("Update all apps"), "",
+            L("Installs all updates known to winget (browsers, players, utilities…)."),
             () => { AppHost.Navigator.Navigate(PageId, "action:update-all"); return Task.CompletedTask; })
         {
-            Keywords = [L("mettre a jour, mise a jour logiciels, winget upgrade, update apps, upgrade all, actualiser les programmes")],
+            Keywords = [L("update, update software, winget upgrade, update apps, upgrade all, refresh programs")],
             Order = 30,
             RequiresAdmin = true,
         });
-        r.AddQuickAction(new QuickAction("apps.remove-bloat", L("Supprimer les applications préinstallées"), "",
-            L("Candy Crush, TikTok, Actualités… : retirez les applications superflues installées d'office."),
+        r.AddQuickAction(new QuickAction("apps.remove-bloat", L("Remove preinstalled apps"), "",
+            L("Candy Crush, TikTok, News…: remove the unnecessary apps installed out of the box."),
             () => { AppHost.Navigator.Navigate(PageId, "view:bloat"); return Task.CompletedTask; })
         {
-            Keywords = [L("bloatware, debloat, applications inutiles, candy crush, nettoyer windows, supprimer applications")],
+            Keywords = [L("bloatware, debloat, unwanted apps, candy crush, clean up windows, remove apps, uninstall apps, junk apps")],
             Order = 35,
         });
 
@@ -59,22 +59,22 @@ public sealed class AppsModule : IModule
 
     private static void RegisterSearchEntries(ModuleRegistry r)
     {
-        Feature(r, "apps.view.install", L("Installer des applications"), L("Catalogue de logiciels vérifiés, installation groupée"), "", "view:install",
-            [L("installer logiciel, telecharger programme, catalogue, ninite, installer plusieurs applications")]);
-        Feature(r, "apps.view.installed", L("Programmes installés"), L("Liste, taille, date d'installation et désinstallation"), "", "view:installed",
-            [L("desinstaller, programmes et fonctionnalites, ajout suppression de programmes, liste des logiciels, taille des programmes")]);
-        Feature(r, "apps.view.bloat", L("Applications préinstallées"), L("Supprimer Candy Crush, TikTok, Actualités, Clipchamp…"), "", "view:bloat",
-            [L("bloatware, candy crush, applications inutiles, cortana, xbox, debloat, supprimer applications windows")]);
-        Feature(r, "apps.view.updates", L("Mises à jour des applications"), L("Voir et installer les nouvelles versions de vos logiciels"), "", "view:updates",
-            [L("mise a jour logiciels, winget upgrade, versions, obsolete, mettre a jour programmes")]);
+        Feature(r, "apps.view.install", L("Install apps"), L("Catalog of verified software, batch install"), "", "view:install",
+            [L("install software, download program, catalog, ninite, install multiple apps, batch install")]);
+        Feature(r, "apps.view.installed", L("Installed programs"), L("List, size, install date and uninstall"), "", "view:installed",
+            [L("uninstall, programs and features, add or remove programs, software list, program size, installed apps")]);
+        Feature(r, "apps.view.bloat", L("Preinstalled apps"), L("Remove Candy Crush, TikTok, News, Clipchamp…"), "", "view:bloat",
+            [L("bloatware, candy crush, unwanted apps, cortana, xbox, debloat, remove windows apps, uninstall apps")]);
+        Feature(r, "apps.view.updates", L("App updates"), L("See and install new versions of your software"), "", "view:updates",
+            [L("update software, winget upgrade, versions, outdated, update programs, upgrade apps")]);
 
         r.AddSearchEntry(new SearchEntry
         {
             Id = "apps.win.appsfeatures",
-            Title = L("Applications installées (Paramètres Windows)"),
-            Subtitle = L("Page des Paramètres pour modifier ou désinstaller une application"),
+            Title = L("Installed apps (Windows Settings)"),
+            Subtitle = L("Settings page to modify or uninstall an app"),
             Glyph = "",
-            Keywords = [L("applications installees, appwiz, programmes et fonctionnalites, apps features")],
+            Keywords = [L("installed apps, appwiz, programs and features, apps features, uninstall")],
             Kind = SearchEntryKind.WindowsSetting,
             Execute = () => ProcessRunner.OpenSettingsUri("ms-settings:appsfeatures"),
         });
@@ -85,10 +85,10 @@ public sealed class AppsModule : IModule
             r.AddSearchEntry(new SearchEntry
             {
                 Id = "apps.install." + app.WingetId,
-                Title = L("Installer {0}", app.Name),
+                Title = L("Install {0}", app.Name),
                 Subtitle = app.Category + " · " + app.Description,
                 Glyph = AppsCatalog.GlyphFor(app.Category),
-                Keywords = [app.Name, app.WingetId, L("installer, telecharger")],
+                Keywords = [app.Name, app.WingetId, L("install, download")],
                 Kind = SearchEntryKind.Feature,
                 PageId = PageId,
                 PageParameter = "search:" + app.Name,

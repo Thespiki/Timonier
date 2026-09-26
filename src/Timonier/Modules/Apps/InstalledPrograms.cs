@@ -10,7 +10,7 @@ namespace Timonier.Modules.Apps;
 public sealed record InstalledProgram(string DisplayName, string? Publisher, string? Version, long SizeBytes, DateTime? InstallDate,
     string? ProductCode, bool PerUser, bool Is32Bit, bool NoRemove)
 {
-    public string ScopeLabel => PerUser ? L("Cet utilisateur") : L("Tous les utilisateurs");
+    public string ScopeLabel => PerUser ? L("This user") : L("All users");
 }
 
 /// <summary>
