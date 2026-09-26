@@ -16,27 +16,28 @@ public static class PowerHealth
             var source = PowerApi.GetSource();
             var mode = PowerApi.GetEffectiveMode() is { } g ? PowerApi.ModeFromGuid(g) : null;
 
-            var plan = active is null ? "plan inconnu" : $"plan « {active.Name} »";
-            var modeText = active?.IsBalanced == true && mode is not null ? $", mode {mode.Label}" : "";
-            var where = !source.HasBattery ? "" : source.OnBattery ? $" · sur batterie{Pct(source)}" : $" · sur secteur{Pct(source)}";
-            var summary = char.ToUpper(plan[0]) + plan[1..] + modeText + where;
+            var plan = active is null ? L("Plan inconnu")
+                : active.IsBalanced && mode is not null ? L("Plan « {0} », mode {1}", active.Name, mode.Label)
+                : L("Plan « {0} »", active.Name);
+            var summary = !source.HasBattery ? plan
+                : source.OnBattery
+                    ? (source.BatteryPercent is { } b ? L("{0} · sur batterie ({1} %)", plan, b) : L("{0} · sur batterie", plan))
+                    : (source.BatteryPercent is { } c ? L("{0} · sur secteur ({1} %)", plan, c) : L("{0} · sur secteur", plan));
 
             var hungry = active?.IsHighPerformance == true
                          || active?.IsBalanced == true && (mode == PowerApi.ModePerformance || mode == PowerApi.ModeBetterPerformance);
             if (source.OnBattery && hungry)
             {
-                return new HealthResult(HealthStatus.Warning, "Sur batterie en mode performances",
-                    summary + ". L'autonomie est réduite : passez en mode Équilibré ou Économie sur batterie.");
+                return new HealthResult(HealthStatus.Warning, L("Sur batterie en mode performances"),
+                    L("{0}. L'autonomie est réduite : passez en mode Équilibré ou Économie sur batterie.", summary));
             }
             return new HealthResult(HealthStatus.Info, summary);
         }
         catch (Exception ex)
         {
-            return new HealthResult(HealthStatus.Unknown, "État de l'alimentation indisponible", ex.Message);
+            return new HealthResult(HealthStatus.Unknown, L("État de l'alimentation indisponible"), ex.Message);
         }
     }
-
-    private static string Pct(PowerSource s) => s.BatteryPercent is { } v ? $" ({v} %)" : "";
 }
 
 /// <summary>Actions rapides du tableau de bord (exécutées sur le thread UI).</summary>
@@ -66,25 +67,27 @@ public static class PerfQuickActions
 
         if (pending.Count == 0)
         {
-            AppHost.Toasts.Show("Ce PC est déjà configuré pour les jeux : Mode Jeu actif, pas d'enregistrement en arrière-plan.", ToastKind.Success);
+            AppHost.Toasts.Show(L("Ce PC est déjà configuré pour les jeux : Mode Jeu actif, pas d'enregistrement en arrière-plan."), ToastKind.Success);
             return;
         }
 
         var lines = string.Join("\n", pending.Select(p => $"• {p.Tweak.Title} → {p.Tweak.GetOption(p.Option)?.Label}"));
         var admin = pending.Any(p => p.Tweak.RequiresAdmin);
-        if (!await AppHost.Dialogs.ConfirmAsync("Mode jeu",
-                $"Les réglages suivants vont être appliqués :\n\n{lines}\n\n" +
-                (admin ? "Une autorisation administrateur sera demandée.\n" : "") +
-                "Tout reste annulable depuis le Journal.", "Appliquer"))
+        if (!await AppHost.Dialogs.ConfirmAsync(L("Mode jeu"),
+                admin
+                    ? L("Les réglages suivants vont être appliqués :\n\n{0}\n\nUne autorisation administrateur sera demandée.\nTout reste annulable depuis le Journal.", lines)
+                    : L("Les réglages suivants vont être appliqués :\n\n{0}\n\nTout reste annulable depuis le Journal.", lines),
+                L("Appliquer")))
             return;
 
         var results = await AppHost.Engine.ApplyManyAsync(pending);
         var failed = results.Where(r => !r.Outcome.Success).ToList();
         var effects = results.Where(r => r.Outcome.Success).Aggregate(ApplyEffect.None, (acc, r) => acc | r.Tweak.Effect);
         if (failed.Count == 0)
-            AppHost.Toasts.ShowOutcome(new Core.Engine.ApplyOutcome(true, $"Mode jeu : {results.Count} réglage(s) appliqué(s).", effects));
+            AppHost.Toasts.ShowOutcome(new Core.Engine.ApplyOutcome(true, LP(results.Count, "Mode jeu : {0} réglage appliqué.", "Mode jeu : {0} réglages appliqués."), effects));
         else
-            AppHost.Toasts.Show($"Mode jeu : {failed.Count} réglage(s) en échec — {string.Join(" ; ", failed.Select(f => f.Tweak.Title + " (" + f.Outcome.Message + ")"))}",
+            AppHost.Toasts.Show(LP(failed.Count, "Mode jeu : {0} réglage en échec — {1}", "Mode jeu : {0} réglages en échec — {1}",
+                string.Join(" ; ", failed.Select(f => f.Tweak.Title + " (" + f.Outcome.Message + ")"))),
                 ToastKind.Warning);
     }
 
@@ -110,7 +113,7 @@ public static class PerfQuickActions
         {
             if (saver.IsActive)
             {
-                AppHost.Toasts.Show($"Le plan « {saver.Name} » est déjà actif.", ToastKind.Info);
+                AppHost.Toasts.Show(L("Le plan « {0} » est déjà actif.", saver.Name), ToastKind.Info);
                 return;
             }
             AppHost.Toasts.ShowOutcome(await PowerUi.ActivateSchemeAsync(saver.Id));
@@ -118,7 +121,7 @@ public static class PerfQuickActions
         }
 
         // 3. Aucun moyen direct : Paramètres Windows.
-        AppHost.Toasts.Show("Aucun plan Économie d'énergie sur ce PC : ouverture des paramètres d'alimentation de Windows.", ToastKind.Info);
+        AppHost.Toasts.Show(L("Aucun plan Économie d'énergie sur ce PC : ouverture des paramètres d'alimentation de Windows."), ToastKind.Info);
         try { Core.Platform.ProcessRunner.OpenSettingsUri("ms-settings:powersleep"); }
         catch (Exception ex) { AppHost.Toasts.Show(ex.Message, ToastKind.Error); }
     }

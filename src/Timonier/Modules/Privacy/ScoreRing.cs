@@ -48,7 +48,7 @@ public sealed class ScoreRing : Grid
         Children.Add(track);
         Children.Add(_arc);
         Children.Add(center);
-        System.Windows.Automation.AutomationProperties.SetName(this, "Score de confidentialité");
+        System.Windows.Automation.AutomationProperties.SetName(this, L("Score de confidentialité"));
     }
 
     /// <summary>Met à jour la jauge. <paramref name="ratio"/> null = état indéterminé (chargement).</summary>
@@ -59,7 +59,7 @@ public sealed class ScoreRing : Grid
         _caption.Visibility = string.IsNullOrEmpty(caption) ? Visibility.Collapsed : Visibility.Visible;
         _arc.SetResourceReference(Shape.StrokeProperty, brushKey);
         _arc.Data = ratio is { } r ? BuildArc(r) : null;
-        ToolTip = ratio is { } v ? $"{Math.Round(v * 100)} % des réglages évalués suivent la recommandation" : null;
+        ToolTip = ratio is { } v ? L("{0} % des réglages évalués suivent la recommandation", Math.Round(v * 100)) : null;
     }
 
     private static Geometry? BuildArc(double ratio)

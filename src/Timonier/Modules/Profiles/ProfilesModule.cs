@@ -16,45 +16,45 @@ public sealed class ProfilesModule : IModule
         // Déclarations uniquement : ce code s'exécute aussi dans le broker élevé.
         r.AddAction(new RenameComputerAction());
 
-        r.AddPage(new PageInfo(PageId, "Installation et profils", Glyph, NavSection.Tools, 5, () => new ProfilesPage())
+        r.AddPage(new PageInfo(PageId, L("Installation et profils"), Glyph, NavSection.Tools, 5, () => new ProfilesPage())
         {
-            Description = "Configurer un PC en quelques étapes à partir de profils d'usage : bureautique, jeux, famille, vie privée…",
-            Keywords = ["installation", "profil", "profils", "assistant", "premier démarrage", "nouveau pc", "configurer", "setup", "preset"],
+            Description = L("Configurer un PC en quelques étapes à partir de profils d'usage : bureautique, jeux, famille, vie privée…"),
+            Keywords = [L("installation, profil, profils, assistant, premier démarrage, nouveau pc, configurer, setup, preset")],
         });
 
-        r.AddQuickAction(new QuickAction("profiles.setup", "Configurer ce PC", Glyph,
-            "Choisir des profils d'usage et appliquer les réglages adaptés en une fois.", () =>
+        r.AddQuickAction(new QuickAction("profiles.setup", L("Configurer ce PC"), Glyph,
+            L("Choisir des profils d'usage et appliquer les réglages adaptés en une fois."), () =>
             {
                 AppHost.Navigator.Navigate(PageId);
                 return Task.CompletedTask;
             })
         {
             Order = 0,
-            Keywords = ["installation", "premier démarrage", "assistant", "profil", "nouveau pc"],
+            Keywords = [L("installation, premier démarrage, assistant, profil, nouveau pc")],
         });
 
         r.AddSearchEntries(
         [
-            Entry("profiles.firstrun", "Configurer un nouveau PC", "Assistant d'installation par profils",
-                "installation", "premier démarrage", "nouveau pc", "après installation de windows", "réinstallation", "setup", "first run"),
-            Entry("profiles.gaming", "Profil Jeux", "Mode Jeu, enregistrement en arrière-plan, planification GPU",
-                "profil jeux", "gaming", "gamer", "optimiser pour les jeux", "jouer"),
-            Entry("profiles.office", "Profil Bureautique", "Poste de travail sobre et sans distractions",
-                "profil bureautique", "travail", "bureau", "office", "télétravail"),
-            Entry("profiles.family", "Profil Famille et enfants", "Recherche sécurisée, publicités coupées, SmartScreen",
-                "profil famille", "enfants", "enfant", "parental", "pc familial"),
-            Entry("profiles.privacy", "Profil Vie privée maximale", "Télémétrie, publicités, Copilot et Recall au minimum",
-                "profil vie privée", "confidentialité maximale", "anti télémétrie", "debloat", "privacy"),
-            Entry("profiles.lowend", "Profil PC modeste", "Alléger Windows sur un PC peu puissant",
-                "pc lent", "vieux pc", "petit pc", "alléger windows", "accélérer", "low end"),
-            Entry("profiles.dev", "Profil Développeur", "Explorateur et outils pour programmer",
-                "profil développeur", "programmation", "dev", "coder"),
-            Entry("profiles.export", "Exporter la configuration", "Enregistrer un plan de configuration dans un fichier",
-                "exporter la configuration", "sauvegarder les réglages", "export", "fichier de configuration", "cloner la configuration"),
-            Entry("profiles.import", "Importer une configuration", "Reprendre les réglages d'un autre PC (vérifiés avant application)",
-                "importer la configuration", "import", "copier les réglages", "même configuration sur plusieurs pc"),
-            Entry("profiles.rename", "Renommer ce PC", "Changer le nom de l'ordinateur sur le réseau",
-                "nom du pc", "nom de l'ordinateur", "renommer l'ordinateur", "hostname", "computer name"),
+            Entry("profiles.firstrun", L("Configurer un nouveau PC"), L("Assistant d'installation par profils"),
+                L("installation, premier démarrage, nouveau pc, après installation de windows, réinstallation, setup, first run")),
+            Entry("profiles.gaming", L("Profil Jeux"), L("Mode Jeu, enregistrement en arrière-plan, planification GPU"),
+                L("profil jeux, gaming, gamer, optimiser pour les jeux, jouer")),
+            Entry("profiles.office", L("Profil Bureautique"), L("Poste de travail sobre et sans distractions"),
+                L("profil bureautique, travail, bureau, office, télétravail")),
+            Entry("profiles.family", L("Profil Famille et enfants"), L("Recherche sécurisée, publicités coupées, SmartScreen"),
+                L("profil famille, enfants, enfant, parental, pc familial")),
+            Entry("profiles.privacy", L("Profil Vie privée maximale"), L("Télémétrie, publicités, Copilot et Recall au minimum"),
+                L("profil vie privée, confidentialité maximale, anti télémétrie, debloat, privacy")),
+            Entry("profiles.lowend", L("Profil PC modeste"), L("Alléger Windows sur un PC peu puissant"),
+                L("pc lent, vieux pc, petit pc, alléger windows, accélérer, low end")),
+            Entry("profiles.dev", L("Profil Développeur"), L("Explorateur et outils pour programmer"),
+                L("profil développeur, programmation, dev, coder")),
+            Entry("profiles.export", L("Exporter la configuration"), L("Enregistrer un plan de configuration dans un fichier"),
+                L("exporter la configuration, sauvegarder les réglages, export, fichier de configuration, cloner la configuration")),
+            Entry("profiles.import", L("Importer une configuration"), L("Reprendre les réglages d'un autre PC (vérifiés avant application)"),
+                L("importer la configuration, import, copier les réglages, même configuration sur plusieurs pc")),
+            Entry("profiles.rename", L("Renommer ce PC"), L("Changer le nom de l'ordinateur sur le réseau"),
+                L("nom du pc, nom de l'ordinateur, renommer l'ordinateur, hostname, computer name")),
         ]);
     }
 

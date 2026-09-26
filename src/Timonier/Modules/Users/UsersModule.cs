@@ -16,8 +16,8 @@ public sealed class UsersModule : IModule
 
     public void Register(ModuleRegistry r)
     {
-        r.AddCategory(new CategoryInfo(Category, "Utilisateurs", Glyph,
-            "Comptes locaux, contrôle parental, plages horaires et écran de connexion."));
+        r.AddCategory(new CategoryInfo(Category, L("Utilisateurs"), Glyph,
+            L("Comptes locaux, contrôle parental, plages horaires et écran de connexion.")));
 
         r.AddTweaks(UsersTweaks.All());
 
@@ -32,31 +32,30 @@ public sealed class UsersModule : IModule
         r.AddAction(new SetRestrictionsAction());
         r.AddAction(new LockoutThresholdAction());
 
-        r.AddPage(new PageInfo(PageId, "Utilisateurs", Glyph, NavSection.Control, 30, () => new UsersPage())
+        r.AddPage(new PageInfo(PageId, L("Utilisateurs"), Glyph, NavSection.Control, 30, () => new UsersPage())
         {
             CategoryId = Category,
-            Description = "Comptes locaux, contrôle parental (plages horaires, restrictions), écran de connexion.",
-            Keywords = ["utilisateurs", "comptes", "compte local", "contrôle parental", "enfant", "famille", "plages horaires",
-                        "restrictions", "administrateur", "mot de passe", "écran de connexion", "users", "accounts", "parental control"],
+            Description = L("Comptes locaux, contrôle parental (plages horaires, restrictions), écran de connexion."),
+            Keywords = [L("utilisateurs, comptes, compte local, contrôle parental, enfant, famille, plages horaires, restrictions, administrateur, mot de passe, écran de connexion, users, accounts, parental control")],
         });
 
         // Contrôles de santé (lecture seule, hors du thread UI ; une seule énumération partagée).
-        r.AddHealthCheck(HealthCheck.Sync("users.builtin-admin", "Compte Administrateur intégré", UsersUi.GlyphAdmin, PageId, UsersHealth.BuiltInAdmin));
-        r.AddHealthCheck(HealthCheck.Sync("users.daily-admin", "Compte utilisé au quotidien", UsersUi.GlyphUser, PageId, UsersHealth.DailyAdmin));
-        r.AddHealthCheck(HealthCheck.Sync("users.no-password", "Comptes sans mot de passe exigé", UsersUi.GlyphKey, PageId, UsersHealth.NoPassword));
+        r.AddHealthCheck(HealthCheck.Sync("users.builtin-admin", L("Compte Administrateur intégré"), UsersUi.GlyphAdmin, PageId, UsersHealth.BuiltInAdmin));
+        r.AddHealthCheck(HealthCheck.Sync("users.daily-admin", L("Compte utilisé au quotidien"), UsersUi.GlyphUser, PageId, UsersHealth.DailyAdmin));
+        r.AddHealthCheck(HealthCheck.Sync("users.no-password", L("Comptes sans mot de passe exigé"), UsersUi.GlyphKey, PageId, UsersHealth.NoPassword));
 
-        r.AddQuickAction(new QuickAction("users.quick.family", "Ouvrir Famille Microsoft", Glyph,
-            "Contrôle parental Microsoft : temps d'écran, filtres web, achats et rapports d'activité.",
+        r.AddQuickAction(new QuickAction("users.quick.family", L("Ouvrir Famille Microsoft"), Glyph,
+            L("Contrôle parental Microsoft : temps d'écran, filtres web, achats et rapports d'activité."),
             () => { UsersUi.OpenUri("ms-settings:family-group"); return Task.CompletedTask; })
         {
-            Keywords = ["famille", "family safety", "contrôle parental", "enfant", "temps d'écran", "parental control"],
+            Keywords = [L("famille, family safety, contrôle parental, enfant, temps d'écran, parental control")],
             Order = 60,
         });
-        r.AddQuickAction(new QuickAction("users.quick.newaccount", "Créer un compte pour un enfant", UsersUi.GlyphAdd,
-            "Compte local standard : il ne peut ni installer de logiciels ni modifier les réglages du PC.",
+        r.AddQuickAction(new QuickAction("users.quick.newaccount", L("Créer un compte pour un enfant"), UsersUi.GlyphAdd,
+            L("Compte local standard : il ne peut ni installer de logiciels ni modifier les réglages du PC."),
             () => { AppHost.Navigator.Navigate(PageId, "action:create"); return Task.CompletedTask; })
         {
-            Keywords = ["nouveau compte", "ajouter utilisateur", "compte enfant", "créer compte", "add user", "compte standard"],
+            Keywords = [L("nouveau compte, ajouter utilisateur, compte enfant, créer compte, add user, compte standard")],
             Order = 70,
         });
 
@@ -77,21 +76,21 @@ public sealed class UsersModule : IModule
                 PageId = PageId, PageParameter = param, Boost = boost,
             });
 
-        Feature("users.accounts", "Comptes locaux", "Créer, supprimer, activer, promouvoir ou rétrograder un compte", UsersUi.GlyphUser,
-            "section:accounts", ["comptes", "utilisateurs", "ajouter compte", "supprimer compte", "administrateur", "compte standard", "local users"], 0.1);
-        Feature("users.newaccount", "Créer un compte utilisateur", "Nouveau compte local standard ou administrateur", UsersUi.GlyphAdd,
-            "action:create", ["nouveau compte", "ajouter utilisateur", "créer utilisateur", "add user", "new account", "compte enfant"], 0.1);
-        Feature("users.resetpassword", "Réinitialiser le mot de passe d'un compte", "Pour un autre compte local de ce PC", UsersUi.GlyphKey,
-            "section:accounts", ["mot de passe oublié", "réinitialiser mot de passe", "reset password", "changer mot de passe"]);
-        Feature("users.logonhours", "Plages horaires de connexion", "Heures auxquelles un compte standard peut ouvrir une session", UsersUi.GlyphClock,
-            "section:hours", ["plages horaires", "heures de connexion", "temps d'écran", "couvre-feu", "logon hours", "limiter horaires"], 0.1);
-        Feature("users.restrictions", "Restrictions d'un compte", "Bloquer Paramètres, Gestionnaire des tâches, invite de commandes, applications…",
+        Feature("users.accounts", L("Comptes locaux"), L("Créer, supprimer, activer, promouvoir ou rétrograder un compte"), UsersUi.GlyphUser,
+            "section:accounts", [L("comptes, utilisateurs, ajouter compte, supprimer compte, administrateur, compte standard, local users")], 0.1);
+        Feature("users.newaccount", L("Créer un compte utilisateur"), L("Nouveau compte local standard ou administrateur"), UsersUi.GlyphAdd,
+            "action:create", [L("nouveau compte, ajouter utilisateur, créer utilisateur, add user, new account, compte enfant")], 0.1);
+        Feature("users.resetpassword", L("Réinitialiser le mot de passe d'un compte"), L("Pour un autre compte local de ce PC"), UsersUi.GlyphKey,
+            "section:accounts", [L("mot de passe oublié, réinitialiser mot de passe, reset password, changer mot de passe")]);
+        Feature("users.logonhours", L("Plages horaires de connexion"), L("Heures auxquelles un compte standard peut ouvrir une session"), UsersUi.GlyphClock,
+            "section:hours", [L("plages horaires, heures de connexion, temps d'écran, couvre-feu, logon hours, limiter horaires")], 0.1);
+        Feature("users.restrictions", L("Restrictions d'un compte"), L("Bloquer Paramètres, Gestionnaire des tâches, invite de commandes, applications…"),
             UsersUi.GlyphBlock, "section:restrictions",
-            ["restrictions", "bloquer application", "interdire programme", "bloquer panneau de configuration", "disallowrun", "bloquer cmd"], 0.1);
-        Feature("users.family", "Contrôle parental Microsoft", "Famille Microsoft, compte standard, DNS familial, accès guidé", UsersUi.GlyphFamily,
-            "section:family", ["contrôle parental", "famille", "enfant", "family safety", "parental control"], 0.1);
-        Feature("users.lockout", "Verrouillage après mots de passe erronés", "Seuil de verrouillage des comptes (force brute)", UsersUi.GlyphLock,
-            "section:signin", ["verrouillage compte", "tentatives mot de passe", "lockout", "force brute", "seuil"]);
+            [L("restrictions, bloquer application, interdire programme, bloquer panneau de configuration, disallowrun, bloquer cmd")], 0.1);
+        Feature("users.family", L("Contrôle parental Microsoft"), L("Famille Microsoft, compte standard, DNS familial, accès guidé"), UsersUi.GlyphFamily,
+            "section:family", [L("contrôle parental, famille, enfant, family safety, parental control")], 0.1);
+        Feature("users.lockout", L("Verrouillage après mots de passe erronés"), L("Seuil de verrouillage des comptes (force brute)"), UsersUi.GlyphLock,
+            "section:signin", [L("verrouillage compte, tentatives mot de passe, lockout, force brute, seuil")]);
 
         void Uri(string id, string title, string subtitle, string uri, string[] keywords) =>
             r.AddSearchEntry(new SearchEntry
@@ -100,14 +99,14 @@ public sealed class UsersModule : IModule
                 Execute = () => UsersUi.OpenUri(uri),
             });
 
-        Uri("users.win.otherusers", "Autres utilisateurs", "Paramètres › Comptes › Autres utilisateurs", "ms-settings:otherusers",
-            ["autres utilisateurs", "ajouter un compte", "other users"]);
-        Uri("users.win.family", "Famille", "Paramètres › Comptes › Famille (contrôle parental Microsoft)", "ms-settings:family-group",
-            ["famille", "family", "contrôle parental"]);
-        Uri("users.win.signin", "Options de connexion", "Code PIN, Windows Hello, mot de passe, clé de sécurité", "ms-settings:signinoptions",
-            ["options de connexion", "code pin", "windows hello", "empreinte", "reconnaissance faciale", "sign-in options"]);
-        Uri("users.win.yourinfo", "Vos informations", "Paramètres › Comptes › Vos informations", "ms-settings:yourinfo",
-            ["mon compte", "photo de profil", "your info", "compte microsoft"]);
+        Uri("users.win.otherusers", L("Autres utilisateurs"), L("Paramètres › Comptes › Autres utilisateurs"), "ms-settings:otherusers",
+            [L("autres utilisateurs, ajouter un compte, other users")]);
+        Uri("users.win.family", L("Famille"), L("Paramètres › Comptes › Famille (contrôle parental Microsoft)"), "ms-settings:family-group",
+            [L("famille, family, contrôle parental")]);
+        Uri("users.win.signin", L("Options de connexion"), L("Code PIN, Windows Hello, mot de passe, clé de sécurité"), "ms-settings:signinoptions",
+            [L("options de connexion, code pin, windows hello, empreinte, reconnaissance faciale, sign-in options")]);
+        Uri("users.win.yourinfo", L("Vos informations"), L("Paramètres › Comptes › Vos informations"), "ms-settings:yourinfo",
+            [L("mon compte, photo de profil, your info, compte microsoft")]);
 
         void Tool(string id, string title, string subtitle, string[] keywords, Action run) =>
             r.AddSearchEntry(new SearchEntry
@@ -115,13 +114,13 @@ public sealed class UsersModule : IModule
                 Id = id, Title = title, Subtitle = subtitle, Glyph = Glyph, Keywords = keywords, Kind = SearchEntryKind.Tool, Execute = run,
             });
 
-        Tool("users.tool.netplwiz", "Comptes d'utilisateurs (netplwiz)", "Outil classique de gestion des comptes et des groupes",
-            ["netplwiz", "control userpasswords2", "comptes utilisateurs"], () => UsersUi.Launch(SystemTool.Netplwiz));
-        Tool("users.tool.lusrmgr", "Utilisateurs et groupes locaux (lusrmgr.msc)", "Console de gestion (éditions Professionnel et supérieures)",
-            ["lusrmgr", "groupes locaux", "local users and groups"],
+        Tool("users.tool.netplwiz", L("Comptes d'utilisateurs (netplwiz)"), L("Outil classique de gestion des comptes et des groupes"),
+            ["netplwiz", "control userpasswords2", L("comptes utilisateurs")], () => UsersUi.Launch(SystemTool.Netplwiz));
+        Tool("users.tool.lusrmgr", L("Utilisateurs et groupes locaux (lusrmgr.msc)"), L("Console de gestion (éditions Professionnel et supérieures)"),
+            ["lusrmgr", L("groupes locaux, local users and groups")],
             () => UsersUi.Launch(SystemTool.Mmc, Path.Combine(Environment.SystemDirectory, "lusrmgr.msc")));
-        Tool("users.tool.profiles", "Profils des utilisateurs", "Supprimer le dossier de profil d'un compte supprimé",
-            ["profils utilisateurs", "supprimer profil", "user profiles", "dossier utilisateur"],
+        Tool("users.tool.profiles", L("Profils des utilisateurs"), L("Supprimer le dossier de profil d'un compte supprimé"),
+            [L("profils utilisateurs, supprimer profil, user profiles, dossier utilisateur")],
             () => UsersUi.Launch(SystemTool.Rundll32, "sysdm.cpl,EditUserProfiles"));
     }
 }
@@ -154,7 +153,7 @@ internal static class UsersHealth
         catch (Exception ex)
         {
             Log.Warn("Users", "contrôle de santé : " + ex.Message);
-            return new HealthResult(HealthStatus.Unknown, "Comptes locaux illisibles", ex.Message);
+            return new HealthResult(HealthStatus.Unknown, L("Comptes locaux illisibles"), ex.Message);
         }
     }
 
@@ -162,30 +161,27 @@ internal static class UsersHealth
     {
         var admin = all.FirstOrDefault(a => a.IsBuiltInAdministrator);
         if (admin is null || !admin.Enabled)
-            return new HealthResult(HealthStatus.Good, "Compte Administrateur intégré désactivé");
-        return new HealthResult(HealthStatus.Warning, $"Le compte « {admin.Name} » intégré est activé",
-            "Ce compte a tous les droits sans invite UAC et son nom est connu d'avance : c'est une cible classique. " +
-            "Désactivez-le depuis la page Utilisateurs après avoir vérifié qu'un autre compte administrateur fonctionne.");
+            return new HealthResult(HealthStatus.Good, L("Compte Administrateur intégré désactivé"));
+        return new HealthResult(HealthStatus.Warning, L("Le compte « {0} » intégré est activé", admin.Name),
+            L("Ce compte a tous les droits sans invite UAC et son nom est connu d'avance : c'est une cible classique. Désactivez-le depuis la page Utilisateurs après avoir vérifié qu'un autre compte administrateur fonctionne."));
     });
 
     public static HealthResult DailyAdmin() => Safe(all =>
     {
         var me = all.FirstOrDefault(a => a.IsCurrent);
-        if (me is null) return new HealthResult(HealthStatus.Info, "Compte de domaine ou Microsoft Entra", "Votre compte n'est pas un compte local de ce PC.");
-        if (!me.IsAdmin) return new HealthResult(HealthStatus.Good, "Vous utilisez un compte standard");
-        return new HealthResult(HealthStatus.Info, "Vous utilisez un compte administrateur au quotidien",
-            "Un compte standard pour l'usage courant limite les dégâts d'un logiciel malveillant : l'UAC demande alors le mot de passe " +
-            "d'un administrateur. Gardez un compte administrateur distinct pour les installations.");
+        if (me is null) return new HealthResult(HealthStatus.Info, L("Compte de domaine ou Microsoft Entra"), L("Votre compte n'est pas un compte local de ce PC."));
+        if (!me.IsAdmin) return new HealthResult(HealthStatus.Good, L("Vous utilisez un compte standard"));
+        return new HealthResult(HealthStatus.Info, L("Vous utilisez un compte administrateur au quotidien"),
+            L("Un compte standard pour l'usage courant limite les dégâts d'un logiciel malveillant : l'UAC demande alors le mot de passe d'un administrateur. Gardez un compte administrateur distinct pour les installations."));
     });
 
     public static HealthResult NoPassword() => Safe(all =>
     {
         var flagged = all.Where(a => a.Enabled && a.PasswordNotRequired && a.MicrosoftAccount is null && !a.IsSystemAccount).ToList();
-        if (flagged.Count == 0) return new HealthResult(HealthStatus.Good, "Tous les comptes actifs exigent un mot de passe");
+        if (flagged.Count == 0) return new HealthResult(HealthStatus.Good, L("Tous les comptes actifs exigent un mot de passe"));
         var names = string.Join(", ", flagged.Select(a => a.Name));
         return new HealthResult(HealthStatus.Info,
-            flagged.Count == 1 ? $"1 compte accepte un mot de passe vide : {names}" : $"{flagged.Count} comptes acceptent un mot de passe vide : {names}",
-            "Windows autorise un mot de passe vide pour ces comptes. Timonier ne peut pas vérifier sans tentative de connexion s'il est " +
-            "réellement vide ; si c'est le cas, n'importe qui peut ouvrir la session en local. Définissez un mot de passe ou un code PIN.");
+            LP(flagged.Count, "{0} compte accepte un mot de passe vide : {1}", "{0} comptes acceptent un mot de passe vide : {1}", names),
+            L("Windows autorise un mot de passe vide pour ces comptes. Timonier ne peut pas vérifier sans tentative de connexion s'il est réellement vide ; si c'est le cas, n'importe qui peut ouvrir la session en local. Définissez un mot de passe ou un code PIN."));
     });
 }

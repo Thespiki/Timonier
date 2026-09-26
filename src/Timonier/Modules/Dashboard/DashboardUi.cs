@@ -119,11 +119,11 @@ internal static class DashUi
 
     public static (string Fg, string Bg, string Glyph, string Label) StatusVisual(HealthStatus s) => s switch
     {
-        HealthStatus.Good => ("Pp.Success", "Pp.SuccessBackground", "", "OK"),
-        HealthStatus.Info => ("Pp.Info", "Pp.InfoBackground", "", "Info"),
-        HealthStatus.Warning => ("Pp.Warning", "Pp.WarningBackground", "", "À vérifier"),
-        HealthStatus.Critical => ("Pp.Danger", "Pp.DangerBackground", "", "Critique"),
-        _ => ("Pp.Neutral", "Pp.NeutralBackground", "", "Inconnu"),
+        HealthStatus.Good => ("Pp.Success", "Pp.SuccessBackground", "", L("OK")),
+        HealthStatus.Info => ("Pp.Info", "Pp.InfoBackground", "", L("Info")),
+        HealthStatus.Warning => ("Pp.Warning", "Pp.WarningBackground", "", L("À vérifier")),
+        HealthStatus.Critical => ("Pp.Danger", "Pp.DangerBackground", "", L("Critique")),
+        _ => ("Pp.Neutral", "Pp.NeutralBackground", "", L("Inconnu")),
     };
 
     public static int Severity(HealthStatus s) => s switch

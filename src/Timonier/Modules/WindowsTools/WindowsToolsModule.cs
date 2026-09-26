@@ -15,11 +15,10 @@ public sealed class WindowsToolsModule : IModule
 
     public void Register(ModuleRegistry r)
     {
-        r.AddPage(new PageInfo(PageId, "Outils Windows", Glyph, NavSection.Tools, 40, () => new WindowsToolsPage())
+        r.AddPage(new PageInfo(PageId, L("Outils Windows"), Glyph, NavSection.Tools, 40, () => new WindowsToolsPage())
         {
-            Description = "Consoles d'administration, panneau de configuration, dossiers spéciaux et raccourcis vers toutes les pages des Paramètres Windows.",
-            Keywords = ["outils windows", "outils d administration", "administrative tools", "windows tools", "raccourcis", "mmc",
-                "panneau de configuration", "control panel", "parametres windows", "ms-settings", "msc"],
+            Description = L("Consoles d'administration, panneau de configuration, dossiers spéciaux et raccourcis vers toutes les pages des Paramètres Windows."),
+            Keywords = [L("outils windows, outils d administration, administrative tools, windows tools, raccourcis, mmc, panneau de configuration, control panel, parametres windows, ms-settings, msc")],
         });
 
         // Outils (catalogue filtré : fichiers présents et édition compatible ; simples tests d'existence de fichiers).
@@ -55,8 +54,8 @@ public sealed class WindowsToolsModule : IModule
             });
         }
 
-        AddQuickAction(r, "devmgmt", "wintools.quick.devmgmt", "Pilotes, matériel en erreur ou désactivé", 160);
-        AddQuickAction(r, "folder.godmode", "wintools.quick.godmode", "Toutes les tâches du Panneau de configuration", 170);
+        AddQuickAction(r, "devmgmt", "wintools.quick.devmgmt", L("Pilotes, matériel en erreur ou désactivé"), 160);
+        AddQuickAction(r, "folder.godmode", "wintools.quick.godmode", L("Toutes les tâches du Panneau de configuration"), 170);
 
         // Vocabulaire Windows absent du dictionnaire commun.
         Synonyms.AddGroup("mmc", "console mmc", "composant logiciel enfichable", "snap in", "outils d administration", "administrative tools", "outils windows");

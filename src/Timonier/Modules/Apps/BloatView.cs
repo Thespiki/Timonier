@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using Timonier.Core.Platform;
@@ -13,7 +12,6 @@ namespace Timonier.Modules.Apps;
 /// </summary>
 internal sealed class BloatView : StackPanel
 {
-    private static readonly CultureInfo Fr = CultureInfo.GetCultureInfo("fr-FR");
     private readonly AppsContext _ctx;
     private readonly ContentControl _host = new() { Focusable = false };
     private readonly List<BloatRow> _rows = [];
@@ -27,19 +25,16 @@ internal sealed class BloatView : StackPanel
     {
         _ctx = ctx;
         Children.Add(AppsUi.InfoBar(
-            "Ces applications sont supprimées pour votre compte uniquement, sans droits administrateur, et se réinstallent depuis le " +
-            "Microsoft Store. Les composants indispensables de Windows (Store, installateur d'applications, sécurité, interface…) " +
-            "sont protégés et n'apparaissent pas ici. Une mise à jour majeure de Windows peut réinstaller certaines applications.", ""));
+            L("Ces applications sont supprimées pour votre compte uniquement, sans droits administrateur, et se réinstallent depuis le Microsoft Store. Les composants indispensables de Windows (Store, installateur d'applications, sécurité, interface…) sont protégés et n'apparaissent pas ici. Une mise à jour majeure de Windows peut réinstaller certaines applications."), ""));
 
-        _removeSelected = AppsUi.Button("Supprimer la sélection", "", "Pp.AccentButton", async (_, _) => await RemoveSelectedAsync());
-        _allUsers = AppsUi.CheckBox("Aussi pour tous les comptes");
-        _allUsers.Content = "Aussi pour tous les comptes et les futurs comptes (administrateur)";
+        _removeSelected = AppsUi.Button(L("Supprimer la sélection"), "", "Pp.AccentButton", async (_, _) => await RemoveSelectedAsync());
+        _allUsers = AppsUi.CheckBox(L("Aussi pour tous les comptes"));
+        _allUsers.Content = L("Aussi pour tous les comptes et les futurs comptes (administrateur)");
         _allUsers.Margin = new Thickness(16, 0, 0, 0);
         _allUsers.Padding = new Thickness(8, 0, 0, 0);
         _allUsers.VerticalContentAlignment = VerticalAlignment.Center;
-        _allUsers.ToolTip = "Supprime aussi l'application pour les autres comptes et la retire de l'image de Windows, " +
-                            "pour qu'elle ne soit plus installée à la création d'un compte.";
-        _refresh = AppsUi.Button("Actualiser", "", "Pp.SubtleButton", async (_, _) => await LoadAsync());
+        _allUsers.ToolTip = L("Supprime aussi l'application pour les autres comptes et la retire de l'image de Windows, pour qu'elle ne soit plus installée à la création d'un compte.");
+        _refresh = AppsUi.Button(L("Actualiser"), "", "Pp.SubtleButton", async (_, _) => await LoadAsync());
         var bar = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
         DockPanel.SetDock(_refresh, Dock.Right);
         bar.Children.Add(_refresh);
@@ -59,7 +54,7 @@ internal sealed class BloatView : StackPanel
         if (_loading) return;
         _loading = true;
         _refresh.IsEnabled = false;
-        if (!_loaded) _host.Content = AppsUi.Loading("Analyse des applications du Store…");
+        if (!_loaded) _host.Content = AppsUi.Loading(L("Analyse des applications du Store…"));
         try
         {
             var apps = await Task.Run(AppxService.ListCurrentUser);
@@ -69,7 +64,7 @@ internal sealed class BloatView : StackPanel
         catch (Exception ex)
         {
             Log.Error("Apps", "liste des applications du Store", ex);
-            _host.Content = AppsUi.EmptyState("", "Liste indisponible", "Les applications du Store n'ont pas pu être énumérées : " + ex.Message, "Pp.Warning");
+            _host.Content = AppsUi.EmptyState("", L("Liste indisponible"), L("Les applications du Store n'ont pas pu être énumérées : {0}", ex.Message), "Pp.Warning");
         }
         finally
         {
@@ -88,12 +83,12 @@ internal sealed class BloatView : StackPanel
         var known = apps.Where(a => a.Bloat is not null && !a.IsSystemSigned)
             .OrderBy(a => a.Bloat!.Risk).ThenByDescending(a => a.Bloat!.Recommended).ThenBy(a => a.Title, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
-        root.Children.Add(AppsUi.SectionHeader("Applications préinstallées détectées", "", out var knownCounter));
+        root.Children.Add(AppsUi.SectionHeader(L("Applications préinstallées détectées"), "", out var knownCounter));
         knownCounter.Text = known.Count.ToString();
         if (known.Count == 0)
         {
-            root.Children.Add(AppsUi.EmptyState("", "Rien à nettoyer",
-                "Aucune des applications préinstallées superflues connues n'est présente pour votre compte.", "Pp.Success"));
+            root.Children.Add(AppsUi.EmptyState("", L("Rien à nettoyer"),
+                L("Aucune des applications préinstallées superflues connues n'est présente pour votre compte."), "Pp.Success"));
         }
         else
         {
@@ -116,7 +111,7 @@ internal sealed class BloatView : StackPanel
             foreach (var a in others) list.Children.Add(new BloatRow(a, this, selectable: false));
             var expander = new Expander
             {
-                Header = $"Autres applications du Store installées pour votre compte ({others.Count})",
+                Header = L("Autres applications du Store installées pour votre compte ({0})", others.Count),
                 Content = AppsUi.Card(list, new Thickness(12, 4, 12, 4)),
                 Margin = new Thickness(0, 18, 0, 0),
             };
@@ -127,7 +122,7 @@ internal sealed class BloatView : StackPanel
         var removed = AppsContext.LoadRemoved().Where(r => apps.All(a => a.FamilyName != r.Family)).ToList();
         if (removed.Count > 0)
         {
-            root.Children.Add(AppsUi.SectionHeader("Supprimées avec Timonier", "", out var removedCounter));
+            root.Children.Add(AppsUi.SectionHeader(L("Supprimées avec Timonier"), "", out var removedCounter));
             removedCounter.Text = removed.Count.ToString();
             var list = new StackPanel();
             foreach (var r in removed) list.Children.Add(RemovedRow(r));
@@ -148,22 +143,22 @@ internal sealed class BloatView : StackPanel
         grid.Children.Add(tile);
         var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         text.Children.Add(AppsUi.Strong(r.Name, 13.5));
-        text.Children.Add(AppsUi.Caption($"Supprimée le {r.Date.ToString("d MMMM yyyy", Fr)} · {BloatCatalog.NameOf(r.Family)}"));
+        text.Children.Add(AppsUi.Caption(L("Supprimée le {0} · {1}", Format.Day(r.Date), BloatCatalog.NameOf(r.Family))));
         Grid.SetColumn(text, 1);
         grid.Children.Add(text);
-        var reinstall = AppsUi.Button("Réinstaller depuis le Store", "", "Pp.Button", (_, _) =>
+        var reinstall = AppsUi.Button(L("Réinstaller depuis le Store"), "", "Pp.Button", (_, _) =>
         {
             if (!BloatCatalog.IsValidFamilyName(r.Family)) return;
             try { ProcessRunner.OpenSettingsUri("ms-windows-store://pdp/?PFN=" + r.Family); }
-            catch (Exception ex) { AppHost.Toasts.Show("Impossible d'ouvrir le Microsoft Store : " + ex.Message, ToastKind.Error); }
+            catch (Exception ex) { AppHost.Toasts.Show(L("Impossible d'ouvrir le Microsoft Store : {0}", ex.Message), ToastKind.Error); }
         });
         Border? row = null;
-        var forget = AppsUi.Button("Retirer", null, "Pp.SubtleButton", (_, _) =>
+        var forget = AppsUi.Button(L("Retirer"), null, "Pp.SubtleButton", (_, _) =>
         {
             AppsContext.ForgetRemoved(r.Family);
             if (row?.Parent is Panel panel) panel.Children.Remove(row);
         });
-        forget.ToolTip = "Retirer de cet historique";
+        forget.ToolTip = L("Retirer de cet historique");
         forget.Margin = new Thickness(6, 0, 0, 0);
         var buttons = AppsUi.Row(reinstall, forget);
         buttons.VerticalAlignment = VerticalAlignment.Center;
@@ -177,7 +172,7 @@ internal sealed class BloatView : StackPanel
     private void UpdateButtons()
     {
         var n = _rows.Count(r => r.IsSelected);
-        AppsUi.SetButtonText(_removeSelected, n == 0 ? "Supprimer la sélection" : $"Supprimer la sélection ({n})");
+        AppsUi.SetButtonText(_removeSelected, n == 0 ? L("Supprimer la sélection") : L("Supprimer la sélection ({0})", n));
         _removeSelected.IsEnabled = n > 0 && !_ctx.Activity.IsBusy;
         _allUsers.IsEnabled = !_ctx.Activity.IsBusy;
         foreach (var r in _rows) r.SetBusy(_ctx.Activity.IsBusy);
@@ -192,8 +187,8 @@ internal sealed class BloatView : StackPanel
 
         var content = new StackPanel();
         content.Children.Add(AppsUi.Caption(allUsers
-            ? "Ces applications seront supprimées pour tous les comptes de ce PC et retirées de l'image de Windows :"
-            : "Ces applications seront supprimées pour votre compte :"));
+            ? L("Ces applications seront supprimées pour tous les comptes de ce PC et retirées de l'image de Windows :")
+            : L("Ces applications seront supprimées pour votre compte :")));
         var items = new StackPanel { Margin = new Thickness(0, 10, 0, 10) };
         foreach (var a in apps)
         {
@@ -211,14 +206,18 @@ internal sealed class BloatView : StackPanel
             items.Children.Add(row);
         }
         content.Children.Add(new ScrollViewer { Content = items, MaxHeight = 280, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
-        content.Children.Add(AppsUi.InfoBar("Vous pourrez les réinstaller depuis le Microsoft Store (historique en bas de cette page).", ""));
+        content.Children.Add(AppsUi.InfoBar(L("Vous pourrez les réinstaller depuis le Microsoft Store (historique en bas de cette page)."), ""));
         var danger = apps.Any(a => a.Bloat?.Risk == BloatRisk.Moderate || a.Bloat is null);
-        if (!await AppHost.Dialogs.ShowAsync(apps.Count == 1 ? "Supprimer cette application ?" : $"Supprimer {apps.Count} applications ?",
-                content, "Supprimer", "Annuler", danger)) return;
+        if (!await AppHost.Dialogs.ShowAsync(apps.Count == 1 ? L("Supprimer cette application ?") : LP(apps.Count, "Supprimer {0} application ?", "Supprimer {0} applications ?"),
+                content, L("Supprimer"), L("Annuler"), danger)) return;
 
-        var title = apps.Count == 1 ? $"Suppression de {apps[0].Title}" : $"Suppression de {apps.Count} applications";
+        var title = allUsers
+            ? (apps.Count == 1 ? L("Suppression de {0} (tous les comptes)", apps[0].Title)
+                : LP(apps.Count, "Suppression de {0} application (tous les comptes)", "Suppression de {0} applications (tous les comptes)"))
+            : (apps.Count == 1 ? L("Suppression de {0}", apps[0].Title)
+                : LP(apps.Count, "Suppression de {0} application", "Suppression de {0} applications"));
         var outcome = allUsers
-            ? await _ctx.Activity.RunAsync(title + " (tous les comptes)", AppxDeprovisionAction.ActionId,
+            ? await _ctx.Activity.RunAsync(title, AppxDeprovisionAction.ActionId,
                 new Dictionary<string, string> { ["family"] = string.Join(",", apps.Select(a => a.FamilyName).Distinct()) })
             : await _ctx.Activity.RunAsync(title, AppxRemoveAction.ActionId,
                 new Dictionary<string, string> { ["fullName"] = string.Join(",", apps.Select(a => a.FullName)) });
@@ -257,7 +256,7 @@ internal sealed class BloatView : StackPanel
             FrameworkElement lead;
             if (selectable)
             {
-                _check = AppsUi.CheckBox("Sélectionner " + app.Title);
+                _check = AppsUi.CheckBox(L("Sélectionner {0}", app.Title));
                 _check.IsChecked = app.Bloat?.Recommended == true;
                 _check.VerticalAlignment = VerticalAlignment.Top;
                 _check.Margin = new Thickness(0, 2, 12, 0);
@@ -279,11 +278,11 @@ internal sealed class BloatView : StackPanel
             top.Children.Add(name);
             if (app.Bloat is { } b)
             {
-                top.Children.Add(b.Risk == BloatRisk.Safe ? AppsUi.Badge("Sans risque", "Pp.Success") : AppsUi.Badge("À considérer", "Pp.Warning"));
-                if (b.Recommended) top.Children.Add(AppsUi.Badge("Recommandé", "Pp.Accent"));
+                top.Children.Add(b.Risk == BloatRisk.Safe ? AppsUi.Badge(L("Sans risque"), "Pp.Success") : AppsUi.Badge(L("À considérer"), "Pp.Warning"));
+                if (b.Recommended) top.Children.Add(AppsUi.Badge(L("Recommandé"), "Pp.Accent"));
             }
             text.Children.Add(top);
-            var desc = AppsUi.Caption(app.Bloat?.Description ?? (app.Publisher.Length > 0 ? app.Publisher : "Application du Store"));
+            var desc = AppsUi.Caption(app.Bloat?.Description ?? (app.Publisher.Length > 0 ? app.Publisher : L("Application du Store")));
             desc.Margin = new Thickness(0, 2, 0, 0);
             text.Children.Add(desc);
             if (app.Bloat?.Warning is { } w)
@@ -293,7 +292,7 @@ internal sealed class BloatView : StackPanel
                 warn.Margin = new Thickness(0, 2, 0, 0);
                 text.Children.Add(warn);
             }
-            var tech = AppsUi.Caption($"{app.Name} · version {app.Version}");
+            var tech = AppsUi.Caption(L("{0} · version {1}", app.Name, app.Version));
             tech.SetResourceReference(TextBlock.ForegroundProperty, "Pp.TextTertiary");
             tech.FontSize = 11;
             tech.Margin = new Thickness(0, 2, 0, 0);
@@ -301,7 +300,7 @@ internal sealed class BloatView : StackPanel
             Grid.SetColumn(text, 1);
             grid.Children.Add(text);
 
-            _remove = AppsUi.Button("Supprimer", "", "Pp.Button", async (_, _) => await owner.RemoveAsync([app]));
+            _remove = AppsUi.Button(L("Supprimer"), "", "Pp.Button", async (_, _) => await owner.RemoveAsync([app]));
             _remove.VerticalAlignment = VerticalAlignment.Center;
             Grid.SetColumn(_remove, 2);
             grid.Children.Add(_remove);

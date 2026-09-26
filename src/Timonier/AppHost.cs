@@ -74,7 +74,7 @@ public static class AppHost
                 t.Keywords.Concat(t.Tags), t.Description, category?.Title, 0, t.Kind == TweakKind.Toggle));
         }
         foreach (var p in Registry.Pages)
-            docs.Add(SearchDocument.Create("page:" + p.Id, p.Title, p.Description ?? "Page", p.Glyph, SearchEntryKind.Page, p, p.Keywords, p.Description, null, 0.15));
+            docs.Add(SearchDocument.Create("page:" + p.Id, p.Title, p.Description ?? L("Page"), p.Glyph, SearchEntryKind.Page, p, p.Keywords, p.Description, null, 0.15));
         foreach (var c in Registry.Categories.Where(c => Registry.Pages.All(p => p.CategoryId != c.Id)))
             docs.Add(SearchDocument.Create("category:" + c.Id, c.Title, c.Description, c.Glyph, SearchEntryKind.Page, c, null, c.Description, null, 0.15));
         foreach (var e in Registry.SearchEntries)

@@ -77,9 +77,9 @@ internal static class ToolLauncher
     public static void LaunchSystem32(string fileName, params string[] args)
     {
         if (!System32Allowlist.Contains(fileName) || fileName.IndexOfAny(['\\', '/', ':']) >= 0)
-            throw new ArgumentException("Outil non autorisé : " + fileName);
+            throw new ArgumentException(L("Outil non autorisé : {0}", fileName));
         var path = Path.Combine(Environment.SystemDirectory, fileName);
-        if (!File.Exists(path)) throw new FileNotFoundException("Outil système introuvable : " + fileName, path);
+        if (!File.Exists(path)) throw new FileNotFoundException(L("Outil système introuvable : {0}", fileName), path);
         var psi = new ProcessStartInfo(path) { UseShellExecute = false, WorkingDirectory = Environment.SystemDirectory };
         foreach (var a in args) psi.ArgumentList.Add(a);
         try
@@ -98,7 +98,7 @@ internal static class ToolLauncher
     private static void ElevatedLaunch(string path, string[] args)
     {
         if (!Path.IsPathFullyQualified(path) || !File.Exists(path))
-            throw new FileNotFoundException("Outil système introuvable : " + Path.GetFileName(path), path);
+            throw new FileNotFoundException(L("Outil système introuvable : {0}", Path.GetFileName(path)), path);
         _ = Task.Run(() =>
         {
             try { ShellLaunch(path, args); }
@@ -110,16 +110,16 @@ internal static class ToolLauncher
     public static void LaunchConsole(string msc)
     {
         if (!msc.EndsWith(".msc", StringComparison.OrdinalIgnoreCase) || msc.IndexOfAny(['\\', '/', ':']) >= 0)
-            throw new ArgumentException("Console non autorisée : " + msc);
+            throw new ArgumentException(L("Console non autorisée : {0}", msc));
         var path = MscPath(msc);
-        if (!File.Exists(path)) throw new FileNotFoundException("Console introuvable : " + msc, path);
+        if (!File.Exists(path)) throw new FileNotFoundException(L("Console introuvable : {0}", msc), path);
         Launch(SystemTool.Mmc, path);
     }
 
     private static void ShellLaunch(string path, string[] args)
     {
         if (!Path.IsPathFullyQualified(path) || !File.Exists(path))
-            throw new FileNotFoundException("Outil système introuvable : " + Path.GetFileName(path), path);
+            throw new FileNotFoundException(L("Outil système introuvable : {0}", Path.GetFileName(path)), path);
         // Même mise en forme des arguments que ProcessRunner.Launch (règles de CommandLineToArgvW) pour ShellExecute.
         var psi = new ProcessStartInfo(path, ProcessRunner.JoinArguments(args)) { UseShellExecute = true, WorkingDirectory = Environment.SystemDirectory };
         try

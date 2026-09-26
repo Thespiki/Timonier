@@ -33,7 +33,7 @@ internal sealed record LocalAccount
     public bool IsSystemAccount => Rid is 503 or 504 || LocalAccounts.IsSetupLeftover(Name);
     public bool HasLogonRestriction => LogonHours is { } h && h.Any(b => b != 0xFF);
     public string DisplayName => string.IsNullOrWhiteSpace(FullName) ? Name : FullName;
-    public string TypeLabel => IsAdmin ? "Administrateur" : "Standard";
+    public string TypeLabel => IsAdmin ? L("Administrateur") : LC("account type", "Standard");
 }
 
 /// <summary>
@@ -71,7 +71,7 @@ internal static partial class LocalAccounts
         catch (Exception ex)
         {
             Log.Warn("Users", "membres Administrateurs illisibles : " + ex.Message);
-            if (strict) throw new InvalidOperationException("Impossible de lire les membres du groupe Administrateurs : opération annulée par sécurité.", ex);
+            if (strict) throw new InvalidOperationException(L("Impossible de lire les membres du groupe Administrateurs : opération annulée par sécurité."), ex);
             admins = [];
         }
 
@@ -113,7 +113,7 @@ internal static partial class LocalAccounts
     public static string ValidateLocalSid(string value)
     {
         var sid = Validate.Sid(value.Trim());
-        if (!LocalSidRx().IsMatch(sid)) throw new ValidationException("Ce SID ne correspond pas à un compte local.");
+        if (!LocalSidRx().IsMatch(sid)) throw new ValidationException(L("Ce SID ne correspond pas à un compte local."));
         return sid;
     }
 
@@ -122,7 +122,7 @@ internal static partial class LocalAccounts
     {
         var all = Enumerate(clientSid, strict: true);
         var target = all.FirstOrDefault(a => string.Equals(a.Sid, sid, StringComparison.OrdinalIgnoreCase))
-                     ?? throw new ValidationException("Compte local introuvable (il a peut-être été supprimé entre-temps).");
+                     ?? throw new ValidationException(L("Compte local introuvable (il a peut-être été supprimé entre-temps)."));
         return (target, all);
     }
 
@@ -137,10 +137,11 @@ internal static partial class LocalAccounts
                || string.Equals(account.Sid, processSid, StringComparison.OrdinalIgnoreCase);
     }
 
-    public static void RefuseSessionAccount(LocalAccount account, string? clientSid, string what)
+    /// <summary>Refuse l'action sur le compte de session ; <paramref name="refusal"/> est la phrase complète affichée.</summary>
+    public static void RefuseSessionAccount(LocalAccount account, string? clientSid, string refusal)
     {
         if (account.IsCurrent || IsSessionAccount(account, clientSid))
-            throw new ValidationException($"Par sécurité, Timonier refuse de {what} le compte avec lequel vous êtes connecté.");
+            throw new ValidationException(refusal);
     }
 
     /// <summary>
@@ -160,7 +161,7 @@ internal static partial class LocalAccounts
         var otherUsableAdmins = all.Count(a => a.IsAdmin && a.Enabled && !a.LockedOut
                                                && !string.Equals(a.Sid, account.Sid, StringComparison.OrdinalIgnoreCase));
         if (otherUsableAdmins == 0)
-            throw new ValidationException("C'est le dernier compte administrateur actif de ce PC : sans lui, plus personne ne pourrait administrer Windows.");
+            throw new ValidationException(L("C'est le dernier compte administrateur actif de ce PC : sans lui, plus personne ne pourrait administrer Windows."));
     }
 
     public static string AdministratorsGroup => GroupName(AdministratorsSid);

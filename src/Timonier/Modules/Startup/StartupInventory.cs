@@ -60,16 +60,16 @@ public sealed class StartupItem
     public bool CanDelete => Kind is StartupKind.Run or StartupKind.Run32;
     public bool NeedsAdmin => Scope == StartupScope.Machine;
 
-    public string ScopeLabel => Scope == StartupScope.User ? "Utilisateur" : "Tous les utilisateurs";
+    public string ScopeLabel => Scope == StartupScope.User ? L("Utilisateur") : L("Tous les utilisateurs");
 
     public string SourceLabel => Kind switch
     {
-        StartupKind.Run => Scope == StartupScope.User ? @"Registre HKCU\…\Run" : @"Registre HKLM\…\Run",
-        StartupKind.Run32 => @"Registre HKLM\…\Run (32 bits)",
-        StartupKind.Folder => Scope == StartupScope.User ? "Dossier Démarrage" : "Dossier Démarrage commun",
-        StartupKind.Packaged => "Application du Store",
-        StartupKind.RunOnce => "RunOnce (une seule fois)",
-        StartupKind.Policy => "Stratégie de groupe",
+        StartupKind.Run => L("Registre {0}", Scope == StartupScope.User ? @"HKCU\…\Run" : @"HKLM\…\Run"),
+        StartupKind.Run32 => L("Registre {0} (32 bits)", @"HKLM\…\Run"),
+        StartupKind.Folder => Scope == StartupScope.User ? L("Dossier Démarrage") : L("Dossier Démarrage commun"),
+        StartupKind.Packaged => L("Application du Store"),
+        StartupKind.RunOnce => L("RunOnce (une seule fois)"),
+        StartupKind.Policy => L("Stratégie de groupe"),
         _ => "",
     };
 }
@@ -109,7 +109,7 @@ public static partial class StartupInventory
         "run32" => StartupKind.Run32,
         "folder" => StartupKind.Folder,
         "packaged" => StartupKind.Packaged,
-        _ => throw new ArgumentException("Type d'entrée inconnu : " + kind),
+        _ => throw new ArgumentException(L("Type d'entrée inconnu : {0}", kind)),
     };
 
     public static RegHive Hive(StartupScope scope) => scope == StartupScope.User ? RegHive.CurrentUser : RegHive.LocalMachine;
@@ -176,37 +176,37 @@ public static partial class StartupInventory
             case StartupKind.Run:
             case StartupKind.Run32:
             {
-                var runKey = RunKeyFor(scope, kind) ?? throw new Core.Security.ValidationException("Type d'entrée non autorisé pour cette portée.");
+                var runKey = RunKeyFor(scope, kind) ?? throw new Core.Security.ValidationException(L("Type d'entrée non autorisé pour cette portée."));
                 using var root = RegistryAccess.OpenRoot(Hive(scope), userSid, writable: false);
                 using var k = root.OpenSubKey(runKey, false);
                 if (k is null || !k.GetValueNames().Contains(name, StringComparer.OrdinalIgnoreCase))
-                    throw new Core.Security.ValidationException("Cette entrée de démarrage n'existe plus. Actualisez la liste.");
+                    throw new Core.Security.ValidationException(L("Cette entrée de démarrage n'existe plus. Actualisez la liste."));
                 return;
             }
             case StartupKind.Folder:
             {
                 if (name.IndexOfAny(['\\', '/', ':']) >= 0 || name.Contains(".."))
-                    throw new Core.Security.ValidationException("Nom de fichier invalide.");
+                    throw new Core.Security.ValidationException(L("Nom de fichier invalide."));
                 var folder = StartupFolder(scope);
                 var exists = Directory.Exists(folder) && Directory.EnumerateFiles(folder)
                     .Any(f => string.Equals(Path.GetFileName(f), name, StringComparison.OrdinalIgnoreCase));
-                if (!exists) throw new Core.Security.ValidationException("Ce raccourci n'est plus dans le dossier Démarrage. Actualisez la liste.");
+                if (!exists) throw new Core.Security.ValidationException(L("Ce raccourci n'est plus dans le dossier Démarrage. Actualisez la liste."));
                 return;
             }
             case StartupKind.Packaged:
             {
                 if (scope != StartupScope.User || !PackagedNameRx().IsMatch(name))
-                    throw new Core.Security.ValidationException("Identifiant de tâche d'application invalide.");
+                    throw new Core.Security.ValidationException(L("Identifiant de tâche d'application invalide."));
                 using var root = RegistryAccess.OpenRoot(RegHive.CurrentUser, userSid, writable: false);
                 using var k = root.OpenSubKey(AppModelKey + "\\" + name, false);
                 if (k?.GetValue("State") is not int state)
-                    throw new Core.Security.ValidationException("Cette tâche de démarrage n'existe plus. Actualisez la liste.");
+                    throw new Core.Security.ValidationException(L("Cette tâche de démarrage n'existe plus. Actualisez la liste."));
                 if (state is 3 or 4)
-                    throw new Core.Security.ValidationException("L'état de cette application est imposé par une stratégie de l'organisation.");
+                    throw new Core.Security.ValidationException(L("L'état de cette application est imposé par une stratégie de l'organisation."));
                 return;
             }
             default:
-                throw new Core.Security.ValidationException("Ce type d'entrée est en lecture seule.");
+                throw new Core.Security.ValidationException(L("Ce type d'entrée est en lecture seule."));
         }
     }
 
@@ -222,7 +222,7 @@ public static partial class StartupInventory
     /// <summary>Suppression d'une entrée Run (et de son état StartupApproved) : entièrement restaurable depuis le journal.</summary>
     public static List<Operation> DeleteOps(StartupScope scope, StartupKind kind, string name)
     {
-        var runKey = RunKeyFor(scope, kind) ?? throw new ArgumentException("Seules les entrées du registre peuvent être supprimées.");
+        var runKey = RunKeyFor(scope, kind) ?? throw new ArgumentException(L("Seules les entrées du registre peuvent être supprimées."));
         return
         [
             new RegDeleteValue(Hive(scope), runKey, name),

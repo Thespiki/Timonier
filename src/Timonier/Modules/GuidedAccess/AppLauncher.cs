@@ -24,9 +24,9 @@ internal static class AppLauncher
         try { process = Process.Start(psi); }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 740)
         {
-            throw new InvalidOperationException("Cette application demande les droits d'administrateur : l'accès guidé ne peut pas la lancer ni la contrôler.");
+            throw new InvalidOperationException(L("Cette application demande les droits d'administrateur : l'accès guidé ne peut pas la lancer ni la contrôler."));
         }
-        if (process is null) throw new InvalidOperationException("L'application n'a pas pu être lancée.");
+        if (process is null) throw new InvalidOperationException(L("L'application n'a pas pu être lancée."));
         Log.Info("GuidedAccess", "application lancée : " + Path.GetFileName(exe));
 
         using (process)
@@ -56,7 +56,7 @@ internal static class AppLauncher
                 }
             }
         }
-        throw new InvalidOperationException("L'application a été lancée mais aucune fenêtre n'est apparue dans les 20 secondes.");
+        throw new InvalidOperationException(L("L'application a été lancée mais aucune fenêtre n'est apparue dans les 20 secondes."));
     }
 
     private static bool StartedAfter(uint pid, DateTime threshold)

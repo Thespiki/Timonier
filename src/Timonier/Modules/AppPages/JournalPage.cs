@@ -17,7 +17,7 @@ namespace Timonier.Modules.AppPages;
 /// </summary>
 public sealed class JournalPage : UserControl, INavigationAware
 {
-    private static readonly CultureInfo Fr = CultureInfo.GetCultureInfo("fr-FR");
+    private static CultureInfo Culture => Core.Localization.Loc.Culture;
     private const int PageSize = 80;
 
     private readonly StackPanel _summary = new() { Orientation = Orientation.Horizontal };
@@ -38,14 +38,14 @@ public sealed class JournalPage : UserControl, INavigationAware
         try { using var p = Process.GetCurrentProcess(); _sessionStart = p.StartTime; }
         catch { _sessionStart = DateTime.Now; }
 
-        var stack = PageScaffold.Create(this, "Journal des modifications",
-            "Tout ce que Timonier a modifié sur ce PC, avec l'état précédent pour revenir en arrière.", AppPagesModule.JournalGlyph);
+        var stack = PageScaffold.Create(this, L("Journal des modifications"),
+            L("Tout ce que Timonier a modifié sur ce PC, avec l'état précédent pour revenir en arrière."), AppPagesModule.JournalGlyph);
 
         // Résumé + annulations groupées
-        _undoSession = AppUi.Button("Annuler la session", "", "Pp.Button", async (_, _) => await UndoManyAsync(session: true));
-        _undoSession.ToolTip = "Annule, de la plus récente à la plus ancienne, les modifications faites depuis l'ouverture de Timonier.";
-        _undoToday = AppUi.Button("Annuler aujourd'hui", "", "Pp.Button", async (_, _) => await UndoManyAsync(session: false));
-        _undoToday.ToolTip = "Annule, de la plus récente à la plus ancienne, toutes les modifications faites aujourd'hui.";
+        _undoSession = AppUi.Button(L("Annuler la session"), "", "Pp.Button", async (_, _) => await UndoManyAsync(session: true));
+        _undoSession.ToolTip = L("Annule, de la plus récente à la plus ancienne, les modifications faites depuis l'ouverture de Timonier.");
+        _undoToday = AppUi.Button(L("Annuler aujourd'hui"), "", "Pp.Button", async (_, _) => await UndoManyAsync(session: false));
+        _undoToday.ToolTip = L("Annule, de la plus récente à la plus ancienne, toutes les modifications faites aujourd'hui.");
         _undoToday.Margin = new Thickness(8, 0, 0, 0);
         var undoButtons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         undoButtons.Children.Add(_undoSession);
@@ -57,10 +57,10 @@ public sealed class JournalPage : UserControl, INavigationAware
         stack.Children.Add(AppUi.Card(summaryDock));
 
         // Barre d'outils
-        _search = AppUi.SearchBox("Rechercher dans le journal (réglage, valeur, note…)", q => { _query = q; _limit = PageSize; Render(); });
-        _export = AppUi.Button("Exporter (CSV)", "", "Pp.Button", async (_, _) => await ExportAsync());
-        _export.ToolTip = "Enregistre toutes les entrées du journal dans un fichier CSV (UTF-8, séparateur « ; »), lisible dans Excel.";
-        _clear = AppUi.Button("Vider le journal utilisateur", "", "Pp.SubtleButton", async (_, _) => await ClearUserJournalAsync());
+        _search = AppUi.SearchBox(L("Rechercher dans le journal (réglage, valeur, note…)"), q => { _query = q; _limit = PageSize; Render(); });
+        _export = AppUi.Button(L("Exporter (CSV)"), "", "Pp.Button", async (_, _) => await ExportAsync());
+        _export.ToolTip = L("Enregistre toutes les entrées du journal dans un fichier CSV (UTF-8, séparateur « ; »), lisible dans Excel.");
+        _clear = AppUi.Button(L("Vider le journal utilisateur"), "", "Pp.SubtleButton", async (_, _) => await ClearUserJournalAsync());
         var right = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         _export.Margin = new Thickness(8, 0, 0, 0);
         _clear.Margin = new Thickness(8, 0, 0, 0);
@@ -72,10 +72,10 @@ public sealed class JournalPage : UserControl, INavigationAware
         toolbar.Children.Add(new Border { Child = _search, MaxWidth = 440, HorizontalAlignment = HorizontalAlignment.Stretch });
         stack.Children.Add(toolbar);
 
-        _filter.Add("Tout", "");
-        _filter.Add("Annulables", "");
-        _filter.Add("Admin", "");
-        _filter.Add("Utilisateur", "");
+        _filter.Add(L("Tout"), "");
+        _filter.Add(L("Annulables"), "");
+        _filter.Add(LC("badge", "Admin"), "");
+        _filter.Add(L("Utilisateur"), "");
         _filter.Select(0, notify: false);
         _filter.SelectionChanged += (_, _) => { _limit = PageSize; Render(); };
         _filter.Margin = new Thickness(0, 0, 0, 6);
@@ -90,9 +90,7 @@ public sealed class JournalPage : UserControl, INavigationAware
         stack.Children.Add(_list);
 
         stack.Children.Add(PageScaffold.InfoBar(
-            "Les modifications faites sans droits d'administrateur sont enregistrées dans votre profil (journal.json). Celles faites par la "
-            + "session administrateur sont enregistrées dans HKLM\\SOFTWARE\\Timonier\\Journal, que seuls les administrateurs peuvent modifier : "
-            + "Timonier ne peut donc annuler que ce qu'il a réellement enregistré. Les actions ponctuelles (outils système) ne sont pas annulables.",
+            L("Les modifications faites sans droits d'administrateur sont enregistrées dans votre profil (journal.json). Celles faites par la session administrateur sont enregistrées dans HKLM\\SOFTWARE\\Timonier\\Journal, que seuls les administrateurs peuvent modifier : Timonier ne peut donc annuler que ce qu'il a réellement enregistré. Les actions ponctuelles (outils système) ne sont pas annulables."),
             ""));
 
         Loaded += OnLoaded;
@@ -142,7 +140,7 @@ public sealed class JournalPage : UserControl, INavigationAware
         if (_all.Count == 0)
         {
             _list.Children.Clear();
-            _list.Children.Add(AppUi.StateCard("", "Lecture du journal…", busy: true));
+            _list.Children.Add(AppUi.StateCard("", L("Lecture du journal…"), busy: true));
         }
         try
         {
@@ -153,8 +151,8 @@ public sealed class JournalPage : UserControl, INavigationAware
         {
             Log.Error("AppPages", "lecture du journal", ex);
             _list.Children.Clear();
-            var card = AppUi.StateCard("", "Le journal n'a pas pu être lu", ex.Message);
-            var retry = AppUi.Button("Réessayer", "", "Pp.Button", (_, _) => _ = ReloadAsync());
+            var card = AppUi.StateCard("", L("Le journal n'a pas pu être lu"), ex.Message);
+            var retry = AppUi.Button(L("Réessayer"), "", "Pp.Button", (_, _) => _ = ReloadAsync());
             retry.HorizontalAlignment = HorizontalAlignment.Center;
             retry.Margin = new Thickness(0, 10, 0, 0);
             ((StackPanel)card.Child).Children.Add(retry);
@@ -185,33 +183,32 @@ public sealed class JournalPage : UserControl, INavigationAware
     private bool Matches(JournalEntry e)
     {
         bool Has(string? s) => s is not null &&
-            Fr.CompareInfo.IndexOf(s, _query, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0;
+            Culture.CompareInfo.IndexOf(s, _query, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0;
         return Has(e.Title) || Has(e.SourceId) || Has(e.ToLabel) || Has(e.Note) || Has(ChangeText(e));
     }
 
     private void Render()
     {
         UpdateSummary();
-        _filter.SetCount(0, _all.Count.ToString(Fr));
-        _filter.SetCount(1, _all.Count(e => e.CanUndo).ToString(Fr));
-        _filter.SetCount(2, _all.Count(e => e.Machine).ToString(Fr));
-        _filter.SetCount(3, _all.Count(e => !e.Machine).ToString(Fr));
+        _filter.SetCount(0, _all.Count.ToString(Culture));
+        _filter.SetCount(1, _all.Count(e => e.CanUndo).ToString(Culture));
+        _filter.SetCount(2, _all.Count(e => e.Machine).ToString(Culture));
+        _filter.SetCount(3, _all.Count(e => !e.Machine).ToString(Culture));
         UpdateButtons();
 
         _list.Children.Clear();
         if (_all.Count == 0)
         {
-            _list.Children.Add(AppUi.StateCard(AppPagesModule.JournalGlyph, "Aucune modification pour l'instant",
-                "Quand vous appliquez un réglage ou une action avec Timonier, la modification apparaît ici avec l'état précédent, "
-                + "pour pouvoir revenir en arrière à tout moment. Rien n'est modifié sans votre accord."));
+            _list.Children.Add(AppUi.StateCard(AppPagesModule.JournalGlyph, L("Aucune modification pour l'instant"),
+                L("Quand vous appliquez un réglage ou une action avec Timonier, la modification apparaît ici avec l'état précédent, pour pouvoir revenir en arrière à tout moment. Rien n'est modifié sans votre accord.")));
             return;
         }
 
         var items = Filtered().ToList();
         if (items.Count == 0)
         {
-            _list.Children.Add(AppUi.StateCard("", "Aucune entrée ne correspond",
-                _query.Length > 0 ? $"Aucun résultat pour « {_query} » avec ce filtre." : "Aucune entrée dans cette catégorie."));
+            _list.Children.Add(AppUi.StateCard("", L("Aucune entrée ne correspond"),
+                _query.Length > 0 ? L("Aucun résultat pour « {0} » avec ce filtre.", _query) : L("Aucune entrée dans cette catégorie.")));
             return;
         }
 
@@ -220,7 +217,7 @@ public sealed class JournalPage : UserControl, INavigationAware
         {
             var count = items.Count(e => e.At.LocalDateTime.Date == day.Key);
             var head = new DockPanel { Margin = new Thickness(2, 14, 2, 8) };
-            var countText = AppUi.Caption(count <= 1 ? $"{count} modification" : $"{count} modifications");
+            var countText = AppUi.Caption(LP(count, "{0} modification", "{0} modifications"));
             countText.VerticalAlignment = VerticalAlignment.Bottom;
             DockPanel.SetDock(countText, Dock.Right);
             head.Children.Add(countText);
@@ -242,7 +239,7 @@ public sealed class JournalPage : UserControl, INavigationAware
         if (items.Count > shown.Count)
         {
             var remaining = items.Count - shown.Count;
-            var more = AppUi.Button($"Afficher plus ({remaining} restante{(remaining > 1 ? "s" : "")})", "", "Pp.Button",
+            var more = AppUi.Button(LP(remaining, "Afficher plus ({0} restante)", "Afficher plus ({0} restantes)"), "", "Pp.Button",
                 (_, _) => { _limit += PageSize; Render(); });
             more.HorizontalAlignment = HorizontalAlignment.Center;
             more.Margin = new Thickness(0, 12, 0, 0);
@@ -262,10 +259,10 @@ public sealed class JournalPage : UserControl, INavigationAware
             s.Children.Add(AppUi.Caption(label));
             _summary.Children.Add(s);
         }
-        Metric(_all.Count.ToString(Fr), "au total");
-        Metric(_all.Count(e => e.CanUndo).ToString(Fr), "annulables");
-        Metric(today.ToString(Fr), "aujourd'hui");
-        Metric(session.ToString(Fr), "depuis l'ouverture");
+        Metric(_all.Count.ToString(Culture), L("au total"));
+        Metric(_all.Count(e => e.CanUndo).ToString(Culture), LC("journal metric", "annulables"));
+        Metric(today.ToString(Culture), LC("journal metric", "aujourd'hui"));
+        Metric(session.ToString(Culture), LC("journal metric", "depuis l'ouverture"));
     }
 
     private void UpdateButtons()
@@ -284,10 +281,10 @@ public sealed class JournalPage : UserControl, INavigationAware
         g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-        var time = AppUi.Text(e.At.LocalDateTime.ToString("HH:mm", Fr), "Pp.Caption", wrap: false);
+        var time = AppUi.Text(e.At.LocalDateTime.ToString("t", Culture), "Pp.Caption", wrap: false);
         time.VerticalAlignment = VerticalAlignment.Top;
         time.Margin = new Thickness(0, 9, 0, 0);
-        time.ToolTip = e.At.LocalDateTime.ToString("dddd d MMMM yyyy 'à' HH:mm:ss", Fr);
+        time.ToolTip = L("{0} à {1}", e.At.LocalDateTime.ToString("D", Culture), e.At.LocalDateTime.ToString("T", Culture));
         g.Children.Add(time);
 
         var tile = e.Undone
@@ -311,17 +308,17 @@ public sealed class JournalPage : UserControl, INavigationAware
         }
         var badges = new WrapPanel { Margin = new Thickness(0, 6, 0, 0) };
         void AddBadge(Border b) { b.Margin = new Thickness(0, 0, 6, 0); badges.Children.Add(b); }
-        AddBadge(e.Machine ? AppUi.Badge("Admin", "Info", "") : AppUi.Badge("Utilisateur", "Neutral", ""));
+        AddBadge(e.Machine ? AppUi.Badge(LC("badge", "Admin"), "Info", "") : AppUi.Badge(L("Utilisateur"), "Neutral", ""));
         if (e.Undone)
         {
             var at = e.UndoneAt?.LocalDateTime;
-            AddBadge(AppUi.Badge(at is { } d ? $"Annulé le {d.ToString("d MMMM 'à' HH:mm", Fr)}" : "Annulé", "Success", ""));
+            AddBadge(AppUi.Badge(at is { } d ? L("Annulé le {0}", Format.Date(d)) : L("Annulé"), "Success", ""));
         }
         else if (!e.CanUndo)
-            AddBadge(AppUi.Badge("Non annulable", "Warning", ""));
+            AddBadge(AppUi.Badge(LC("badge", "Non annulable"), "Warning", ""));
         if (e.Machine && !string.IsNullOrEmpty(e.UserSid) && !string.IsNullOrEmpty(AppHost.Profile.UserSid)
             && !string.Equals(e.UserSid, AppHost.Profile.UserSid, StringComparison.OrdinalIgnoreCase))
-            AddBadge(AppUi.Badge("Autre compte", "Neutral", ""));
+            AddBadge(AppUi.Badge(L("Autre compte"), "Neutral", ""));
         text.Children.Add(badges);
         if (!string.IsNullOrWhiteSpace(e.Note))
         {
@@ -337,17 +334,17 @@ public sealed class JournalPage : UserControl, INavigationAware
         {
             var open = AppUi.Button("", "", "Pp.SubtleButton", (_, _) =>
                 AppHost.Navigator.Navigate(AppHost.Registry.PageIdForCategory(tweak.Category), "tweak:" + tweak.Id));
-            open.ToolTip = "Ouvrir ce réglage";
-            System.Windows.Automation.AutomationProperties.SetName(open, "Ouvrir ce réglage");
+            open.ToolTip = L("Ouvrir ce réglage");
+            System.Windows.Automation.AutomationProperties.SetName(open, L("Ouvrir ce réglage"));
             open.Width = 34;
             open.Padding = new Thickness(0);
             actions.Children.Add(open);
         }
         if (e.CanUndo)
         {
-            var undo = AppUi.Button("Annuler", "", "Pp.Button");
+            var undo = AppUi.Button(L("Annuler"), "", "Pp.Button");
             undo.Margin = new Thickness(6, 0, 0, 0);
-            undo.ToolTip = e.Machine ? "Annule via la session administrateur (une invite UAC peut s'afficher)." : "Rétablit l'état précédent.";
+            undo.ToolTip = e.Machine ? L("Annule via la session administrateur (une invite UAC peut s'afficher).") : L("Rétablit l'état précédent.");
             undo.IsEnabled = !_busy;
             undo.Click += async (_, _) => await UndoOneAsync(e, undo);
             actions.Children.Add(undo);
@@ -361,10 +358,10 @@ public sealed class JournalPage : UserControl, INavigationAware
 
     private static string DayLabel(DateTime day)
     {
-        var full = day.ToString("dddd d MMMM yyyy", Fr);
-        if (day == DateTime.Today) return "Aujourd'hui — " + full;
-        if (day == DateTime.Today.AddDays(-1)) return "Hier — " + full;
-        return char.ToUpper(full[0], Fr) + full[1..];
+        var full = day.ToString("D", Culture);
+        if (day == DateTime.Today) return L("Aujourd'hui — {0}", full);
+        if (day == DateTime.Today.AddDays(-1)) return L("Hier — {0}", full);
+        return char.ToUpper(full[0], Culture) + full[1..];
     }
 
     /// <summary>« Ancien libellé → nouveau libellé » (libellés du catalogue quand le réglage existe encore).</summary>
@@ -413,8 +410,8 @@ public sealed class JournalPage : UserControl, INavigationAware
     private async Task UndoOneAsync(JournalEntry entry, Button button)
     {
         if (_busy) return;
-        SetBusy(true, $"Annulation : {entry.Title}…");
-        AppUi.SetButtonText(button, "Annulation…");
+        SetBusy(true, L("Annulation : {0}…", entry.Title));
+        AppUi.SetButtonText(button, L("Annulation…"));
         try
         {
             var outcome = await AppHost.Engine.UndoAsync(entry);
@@ -437,41 +434,42 @@ public sealed class JournalPage : UserControl, INavigationAware
             .Where(e => !e.Machine || e.UserSid is null || string.Equals(e.UserSid, mySid, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(e => e.At)
             .ToList();
-        var scope = session ? "depuis l'ouverture de Timonier" : "aujourd'hui";
         if (items.Count == 0)
         {
-            AppHost.Toasts.Show($"Aucune modification annulable {scope}.", ToastKind.Info);
+            AppHost.Toasts.Show(session ? L("Aucune modification annulable depuis l'ouverture de Timonier.") : L("Aucune modification annulable aujourd'hui."),
+                ToastKind.Info);
             return;
         }
 
         var content = new StackPanel { MaxWidth = 520 };
-        content.Children.Add(AppUi.Text(items.Count == 1
-            ? $"La modification suivante, faite {scope}, sera annulée :"
-            : $"Les {items.Count} modifications suivantes, faites {scope}, seront annulées de la plus récente à la plus ancienne :"));
+        content.Children.Add(AppUi.Text(session
+            ? LP(items.Count, "La modification suivante, faite depuis l'ouverture de Timonier, sera annulée :",
+                "Les {0} modifications suivantes, faites depuis l'ouverture de Timonier, seront annulées de la plus récente à la plus ancienne :")
+            : LP(items.Count, "La modification suivante, faite aujourd'hui, sera annulée :",
+                "Les {0} modifications suivantes, faites aujourd'hui, seront annulées de la plus récente à la plus ancienne :")));
         var list = new StackPanel { Margin = new Thickness(0, 10, 0, 0) };
         foreach (var e in items.Take(12))
         {
             var line = new DockPanel { Margin = new Thickness(0, 2, 0, 2) };
-            var time = AppUi.Caption(e.At.LocalDateTime.ToString("HH:mm", Fr));
+            var time = AppUi.Caption(e.At.LocalDateTime.ToString("t", Culture));
             time.Width = 48;
             DockPanel.SetDock(time, Dock.Left);
             line.Children.Add(time);
             var change = ChangeText(e);
-            line.Children.Add(AppUi.Text(change.Length > 0 ? $"{e.Title} ({change})" : e.Title));
+            line.Children.Add(AppUi.Text(change.Length > 0 ? L("{0} ({1})", e.Title, change) : e.Title));
             list.Children.Add(line);
         }
-        if (items.Count > 12) list.Children.Add(AppUi.Caption($"… et {items.Count - 12} autre(s)."));
+        if (items.Count > 12) list.Children.Add(AppUi.Caption(LP(items.Count - 12, "… et {0} autre.", "… et {0} autres.")));
         content.Children.Add(list);
         if (items.Any(e => e.Machine))
         {
-            var admin = AppUi.Caption("Certaines modifications ont été faites avec les droits d'administrateur : une invite UAC peut s'afficher. "
-                + "Si vous la refusez, l'annulation s'arrête là et le reste est conservé.");
+            var admin = AppUi.Caption(L("Certaines modifications ont été faites avec les droits d'administrateur : une invite UAC peut s'afficher. Si vous la refusez, l'annulation s'arrête là et le reste est conservé."));
             admin.Margin = new Thickness(0, 12, 0, 0);
             content.Children.Add(admin);
         }
 
-        if (!await AppHost.Dialogs.ShowAsync(session ? "Annuler les modifications de la session" : "Annuler les modifications du jour",
-                content, "Tout annuler", "Garder"))
+        if (!await AppHost.Dialogs.ShowAsync(session ? L("Annuler les modifications de la session") : L("Annuler les modifications du jour"),
+                content, L("Tout annuler"), L("Garder")))
             return;
 
         var done = 0;
@@ -484,11 +482,11 @@ public sealed class JournalPage : UserControl, INavigationAware
             for (var i = 0; i < items.Count; i++)
             {
                 var e = items[i];
-                SetBusy(true, $"Annulation {i + 1} sur {items.Count} : {e.Title}…");
+                SetBusy(true, L("Annulation {0} sur {1} : {2}…", i + 1, items.Count, e.Title));
                 var outcome = await AppHost.Engine.UndoAsync(e);
                 if (outcome.Cancelled) { stopped = true; break; }
                 if (outcome.Success) { done++; effect |= outcome.Effect; }
-                else failures.Add($"{e.Title} : {outcome.Message}");
+                else failures.Add(L("{0} : {1}", e.Title, outcome.Message));
             }
         }
         finally
@@ -501,18 +499,18 @@ public sealed class JournalPage : UserControl, INavigationAware
         if (failures.Count == 0 && !stopped)
         {
             AppHost.Toasts.ShowOutcome(new ApplyOutcome(true,
-                done == 1 ? "1 modification annulée." : $"{done} modifications annulées.", effect));
+                LP(done, "{0} modification annulée.", "{0} modifications annulées."), effect));
             return;
         }
-        var msg = new StringBuilder();
-        msg.Append(done <= 1 ? $"{done} modification annulée" : $"{done} modifications annulées");
-        if (stopped) msg.Append($", {remaining} non traitée(s) (annulation interrompue)");
-        if (failures.Count > 0) msg.Append($", {failures.Count} en échec");
-        msg.Append('.');
-        if (effect != ApplyEffect.None) AppHost.Toasts.ShowOutcome(new ApplyOutcome(true, msg.ToString(), effect));
-        else AppHost.Toasts.Show(msg.ToString(), failures.Count > 0 ? ToastKind.Error : ToastKind.Warning);
+        // Phrases complètes juxtaposées (chacune porte son propre pluriel).
+        var parts = new List<string> { LP(done, "{0} modification annulée.", "{0} modifications annulées.") };
+        if (stopped) parts.Add(LP(remaining, "{0} modification non traitée (annulation interrompue).", "{0} modifications non traitées (annulation interrompue)."));
+        if (failures.Count > 0) parts.Add(LP(failures.Count, "{0} modification en échec.", "{0} modifications en échec."));
+        var msg = string.Join(" ", parts);
+        if (effect != ApplyEffect.None) AppHost.Toasts.ShowOutcome(new ApplyOutcome(true, msg, effect));
+        else AppHost.Toasts.Show(msg, failures.Count > 0 ? ToastKind.Error : ToastKind.Warning);
         if (failures.Count > 0)
-            await AppHost.Dialogs.AlertAsync("Annulations en échec", string.Join(Environment.NewLine, failures.Take(10)));
+            await AppHost.Dialogs.AlertAsync(L("Annulations en échec"), string.Join(Environment.NewLine, failures.Take(10)));
     }
 
     // ------------------------------------------------------------------ Export / vidage
@@ -522,31 +520,31 @@ public sealed class JournalPage : UserControl, INavigationAware
         if (_busy || _all.Count == 0) return;
         var dialog = new Microsoft.Win32.SaveFileDialog
         {
-            Title = "Exporter le journal de Timonier",
-            FileName = $"Timonier - journal {DateTime.Now:yyyy-MM-dd}.csv",
+            Title = L("Exporter le journal de Timonier"),
+            FileName = L("Timonier - journal {0}.csv", DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
             DefaultExt = ".csv",
-            Filter = "Fichier CSV (*.csv)|*.csv",
+            Filter = L("Fichier CSV") + " (*.csv)|*.csv",
             AddExtension = true,
             OverwritePrompt = true,
         };
         if (dialog.ShowDialog(Window.GetWindow(this)) != true) return;
         var path = dialog.FileName;
         var rows = _all.ToList();
-        SetBusy(true, "Export en cours…");
+        SetBusy(true, L("Export en cours…"));
         try
         {
             var csv = await Task.Run(() => BuildCsv(rows));
             await File.WriteAllTextAsync(path, csv, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
-            AppHost.Toasts.Show($"Journal exporté : {rows.Count} entrée(s).", ToastKind.Success, "Ouvrir le dossier", () =>
+            AppHost.Toasts.Show(LP(rows.Count, "Journal exporté : {0} entrée.", "Journal exporté : {0} entrées."), ToastKind.Success, L("Ouvrir le dossier"), () =>
             {
                 try { if (Path.GetDirectoryName(path) is { } dir) ProcessRunner.OpenFolder(dir); }
-                catch (Exception ex) { AppHost.Toasts.Show("Impossible d'ouvrir le dossier : " + ex.Message, ToastKind.Error); }
+                catch (Exception ex) { AppHost.Toasts.Show(L("Impossible d'ouvrir le dossier : {0}", ex.Message), ToastKind.Error); }
             });
         }
         catch (Exception ex)
         {
             Log.Error("AppPages", "export du journal", ex);
-            AppHost.Toasts.Show("Export impossible : " + ex.Message, ToastKind.Error);
+            AppHost.Toasts.Show(L("Export impossible : {0}", ex.Message), ToastKind.Error);
         }
         finally { SetBusy(false); }
     }
@@ -562,7 +560,7 @@ public sealed class JournalPage : UserControl, INavigationAware
             return s.IndexOfAny([';', '"', '\n', '\r', '\t']) >= 0 ? "\"" + s.Replace("\"", "\"\"") + "\"" : s;
         }
         var sb = new StringBuilder();
-        sb.AppendLine("Date;Heure;Titre;Identifiant;Modification;Portée;Annulable;Annulé le;Note");
+        sb.AppendLine(L("Date;Heure;Titre;Identifiant;Modification;Portée;Annulable;Annulé le;Note"));
         foreach (var e in rows)
         {
             var at = e.At.LocalDateTime;
@@ -571,8 +569,8 @@ public sealed class JournalPage : UserControl, INavigationAware
               .Append(Esc(e.Title)).Append(';')
               .Append(Esc(e.SourceId)).Append(';')
               .Append(Esc(ChangeText(e))).Append(';')
-              .Append(e.Machine ? "Admin" : "Utilisateur").Append(';')
-              .Append(e.CanUndo ? "Oui" : "Non").Append(';')
+              .Append(e.Machine ? LC("badge", "Admin") : L("Utilisateur")).Append(';')
+              .Append(e.CanUndo ? L("Oui") : L("Non")).Append(';')
               .Append(Esc(e.UndoneAt?.LocalDateTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture))).Append(';')
               .Append(Esc(e.Note?.ReplaceLineEndings(" ")))
               .AppendLine();
@@ -587,25 +585,30 @@ public sealed class JournalPage : UserControl, INavigationAware
         if (user.Count == 0) return;
         var undoable = user.Count(e => e.CanUndo);
         var machine = _all.Count - user.Count;
+        // Paragraphes complets juxtaposés (chacun porte son propre pluriel).
         var message = new StringBuilder();
-        message.Append($"Les {user.Count} entrée(s) du journal utilisateur seront effacées.");
+        message.Append(LP(user.Count, "L'entrée du journal utilisateur sera effacée.", "Les {0} entrées du journal utilisateur seront effacées."));
         if (undoable > 0)
-            message.Append($" {undoable} d'entre elles sont encore annulables : les modifications resteront en place, mais Timonier ne pourra plus les annuler automatiquement.");
-        message.Append("\n\nLe journal administrateur ");
-        message.Append(machine > 0 ? $"({machine} entrée(s)) " : "");
-        message.Append("est conservé dans HKLM\\SOFTWARE\\Timonier\\Journal : il est géré par la session administrateur, qui en garde "
-            + "les 500 entrées les plus récentes, et ne peut pas être modifié depuis l'interface sans droits d'administrateur.");
-        if (!await AppHost.Dialogs.ConfirmAsync("Vider le journal utilisateur ?", message.ToString(), "Vider", "Annuler", danger: true))
+            message.Append(' ').Append(LP(undoable,
+                "{0} d'entre elles est encore annulable : la modification restera en place, mais Timonier ne pourra plus l'annuler automatiquement.",
+                "{0} d'entre elles sont encore annulables : les modifications resteront en place, mais Timonier ne pourra plus les annuler automatiquement."));
+        message.Append("\n\n");
+        message.Append(machine > 0
+            ? LP(machine,
+                "Le journal administrateur ({0} entrée) est conservé dans HKLM\\SOFTWARE\\Timonier\\Journal : il est géré par la session administrateur, qui en garde les 500 entrées les plus récentes, et ne peut pas être modifié depuis l'interface sans droits d'administrateur.",
+                "Le journal administrateur ({0} entrées) est conservé dans HKLM\\SOFTWARE\\Timonier\\Journal : il est géré par la session administrateur, qui en garde les 500 entrées les plus récentes, et ne peut pas être modifié depuis l'interface sans droits d'administrateur.")
+            : L("Le journal administrateur est conservé dans HKLM\\SOFTWARE\\Timonier\\Journal : il est géré par la session administrateur, qui en garde les 500 entrées les plus récentes, et ne peut pas être modifié depuis l'interface sans droits d'administrateur."));
+        if (!await AppHost.Dialogs.ConfirmAsync(L("Vider le journal utilisateur ?"), message.ToString(), L("Vider"), L("Annuler"), danger: true))
             return;
         try
         {
             await Task.Run(JournalWriter.UserStore.Clear);
-            AppHost.Toasts.Show("Journal utilisateur vidé.", ToastKind.Success);
+            AppHost.Toasts.Show(L("Journal utilisateur vidé."), ToastKind.Success);
         }
         catch (Exception ex)
         {
             Log.Error("AppPages", "vidage du journal", ex);
-            AppHost.Toasts.Show("Impossible de vider le journal : " + ex.Message, ToastKind.Error);
+            AppHost.Toasts.Show(L("Impossible de vider le journal : {0}", ex.Message), ToastKind.Error);
         }
         await ReloadAsync();
     }

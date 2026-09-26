@@ -317,7 +317,8 @@ static partial class Wrapper
                 var joined = string.Join(", ", node.ArgumentList.Arguments.Select(a => ((LiteralExpressionSyntax)a.Expression).Token.ValueText));
                 Count++;
                 var expr = (ExpressionSyntax)Visit(node.Expression)!;
-                return node.WithExpression(expr).WithArgumentList(ArgumentList(SingletonSeparatedList(Argument(MakeL(joined, [])))));
+                return node.WithExpression(expr).WithArgumentList(
+                    ArgumentList(SingletonSeparatedList(Argument(MakeL(joined, [])))).WithTriviaFrom(node.ArgumentList));
             }
             return base.VisitInvocationExpression(node);
         }

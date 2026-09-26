@@ -17,10 +17,10 @@ internal static class KioskModes
 
     public static string Label(string? mode) => mode switch
     {
-        Store => "Application du Store en plein écran (accès attribué)",
-        Edge => "Microsoft Edge en mode kiosque",
-        Win32 => "Application classique à la place du Bureau",
-        _ => "Inconnu",
+        Store => L("Application du Store en plein écran (accès attribué)"),
+        Edge => L("Microsoft Edge en mode kiosque"),
+        Win32 => L("Application classique à la place du Bureau"),
+        _ => L("Inconnu"),
     };
 }
 
@@ -35,29 +35,29 @@ internal static class KioskRestrictions
 
     public static readonly IReadOnlyList<KioskRestriction> All =
     [
-        new("taskmgr", "Bloquer le Gestionnaire des tâches",
-            "Le Gestionnaire des tâches ne s'ouvre plus (ni par Ctrl+Maj+Échap, ni depuis l'écran Ctrl+Alt+Suppr) : impossible de fermer l'application de la borne ou d'en lancer une autre par ce biais.",
+        new("taskmgr", L("Bloquer le Gestionnaire des tâches"),
+            L("Le Gestionnaire des tâches ne s'ouvre plus (ni par Ctrl+Maj+Échap, ni depuis l'écran Ctrl+Alt+Suppr) : impossible de fermer l'application de la borne ou d'en lancer une autre par ce biais."),
             System, "DisableTaskMgr", 1, true),
-        new("norun", "Supprimer la commande « Exécuter »",
-            "Retire « Exécuter » du menu Démarrer et désactive Win+R, pour que l'utilisateur ne puisse pas lancer un programme en tapant son nom.",
+        new("norun", L("Supprimer la commande « Exécuter »"),
+            L("Retire « Exécuter » du menu Démarrer et désactive Win+R, pour que l'utilisateur ne puisse pas lancer un programme en tapant son nom."),
             Explorer, "NoRun", 1, true),
-        new("controlpanel", "Bloquer le Panneau de configuration et les Paramètres",
-            "Empêche d'ouvrir le Panneau de configuration et l'application Paramètres depuis ce compte.",
+        new("controlpanel", L("Bloquer le Panneau de configuration et les Paramètres"),
+            L("Empêche d'ouvrir le Panneau de configuration et l'application Paramètres depuis ce compte."),
             Explorer, "NoControlPanel", 1, true),
-        new("regedit", "Bloquer l'Éditeur du Registre",
-            "Regedit refuse de s'ouvrir pour ce compte, y compris en mode silencieux (fichiers .reg).",
+        new("regedit", L("Bloquer l'Éditeur du Registre"),
+            L("Regedit refuse de s'ouvrir pour ce compte, y compris en mode silencieux (fichiers .reg)."),
             System, "DisableRegistryTools", 1, true),
-        new("cmd", "Bloquer l'invite de commandes",
-            "L'invite de commandes interactive (cmd.exe) est refusée ; les scripts .bat des applications continuent de fonctionner. PowerShell n'est pas concerné par cette stratégie.",
+        new("cmd", L("Bloquer l'invite de commandes"),
+            L("L'invite de commandes interactive (cmd.exe) est refusée ; les scripts .bat des applications continuent de fonctionner. PowerShell n'est pas concerné par cette stratégie."),
             WinSystem, "DisableCMD", 2, true),
-        new("winkeys", "Désactiver les raccourcis de la touche Windows",
-            "Les raccourcis Win+E, Win+R, Win+X, etc. sont ignorés. Utile surtout si l'Explorateur peut être ouvert depuis l'application.",
+        new("winkeys", L("Désactiver les raccourcis de la touche Windows"),
+            L("Les raccourcis Win+E, Win+R, Win+X, etc. sont ignorés. Utile surtout si l'Explorateur peut être ouvert depuis l'application."),
             Explorer, "NoWinKeys", 1, true),
-        new("contextmenu", "Supprimer le menu contextuel de l'Explorateur",
-            "Le clic droit n'affiche plus de menu sur le Bureau ni dans l'Explorateur de fichiers.",
+        new("contextmenu", L("Supprimer le menu contextuel de l'Explorateur"),
+            L("Le clic droit n'affiche plus de menu sur le Bureau ni dans l'Explorateur de fichiers."),
             Explorer, "NoViewContextMenu", 1, true),
-        new("noclose", "Masquer Arrêter et Redémarrer",
-            "Retire Arrêter, Redémarrer, Veille et Veille prolongée du menu Démarrer et de l'écran Ctrl+Alt+Suppr pour ce compte. Le bouton d'alimentation physique fonctionne toujours.",
+        new("noclose", L("Masquer Arrêter et Redémarrer"),
+            L("Retire Arrêter, Redémarrer, Veille et Veille prolongée du menu Démarrer et de l'écran Ctrl+Alt+Suppr pour ce compte. Le bouton d'alimentation physique fonctionne toujours."),
             Explorer, "NoClose", 1, false),
     ];
 
@@ -70,7 +70,7 @@ internal static class KioskRestrictions
         if (string.IsNullOrWhiteSpace(list)) return result;
         foreach (var raw in list.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
-            var r = Get(raw) ?? throw new ValidationException("Restriction inconnue : " + raw);
+            var r = Get(raw) ?? throw new ValidationException(L("Restriction inconnue : {0}", raw));
             if (!result.Contains(r)) result.Add(r);
         }
         return result;
@@ -98,7 +98,7 @@ internal static partial class KioskRules
         var v = value.Trim();
         if (!UrlRx().IsMatch(v) || !Uri.TryCreate(v, UriKind.Absolute, out var uri)
             || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps) || string.IsNullOrEmpty(uri.Host))
-            throw new ValidationException("Adresse web invalide : elle doit commencer par http:// ou https:// et ne contenir ni espace ni guillemet.");
+            throw new ValidationException(L("Adresse web invalide : elle doit commencer par http:// ou https:// et ne contenir ni espace ni guillemet."));
         return v;
     }
 
@@ -150,16 +150,15 @@ internal static partial class KioskRules
         var pub = Path.Combine(profiles, "Public") + "\\";
         if (exe.StartsWith(pub, StringComparison.OrdinalIgnoreCase)) return null;
         if (kioskProfile is not null && exe.StartsWith(kioskProfile.TrimEnd('\\') + "\\", StringComparison.OrdinalIgnoreCase)) return null;
-        return "Ce programme se trouve dans le dossier personnel d'un autre utilisateur : le compte kiosque n'y aura pas accès. "
-             + "Installez-le pour tous les utilisateurs (par exemple dans Program Files).";
+        return L("Ce programme se trouve dans le dossier personnel d'un autre utilisateur : le compte kiosque n'y aura pas accès. Installez-le pour tous les utilisateurs (par exemple dans Program Files).");
     }
 
     /// <summary>Mot de passe facultatif : 127 caractères au plus, sans caractère de contrôle. Jamais journalisé.</summary>
     public static string Password(IReadOnlyDictionary<string, string> p)
     {
         if (!p.TryGetValue("password", out var pw) || pw is null) return "";
-        if (pw.Length > 127) throw new ValidationException("Mot de passe trop long (127 caractères au maximum).");
-        if (pw.Any(char.IsControl)) throw new ValidationException("Le mot de passe contient des caractères non autorisés.");
+        if (pw.Length > 127) throw new ValidationException(L("Mot de passe trop long (127 caractères au maximum)."));
+        if (pw.Any(char.IsControl)) throw new ValidationException(L("Le mot de passe contient des caractères non autorisés."));
         return pw;
     }
 
@@ -168,7 +167,7 @@ internal static partial class KioskRules
         var name = Path.GetFileName(exe);
         string[] refused = ["explorer.exe", "cmd.exe", "powershell.exe", "pwsh.exe", "regedit.exe", "taskmgr.exe", "mmc.exe"];
         if (refused.Contains(name, StringComparer.OrdinalIgnoreCase))
-            throw new ValidationException($"« {name} » ne peut pas servir d'application de borne (outil système ou Bureau Windows).");
+            throw new ValidationException(L("« {0} » ne peut pas servir d'application de borne (outil système ou Bureau Windows).", name));
         return exe;
     }
 }

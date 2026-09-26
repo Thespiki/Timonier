@@ -109,7 +109,7 @@ public sealed class TweakBuilder
     private Func<string?>? _detect;
     private Func<SystemProfile, string?>? _adaptive;
     private bool _forceAdmin;
-    private string _onLabel = "Activé", _offLabel = "Désactivé";
+    private string _onLabel = L("Activé"), _offLabel = L("Désactivé");
 
     internal TweakBuilder(string id, string title, string description, TweakKind kind)
     {
@@ -135,7 +135,7 @@ public sealed class TweakBuilder
     public TweakBuilder WhenOff(params Operation[] ops) => AddOrReplace(TweakDefinition.Off, _offLabel, null, ops);
     public TweakBuilder Option(string key, string label, params Operation[] ops) => AddOrReplace(key, label, null, ops);
     public TweakBuilder OptionWithHelp(string key, string label, string description, params Operation[] ops) => AddOrReplace(key, label, description, ops);
-    public TweakBuilder Run(params Operation[] ops) => AddOrReplace(TweakDefinition.Run, "Exécuter", null, ops);
+    public TweakBuilder Run(params Operation[] ops) => AddOrReplace(TweakDefinition.Run, L("Exécuter"), null, ops);
 
     private TweakBuilder AddOrReplace(string key, string label, string? description, Operation[] ops)
     {

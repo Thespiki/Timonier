@@ -23,7 +23,7 @@ public static class RegistryAccess
                                    ?? throw new InvalidOperationException("HKU\\.DEFAULT introuvable"),
             RegHive.CurrentUser when !string.IsNullOrEmpty(userSid) =>
                 RegistryKey.OpenBaseKey(RegistryHive.Users, RegistryView.Registry64).OpenSubKey(userSid, writable)
-                ?? throw new InvalidOperationException("Ruche utilisateur non chargée : " + userSid),
+                ?? throw new InvalidOperationException(L("Ruche utilisateur non chargée : {0}", userSid)),
             _ => RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64),
         };
     }
@@ -104,7 +104,7 @@ public static partial class ServiceConfig
 
     public static void SetStart(string name, ServiceStartKind kind)
     {
-        if (!IsValidName(name)) throw new ArgumentException("Nom de service invalide : " + name);
+        if (!IsValidName(name)) throw new ArgumentException(L("Nom de service invalide : {0}", name));
         var scm = Native.OpenSCManager(null, null, Native.SC_MANAGER_CONNECT);
         if (scm == 0) throw Native.LastError("OpenSCManager");
         try
@@ -160,7 +160,7 @@ public static class TaskSchedulerHelper
 {
     private static dynamic Connect()
     {
-        var type = Type.GetTypeFromProgID("Schedule.Service") ?? throw new InvalidOperationException("Planificateur de tâches indisponible");
+        var type = Type.GetTypeFromProgID("Schedule.Service") ?? throw new InvalidOperationException(L("Planificateur de tâches indisponible"));
         dynamic service = Activator.CreateInstance(type)!;
         service.Connect();
         return service;
@@ -187,7 +187,7 @@ public static class TaskSchedulerHelper
 
     public static void SetEnabled(string path, bool enabled)
     {
-        if (!IsValidPath(path)) throw new ArgumentException("Chemin de tâche invalide : " + path);
+        if (!IsValidPath(path)) throw new ArgumentException(L("Chemin de tâche invalide : {0}", path));
         dynamic service = Connect();
         try
         {
@@ -230,7 +230,7 @@ public static class TaskSchedulerHelper
                     try { var d = (DateTime)t.NextRunTime; if (d.Year > 2000) next = d; } catch { }
                     string? author = null;
                     try { author = (string)t.Definition.RegistrationInfo.Author; } catch { }
-                    var state = (int)t.State switch { 1 => "Désactivée", 2 => "En file", 3 => "Prête", 4 => "En cours", _ => "Inconnu" };
+                    var state = (int)t.State switch { 1 => L("Désactivée"), 2 => L("En file"), 3 => L("Prête"), 4 => L("En cours"), _ => L("Inconnu") };
                     result.Add(new ScheduledTaskInfo((string)t.Path, (string)t.Name, (bool)t.Enabled, state, author, last, next, actions));
                 }
                 catch { /* tâche illisible */ }

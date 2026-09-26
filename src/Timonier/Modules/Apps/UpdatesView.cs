@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using Timonier.Core.Localization;
 using Timonier.Core.Platform;
 
 namespace Timonier.Modules.Apps;
@@ -23,8 +24,8 @@ internal sealed class UpdatesView : StackPanel
     public UpdatesView(AppsContext ctx)
     {
         _ctx = ctx;
-        _upgradeAll = AppsUi.Button("Tout mettre à jour", "", "Pp.AccentButton", async (_, _) => await UpgradeAllAsync());
-        _scan = AppsUi.Button("Rechercher", "", "Pp.Button", async (_, _) => await ScanAsync());
+        _upgradeAll = AppsUi.Button(L("Tout mettre à jour"), "", "Pp.AccentButton", async (_, _) => await UpgradeAllAsync());
+        _scan = AppsUi.Button(L("Rechercher"), "", "Pp.Button", async (_, _) => await ScanAsync());
         _scan.Margin = new Thickness(8, 0, 0, 0);
         var buttons = AppsUi.Row(_upgradeAll, _scan);
         var bar = new DockPanel();
@@ -35,8 +36,7 @@ internal sealed class UpdatesView : StackPanel
         bar.Children.Add(_summary);
         Children.Add(bar);
 
-        var note = AppsUi.Caption("winget compare vos logiciels aux versions publiées dans ses sources (connexion Internet). Les mises à jour " +
-                                  "s'installent en silencieux avec l'accord des licences des éditeurs ; fermez les programmes concernés avant.");
+        var note = AppsUi.Caption(L("winget compare vos logiciels aux versions publiées dans ses sources (connexion Internet). Les mises à jour s'installent en silencieux avec l'accord des licences des éditeurs ; fermez les programmes concernés avant."));
         note.Margin = new Thickness(2, 8, 0, 4);
         Children.Add(note);
         Children.Add(_host);
@@ -51,8 +51,8 @@ internal sealed class UpdatesView : StackPanel
     }
 
     private void ShowUnavailable() =>
-        _host.Content = AppsUi.EmptyState("", "winget est indisponible",
-            "Installez le « Programme d'installation d'application » depuis le Microsoft Store pour rechercher et installer les mises à jour.",
+        _host.Content = AppsUi.EmptyState("", L("winget est indisponible"),
+            L("Installez le « Programme d'installation d'application » depuis le Microsoft Store pour rechercher et installer les mises à jour."),
             "Pp.Warning");
 
     private async Task ScanAsync()
@@ -60,8 +60,8 @@ internal sealed class UpdatesView : StackPanel
         if (_scanning || !_ctx.WingetAvailable) return;
         _scanning = true;
         UpdateButtons();
-        _summary.Text = "Recherche en cours…";
-        _host.Content = AppsUi.Loading("Interrogation des sources winget… (quelques secondes à une minute)");
+        _summary.Text = L("Recherche en cours…");
+        _host.Content = AppsUi.Loading(L("Interrogation des sources winget… (quelques secondes à une minute)"));
         try
         {
             var r = await Winget.RunAsync(["upgrade", "--accept-source-agreements", "--disable-interactivity"], TimeSpan.FromMinutes(3), null, CancellationToken.None);
@@ -71,8 +71,8 @@ internal sealed class UpdatesView : StackPanel
             if (items.Count == 0 && !r.Success && unchecked((uint)r.ExitCode) != 0x8A150014 && r.Output.Trim().Length == 0)
             {
                 _summary.Text = "";
-                _host.Content = AppsUi.EmptyState("", "Recherche impossible",
-                    "winget n'a pas pu consulter ses sources (" + Winget.Describe(r.ExitCode, r.TimedOut) + "). Vérifiez la connexion Internet puis réessayez.",
+                _host.Content = AppsUi.EmptyState("", L("Recherche impossible"),
+                    L("winget n'a pas pu consulter ses sources ({0}). Vérifiez la connexion Internet puis réessayez.", Winget.Describe(r.ExitCode, r.TimedOut)),
                     "Pp.Warning");
                 return;
             }
@@ -82,7 +82,7 @@ internal sealed class UpdatesView : StackPanel
         {
             Log.Error("Apps", "recherche des mises à jour", ex);
             _summary.Text = "";
-            _host.Content = AppsUi.EmptyState("", "Recherche impossible", ex.Message, "Pp.Warning");
+            _host.Content = AppsUi.EmptyState("", L("Recherche impossible"), ex.Message, "Pp.Warning");
         }
         finally
         {
@@ -94,16 +94,16 @@ internal sealed class UpdatesView : StackPanel
     private void Show(List<UpgradeItem> items)
     {
         _rowButtons.Clear();
-        var when = _lastScan is { } t ? $" · vérifié à {t:HH:mm}" : "";
+        var when = _lastScan is { } t ? " · " + L("vérifié à {0}", t.ToString("t", Loc.Culture)) : "";
         if (items.Count == 0)
         {
-            _summary.Text = "Aucune mise à jour" + when;
-            _host.Content = AppsUi.EmptyState("", "Tout est à jour",
-                "winget ne connaît pas de version plus récente pour vos logiciels. Les applications du Store se mettent à jour par le Store.",
+            _summary.Text = L("Aucune mise à jour") + when;
+            _host.Content = AppsUi.EmptyState("", L("Tout est à jour"),
+                L("winget ne connaît pas de version plus récente pour vos logiciels. Les applications du Store se mettent à jour par le Store."),
                 "Pp.Success");
             return;
         }
-        _summary.Text = AppsContext.Plural(items.Count, "mise à jour disponible", "mises à jour disponibles") + when;
+        _summary.Text = LP(items.Count, "{0} mise à jour disponible", "{0} mises à jour disponibles") + when;
         var list = new StackPanel();
         foreach (var item in items.OrderBy(i => i.Name, StringComparer.CurrentCultureIgnoreCase)) list.Children.Add(Row(item));
         _host.Content = AppsUi.Card(list, new Thickness(12, 4, 12, 4));
@@ -126,7 +126,7 @@ internal sealed class UpdatesView : StackPanel
         var title = AppsUi.Strong(name, 13.5);
         title.ToolTip = item.Name;
         text.Children.Add(title);
-        text.Children.Add(AppsUi.Caption(item.Id + (item.Source.Length > 0 ? " · source " + item.Source : "")));
+        text.Children.Add(AppsUi.Caption(item.Id + (item.Source.Length > 0 ? " · " + L("source {0}", item.Source) : "")));
         Grid.SetColumn(text, 1);
         grid.Children.Add(text);
 
@@ -137,7 +137,7 @@ internal sealed class UpdatesView : StackPanel
         Grid.SetColumn(versions, 2);
         grid.Children.Add(versions);
 
-        var button = AppsUi.Button("Mettre à jour", null, "Pp.Button", async (_, _) => await UpgradeAsync(item, name));
+        var button = AppsUi.Button(L("Mettre à jour"), null, "Pp.Button", async (_, _) => await UpgradeAsync(item, name));
         button.VerticalAlignment = VerticalAlignment.Center;
         _rowButtons.Add(button);
         Grid.SetColumn(button, 3);
@@ -157,7 +157,7 @@ internal sealed class UpdatesView : StackPanel
 
     private async Task UpgradeAsync(UpgradeItem item, string name)
     {
-        var outcome = await _ctx.Activity.RunAsync($"Mise à jour de {name}", WingetUpgradeAction.ActionId,
+        var outcome = await _ctx.Activity.RunAsync(L("Mise à jour de {0}", name), WingetUpgradeAction.ActionId,
             new Dictionary<string, string> { ["ids"] = item.Id });
         if (outcome is null) return;
         _ctx.NotifyInstalledChanged();
@@ -168,12 +168,10 @@ internal sealed class UpdatesView : StackPanel
     public async Task UpgradeAllAsync()
     {
         if (_ctx.Activity.IsBusy || !_ctx.WingetAvailable) return;
-        if (!await AppHost.Dialogs.ConfirmAsync("Tout mettre à jour ?",
-                "winget va télécharger et installer en silencieux toutes les mises à jour disponibles, y compris celles non listées ici " +
-                "(applications du Store gérées par winget).\n\nFermez les programmes concernés : un programme ouvert peut empêcher sa mise à jour. " +
-                "L'opération peut durer plusieurs minutes ; vous pouvez l'annuler entre deux applications. Installer vaut acceptation des licences des éditeurs.",
-                "Tout mettre à jour")) return;
-        var outcome = await _ctx.Activity.RunAsync("Mise à jour de toutes les applications", WingetUpgradeAllAction.ActionId, []);
+        if (!await AppHost.Dialogs.ConfirmAsync(L("Tout mettre à jour ?"),
+                L("winget va télécharger et installer en silencieux toutes les mises à jour disponibles, y compris celles non listées ici (applications du Store gérées par winget).\n\nFermez les programmes concernés : un programme ouvert peut empêcher sa mise à jour. L'opération peut durer plusieurs minutes ; vous pouvez l'annuler entre deux applications. Installer vaut acceptation des licences des éditeurs."),
+                L("Tout mettre à jour"))) return;
+        var outcome = await _ctx.Activity.RunAsync(L("Mise à jour de toutes les applications"), WingetUpgradeAllAction.ActionId, []);
         if (outcome is null) return;
         _ctx.NotifyInstalledChanged();
         await ScanAsync();

@@ -183,7 +183,7 @@ internal static class UsersUi
         catch (Exception ex)
         {
             Log.Warn("Users", "ouverture " + uri + " : " + ex.Message);
-            AppHost.Toasts.Show("Impossible d'ouvrir cette page des Paramètres.", UI.Services.ToastKind.Error);
+            AppHost.Toasts.Show(L("Impossible d'ouvrir cette page des Paramètres."), UI.Services.ToastKind.Error);
         }
     }
 
@@ -193,7 +193,7 @@ internal static class UsersUi
         catch (Exception ex)
         {
             Log.Warn("Users", "lancement " + tool + " : " + ex.Message);
-            AppHost.Toasts.Show("Impossible d'ouvrir cet outil Windows.", UI.Services.ToastKind.Error);
+            AppHost.Toasts.Show(L("Impossible d'ouvrir cet outil Windows."), UI.Services.ToastKind.Error);
         }
     }
 

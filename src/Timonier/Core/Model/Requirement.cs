@@ -28,29 +28,29 @@ public sealed record Requirement
     public string? Check(SystemProfile p)
     {
         if (MinBuild is { } min && p.Build < min)
-            return min >= 22000 ? $"Nécessite Windows 11 (build {min} ou plus récent)." : $"Nécessite Windows build {min} ou plus récent.";
+            return min >= 22000 ? L("Nécessite Windows 11 (build {0} ou plus récent).", min) : L("Nécessite Windows build {0} ou plus récent.", min);
         if (MaxBuild is { } max && p.Build > max)
-            return max < 22000 ? "Réservé à Windows 10." : $"Plus disponible après le build {max}.";
+            return max < 22000 ? L("Réservé à Windows 10.") : L("Plus disponible après le build {0}.", max);
         if (Editions is { Length: > 0 } && !Editions.Contains(p.Edition))
-            return $"Non disponible sur l'édition {p.EditionLabel}.";
+            return L("Non disponible sur l'édition {0}.", p.EditionLabel);
         if (NotWhenManaged && p.IsManaged)
-            return "Ce PC est géré par une organisation (domaine/MDM) : ce réglage serait écrasé par ses stratégies.";
+            return L("Ce PC est géré par une organisation (domaine/MDM) : ce réglage serait écrasé par ses stratégies.");
         // Les conditions matérielles ne sont évaluées qu'une fois le matériel détecté.
         if (p.HardwareLoaded)
         {
-            if (NeedsBattery && !p.HasBattery) return "Ce PC n'a pas de batterie.";
-            if (NeedsTouch && !p.HasTouch) return "Ce PC n'a pas d'écran tactile.";
-            if (NeedsBluetooth && !p.HasBluetooth) return "Aucun adaptateur Bluetooth détecté.";
-            if (NeedsWifi && !p.HasWifi) return "Aucune carte Wi-Fi détectée.";
-            if (NeedsCamera && !p.HasCamera) return "Aucune caméra détectée.";
-            if (NotOnVirtualMachine && p.IsVirtualMachine) return "Sans effet dans une machine virtuelle.";
+            if (NeedsBattery && !p.HasBattery) return L("Ce PC n'a pas de batterie.");
+            if (NeedsTouch && !p.HasTouch) return L("Ce PC n'a pas d'écran tactile.");
+            if (NeedsBluetooth && !p.HasBluetooth) return L("Aucun adaptateur Bluetooth détecté.");
+            if (NeedsWifi && !p.HasWifi) return L("Aucune carte Wi-Fi détectée.");
+            if (NeedsCamera && !p.HasCamera) return L("Aucune caméra détectée.");
+            if (NotOnVirtualMachine && p.IsVirtualMachine) return L("Sans effet dans une machine virtuelle.");
             if (GpuVendors is { Length: > 0 } && !p.Gpus.Any(g => GpuVendors.Contains(g.Vendor)))
-                return $"Nécessite une carte graphique {string.Join(" / ", GpuVendors)}.";
+                return L("Nécessite une carte graphique {0}.", string.Join(" / ", GpuVendors));
             if (CpuVendors is { Length: > 0 } && !CpuVendors.Contains(p.CpuVendor))
-                return $"Nécessite un processeur {string.Join(" / ", CpuVendors)}.";
+                return L("Nécessite un processeur {0}.", string.Join(" / ", CpuVendors));
         }
         if (Custom is not null && !Custom(p))
-            return CustomReason ?? "Non disponible sur cette configuration.";
+            return CustomReason ?? L("Non disponible sur cette configuration.");
         return null;
     }
 

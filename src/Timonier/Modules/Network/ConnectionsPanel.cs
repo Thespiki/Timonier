@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 using Timonier.Core.Platform;
 
@@ -18,7 +18,7 @@ internal sealed class ConnectionsPanel : UserControl
         Focusable = false;
         var root = new StackPanel();
 
-        _showAll = new CheckBox { Content = "Afficher les cartes inactives et virtuelles", Margin = new Thickness(0, 0, 0, 12) }.Styled("Pp.ToggleSwitch");
+        _showAll = new CheckBox { Content = L("Afficher les cartes inactives et virtuelles"), Margin = new Thickness(0, 0, 0, 12) }.Styled("Pp.ToggleSwitch");
         _showAll.Checked += (_, _) => Render();
         _showAll.Unchecked += (_, _) => Render();
         root.Children.Add(_showAll);
@@ -39,31 +39,30 @@ internal sealed class ConnectionsPanel : UserControl
         var snap = _page.Snapshot;
         if (snap is null)
         {
-            _list.Children.Add(NetUi.EmptyState("", "Lecture des cartes réseau…"));
+            _list.Children.Add(NetUi.EmptyState("", L("Lecture des cartes réseau…")));
             return;
         }
 
         if (snap.Wifi?.NeedsLocation == true && snap.WifiName is null)
         {
-            var open = NetUi.Button("Ouvrir Localisation", "", "Pp.Button", (_, _) => OpenSettings("ms-settings:privacy-location"));
+            var open = NetUi.Button(L("Ouvrir Localisation"), "", "Pp.Button", (_, _) => OpenSettings("ms-settings:privacy-location"));
             _hints.Children.Add(NetUi.InfoBar(
-                "Depuis Windows 11 24H2, le nom du réseau Wi-Fi (SSID) n'est communiqué aux applications de bureau que si l'accès à la " +
-                "localisation est autorisé pour elles (« Autoriser les applications de bureau à accéder à votre position »). Timonier n'utilise pas votre position.",
-                "", "Pp.InfoBar", open, "Nom du Wi-Fi masqué par Windows"));
+                L("Depuis Windows 11 24H2, le nom du réseau Wi-Fi (SSID) n'est communiqué aux applications de bureau que si l'accès à la localisation est autorisé pour elles (« Autoriser les applications de bureau à accéder à votre position »). Timonier n'utilise pas votre position."),
+                "", "Pp.InfoBar", open, L("Nom du Wi-Fi masqué par Windows")));
         }
 
         var showAll = _showAll.IsChecked == true;
         var adapters = snap.Adapters.Where(a => showAll || IsRelevant(a)).ToList();
         if (adapters.Count == 0)
         {
-            _list.Children.Add(NetUi.EmptyState("", "Aucune carte réseau à afficher",
-                showAll ? "Windows ne signale aucune carte réseau." : "Activez « Afficher les cartes inactives et virtuelles » pour tout voir."));
+            _list.Children.Add(NetUi.EmptyState("", L("Aucune carte réseau à afficher"),
+                showAll ? L("Windows ne signale aucune carte réseau.") : L("Activez « Afficher les cartes inactives et virtuelles » pour tout voir.")));
             return;
         }
         foreach (var a in adapters) _list.Children.Add(BuildAdapterCard(a, snap));
         var hidden = snap.Adapters.Count - adapters.Count;
         if (hidden > 0 && !showAll)
-            _list.Children.Add(NetUi.Text($"{hidden} carte(s) inactive(s) ou virtuelle(s) masquée(s).", "Pp.Caption", new Thickness(2, 8, 0, 0)));
+            _list.Children.Add(NetUi.Text(LP(hidden, "{0} carte inactive ou virtuelle masquée.", "{0} cartes inactives ou virtuelles masquées."), "Pp.Caption", new Thickness(2, 8, 0, 0)));
     }
 
     /// <summary>Par défaut : cartes physiques (même déconnectées), VPN actifs, cartes virtuelles actives ayant une adresse IPv4.</summary>
@@ -80,13 +79,12 @@ internal sealed class ConnectionsPanel : UserControl
 
         // En-tête : icône, nom, description, badges
         var tile = NetUi.IconTile(a.Glyph, a.IsUp ? "Pp.AccentSubtle" : "Pp.NeutralBackground", a.IsUp ? "Pp.AccentText" : "Pp.TextSecondary");
-        var titleText = a.Name;
-        if (a.Kind == AdapterKind.Wifi && a.IsUp && snap.WifiName is { } ssid) titleText += $" — « {ssid} »";
+        var titleText = a.Kind == AdapterKind.Wifi && a.IsUp && snap.WifiName is { } ssid ? L("{0} — « {1} »", a.Name, ssid) : a.Name;
         var names = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         names.Children.Add(new TextBlock { Text = titleText, FontWeight = FontWeights.SemiBold }.Styled("Pp.CardTitle"));
         names.Children.Add(NetUi.Text(a.Description, "Pp.Caption"));
         var badges = new WrapPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
-        badges.Children.Add(a.IsUp ? NetUi.Badge("Connecté", "Success") : NetUi.Badge("Déconnecté"));
+        badges.Children.Add(a.IsUp ? NetUi.Badge(L("Connecté"), "Success") : NetUi.Badge(L("Déconnecté")));
         badges.Children.Add(NetUi.Badge(a.KindLabel, "Accent"));
         var header = new DockPanel();
         DockPanel.SetDock(tile, Dock.Left);
@@ -99,8 +97,8 @@ internal sealed class ConnectionsPanel : UserControl
         if (!a.IsUp)
         {
             root.Children.Add(NetUi.Text(a.Kind == AdapterKind.Wifi
-                    ? "Wi-Fi non connecté (ou mode Avion activé)."
-                    : "Aucun lien réseau : câble débranché ou carte désactivée.", "Pp.Caption", new Thickness(50, 8, 0, 0)));
+                    ? L("Wi-Fi non connecté (ou mode Avion activé).")
+                    : L("Aucun lien réseau : câble débranché ou carte désactivée."), "Pp.Caption", new Thickness(50, 8, 0, 0)));
             root.Children.Add(MacRow(a, new Thickness(50, 4, 0, 0)));
             return NetUi.Card(root, new Thickness(0, 0, 0, 8));
         }
@@ -116,25 +114,27 @@ internal sealed class ConnectionsPanel : UserControl
         grid.Children.Add(left);
         grid.Children.Add(right);
 
-        left.Children.Add(NetUi.KeyValue("Adresse IPv4", a.IPv4.Count > 0 ? string.Join("\n", a.IPv4) : "—", 120, selectable: true));
+        left.Children.Add(NetUi.KeyValue(L("Adresse IPv4"), a.IPv4.Count > 0 ? string.Join("\n", a.IPv4) : "—", 120, selectable: true));
         var v6 = a.IPv6.Where(x => !x.StartsWith("fe80", StringComparison.OrdinalIgnoreCase)).Take(2).ToList();
-        left.Children.Add(NetUi.KeyValue("Adresse IPv6", v6.Count > 0 ? string.Join("\n", v6) : a.SupportsIPv6 ? "Locale uniquement" : "IPv6 désactivé", 120, selectable: v6.Count > 0));
-        left.Children.Add(NetUi.KeyValue("Passerelle", a.HasGateway ? string.Join("\n", a.Gateways.Take(2)) : "Aucune (pas d'accès Internet par cette carte)", 120, selectable: a.HasGateway));
-        left.Children.Add(NetUi.KeyValue("DHCP", a.DhcpEnabled ? "Activé" + (a.DhcpServer is { } d ? $" (serveur {d})" : "") : "Désactivé (adresse fixe)", 120));
+        left.Children.Add(NetUi.KeyValue(L("Adresse IPv6"), v6.Count > 0 ? string.Join("\n", v6) : a.SupportsIPv6 ? L("Locale uniquement") : L("IPv6 désactivé"), 120, selectable: v6.Count > 0));
+        left.Children.Add(NetUi.KeyValue(L("Passerelle"), a.HasGateway ? string.Join("\n", a.Gateways.Take(2)) : L("Aucune (pas d'accès Internet par cette carte)"), 120, selectable: a.HasGateway));
+        left.Children.Add(NetUi.KeyValue("DHCP", a.DhcpEnabled ? (a.DhcpServer is { } d ? L("Activé (serveur {0})", d) : L("Activé")) : L("Désactivé (adresse fixe)"), 120));
 
-        var dnsText = a.DnsServers.Count == 0 ? "Aucun" : string.Join("\n", a.DnsServers.Take(4));
-        right.Children.Add(NetUi.KeyValue("Serveurs DNS", dnsText, 120, selectable: a.DnsServers.Count > 0));
+        var dnsText = a.DnsServers.Count == 0 ? L("Aucun") : string.Join("\n", a.DnsServers.Take(4));
+        right.Children.Add(NetUi.KeyValue(L("Serveurs DNS"), dnsText, 120, selectable: a.DnsServers.Count > 0));
         var provider = DnsProviders.Identify(a.DnsServers);
-        right.Children.Add(NetUi.KeyValue("Origine des DNS",
-            (a.DnsIsManual ? "Saisis manuellement" : "Automatiques (réseau)") + (provider is not null ? " — " + provider.Name : ""), 120));
-        right.Children.Add(NetUi.KeyValue("Vitesse du lien", a.SpeedLabel, 120));
+        right.Children.Add(NetUi.KeyValue(L("Origine des DNS"),
+            provider is null
+                ? (a.DnsIsManual ? L("Saisis manuellement") : L("Automatiques (réseau)"))
+                : (a.DnsIsManual ? L("Saisis manuellement — {0}", provider.Name) : L("Automatiques (réseau) — {0}", provider.Name)), 120));
+        right.Children.Add(NetUi.KeyValue(L("Vitesse du lien"), a.SpeedLabel, 120));
         right.Children.Add(MacRow(a, new Thickness(0)));
-        if (a.DnsSuffix is { } suffix) right.Children.Add(NetUi.KeyValue("Suffixe DNS", suffix, 120));
+        if (a.DnsSuffix is { } suffix) right.Children.Add(NetUi.KeyValue(L("Suffixe DNS"), suffix, 120));
         root.Children.Add(grid);
 
         if (a.CanSetDns)
         {
-            var actions = NetUi.Row(NetUi.Button("Changer le DNS", "", "Pp.Button", (_, _) => _page.OpenDnsFor(a)));
+            var actions = NetUi.Row(NetUi.Button(L("Changer le DNS"), "", "Pp.Button", (_, _) => _page.OpenDnsFor(a)));
             actions.Margin = new Thickness(50, 10, 0, 2);
             root.Children.Add(actions);
         }
@@ -144,17 +144,17 @@ internal sealed class ConnectionsPanel : UserControl
     /// <summary>Adresse MAC masquée par défaut (identifiant matériel unique), avec un bouton « Révéler ».</summary>
     private static Grid MacRow(AdapterInfo a, Thickness margin)
     {
-        var row = NetUi.KeyValue("Adresse MAC", a.MacDisplay(false), 120);
+        var row = NetUi.KeyValue(L("Adresse MAC"), a.MacDisplay(false), 120);
         row.Margin = new Thickness(margin.Left, margin.Top + 3, 0, 3);
         if (a.Mac.Length != 12) return row;
         var value = (TextBlock)row.Children[1];
         var revealed = false;
-        var toggle = new Button { Content = "Révéler", Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center }.Styled("Pp.LinkButton");
+        var toggle = new Button { Content = L("Révéler"), Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center }.Styled("Pp.LinkButton");
         toggle.Click += (_, _) =>
         {
             revealed = !revealed;
             value.Text = a.MacDisplay(revealed);
-            toggle.Content = revealed ? "Masquer" : "Révéler";
+            toggle.Content = revealed ? L("Masquer") : L("Révéler");
         };
         row.Children.Remove(value);
         var panel = NetUi.Row(value, toggle);
@@ -169,7 +169,7 @@ internal sealed class ConnectionsPanel : UserControl
         catch (Exception ex)
         {
             Log.Warn("Network", "ouverture " + uri + " : " + ex.Message);
-            AppHost.Toasts.Show("Impossible d'ouvrir cette page des Paramètres.", UI.Services.ToastKind.Error);
+            AppHost.Toasts.Show(L("Impossible d'ouvrir cette page des Paramètres."), UI.Services.ToastKind.Error);
         }
     }
 }

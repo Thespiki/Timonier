@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using Timonier.Core.Security;
@@ -18,7 +18,7 @@ internal sealed class DnsPanel : UserControl
     private readonly Dictionary<string, RadioButton> _options = new(StringComparer.Ordinal);
     private readonly TextBox _custom = new() { MinWidth = 360, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(28, 8, 0, 0) };
     private readonly TextBlock _customError = NetUi.Text("", "Pp.Caption", new Thickness(28, 4, 0, 0));
-    private readonly CheckBox _doh = new() { Content = "Chiffrer les requêtes DNS (DNS over HTTPS)" };
+    private readonly CheckBox _doh = new() { Content = L("Chiffrer les requêtes DNS (DNS over HTTPS)") };
     private readonly TextBlock _dohHelp = NetUi.Text("", "Pp.Caption", new Thickness(28, 2, 0, 0));
     private readonly Border _familyInfo;
     private readonly Button _apply;
@@ -34,21 +34,19 @@ internal sealed class DnsPanel : UserControl
         Focusable = false;
         var root = new StackPanel();
 
-        _empty = NetUi.EmptyState("", "Aucune carte réseau active",
-            "Connectez-vous à un réseau (Wi-Fi ou câble) pour choisir ses serveurs DNS.");
+        _empty = NetUi.EmptyState("", L("Aucune carte réseau active"),
+            L("Connectez-vous à un réseau (Wi-Fi ou câble) pour choisir ses serveurs DNS."));
         _empty.Visibility = Visibility.Collapsed;
         root.Children.Add(_empty);
         root.Children.Add(_body);
 
         root.Children.Add(NetUi.InfoBar(
-            "Le DNS traduit les noms de sites (exemple.com) en adresses. Par défaut, c'est votre box ou votre fournisseur d'accès qui s'en charge. " +
-            "Un fournisseur public peut être plus rapide, plus respectueux de la vie privée ou filtrer les sites dangereux. " +
-            "Le choix s'applique à la carte sélectionnée, sur tous les réseaux auxquels elle se connecte.",
+            L("Le DNS traduit les noms de sites (exemple.com) en adresses. Par défaut, c'est votre box ou votre fournisseur d'accès qui s'en charge. Un fournisseur public peut être plus rapide, plus respectueux de la vie privée ou filtrer les sites dangereux. Le choix s'applique à la carte sélectionnée, sur tous les réseaux auxquels elle se connecte."),
             "", "Pp.InfoBar"));
 
         // --- Carte sélectionnée
         var adapterCard = new StackPanel();
-        adapterCard.Children.Add(new TextBlock { Text = "Carte réseau", FontWeight = FontWeights.SemiBold }.Styled("Pp.CardTitle"));
+        adapterCard.Children.Add(new TextBlock { Text = L("Carte réseau"), FontWeight = FontWeights.SemiBold }.Styled("Pp.CardTitle"));
         _adapterBox.Margin = new Thickness(0, 8, 0, 0);
         _adapterBox.SelectionChanged += (_, _) => OnAdapterChanged();
         adapterCard.Children.Add(_adapterBox);
@@ -56,51 +54,47 @@ internal sealed class DnsPanel : UserControl
         _body.Children.Add(NetUi.Card(adapterCard, new Thickness(0, 0, 0, 8)));
 
         // --- Fournisseurs
-        _body.Children.Add(NetUi.Section("Fournisseur DNS"));
-        _body.Children.Add(OptionCard(DnsProviders.Auto, "Automatique (fourni par le réseau)",
-            "Revient aux serveurs annoncés par la box ou le réseau (DHCP). C'est le réglage d'origine de Windows.", null, null));
+        _body.Children.Add(NetUi.Section(L("Fournisseur DNS")));
+        _body.Children.Add(OptionCard(DnsProviders.Auto, L("Automatique (fourni par le réseau)"),
+            L("Revient aux serveurs annoncés par la box ou le réseau (DHCP). C'est le réglage d'origine de Windows."), null, null));
 
         var grid = new UniformGrid { Columns = 2, Margin = new Thickness(0, 0, -8, 0) };
         foreach (var p in DnsProviders.Known)
             grid.Children.Add(OptionCard(p.Key, p.Name, p.Description, p.Filtering, p));
         _body.Children.Add(grid);
 
-        var custom = OptionCard(DnsProviders.Custom, "Personnalisé",
-            "Vos propres serveurs (Pi-hole, NextDNS, serveur d'entreprise…) : jusqu'à 2 adresses IPv4 et 2 IPv6, séparées par des virgules.", null, null);
+        var custom = OptionCard(DnsProviders.Custom, L("Personnalisé"),
+            L("Vos propres serveurs (Pi-hole, NextDNS, serveur d'entreprise…) : jusqu'à 2 adresses IPv4 et 2 IPv6, séparées par des virgules."), null, null);
         var customStack = (StackPanel)((RadioButton)((Border)custom).Child).Content;
         _custom.TextChanged += (_, _) => ValidateInput();
-        System.Windows.Automation.AutomationProperties.SetName(_custom, "Serveurs DNS personnalisés");
+        System.Windows.Automation.AutomationProperties.SetName(_custom, L("Serveurs DNS personnalisés"));
         customStack.Children.Add(_custom);
         customStack.Children.Add(_customError);
         _body.Children.Add(custom);
 
         // --- Options
-        _body.Children.Add(NetUi.Section("Options"));
+        _body.Children.Add(NetUi.Section(L("Options")));
         var opts = new StackPanel();
         _doh.Checked += (_, _) => ValidateInput();
         _doh.Unchecked += (_, _) => ValidateInput();
         opts.Children.Add(_doh);
         opts.Children.Add(_dohHelp);
         opts.Children.Add(NetUi.Text(
-            "Les adresses IPv6 du fournisseur sont ajoutées automatiquement si la carte utilise IPv6 : sinon, les DNS IPv6 de la box " +
-            "continueraient de répondre et pourraient contourner un filtre.", "Pp.Caption", new Thickness(0, 10, 0, 0)));
+            L("Les adresses IPv6 du fournisseur sont ajoutées automatiquement si la carte utilise IPv6 : sinon, les DNS IPv6 de la box continueraient de répondre et pourraient contourner un filtre."), "Pp.Caption", new Thickness(0, 10, 0, 0)));
         _body.Children.Add(NetUi.Card(opts, new Thickness(0, 0, 0, 8)));
 
         _familyInfo = NetUi.InfoBar(
-            "Un DNS familial bloque les sites pour adultes et dangereux sur tout le PC, sans logiciel à installer. Il a des limites : " +
-            "il ne filtre pas le contenu à l'intérieur d'un site autorisé (réseaux sociaux, vidéos), il peut être contourné par un VPN, " +
-            "un navigateur réglé sur son propre DNS sécurisé (Chrome, Edge, Firefox) ou un changement de DNS par un compte administrateur. " +
-            "Pour un enfant, combinez-le avec un compte standard (non administrateur) et Microsoft Family Safety.",
-            "", "Pp.InfoBar.Success", title: "Filtre familial : ce qu'il fait et ne fait pas");
+            L("Un DNS familial bloque les sites pour adultes et dangereux sur tout le PC, sans logiciel à installer. Il a des limites : il ne filtre pas le contenu à l'intérieur d'un site autorisé (réseaux sociaux, vidéos), il peut être contourné par un VPN, un navigateur réglé sur son propre DNS sécurisé (Chrome, Edge, Firefox) ou un changement de DNS par un compte administrateur. Pour un enfant, combinez-le avec un compte standard (non administrateur) et Microsoft Family Safety."),
+            "", "Pp.InfoBar.Success", title: L("Filtre familial : ce qu'il fait et ne fait pas"));
         _familyInfo.Visibility = Visibility.Collapsed;
         _body.Children.Add(_familyInfo);
 
         // --- Application
-        _apply = NetUi.Button("Appliquer", "", "Pp.AccentButton", async (_, _) => await ApplyAsync());
+        _apply = NetUi.Button(L("Appliquer"), "", "Pp.AccentButton", async (_, _) => await ApplyAsync());
         var applyRow = NetUi.Row(_apply, _busy);
         applyRow.Margin = new Thickness(0, 8, 0, 0);
         _body.Children.Add(applyRow);
-        _body.Children.Add(NetUi.Text("Une autorisation administrateur est demandée. Le changement est immédiat et peut être annulé depuis la notification.",
+        _body.Children.Add(NetUi.Text(L("Une autorisation administrateur est demandée. Le changement est immédiat et peut être annulé depuis la notification."),
             "Pp.Caption", new Thickness(0, 6, 0, 0)));
 
         Content = root;
@@ -178,10 +172,12 @@ internal sealed class DnsPanel : UserControl
         _preferredIfIndex = a.IfIndex;
         var manual = a.StaticDns4.Concat(a.StaticDns6).ToList();
         var provider = DnsProviders.Identify(a.DnsServers);
-        var servers = a.DnsServers.Count > 0 ? string.Join(", ", a.DnsServers.Take(4)) : "aucun";
+        var servers = a.DnsServers.Count > 0 ? string.Join(", ", a.DnsServers.Take(4)) : L("aucun");
         _current.Text = manual.Count == 0
-            ? $"Actuellement : automatiques (fournis par le réseau) — {servers}"
-            : $"Actuellement : {(provider is not null ? provider.Name : "serveurs personnalisés")} — {servers}";
+            ? L("Actuellement : automatiques (fournis par le réseau) — {0}", servers)
+            : provider is not null
+                ? L("Actuellement : {0} — {1}", provider.Name, servers)
+                : L("Actuellement : serveurs personnalisés — {0}", servers);
 
         // Présélectionne l'option qui correspond à la configuration actuelle.
         if (manual.Count == 0) Select(DnsProviders.Auto);
@@ -191,7 +187,7 @@ internal sealed class DnsPanel : UserControl
             _custom.Text = string.Join(", ", manual);
             Select(DnsProviders.Custom);
         }
-        _apply.Content = BuildApplyContent($"Appliquer à « {a.Name} »");
+        _apply.Content = BuildApplyContent(L("Appliquer à « {0} »", a.Name));
         ValidateInput();
     }
 
@@ -217,17 +213,16 @@ internal sealed class DnsPanel : UserControl
         _doh.IsEnabled = win11 && provider?.DohTemplate is not null;
         if (!_doh.IsEnabled) _doh.IsChecked = false;
         _dohHelp.Text = !win11
-            ? "Le DNS chiffré intégré à Windows nécessite Windows 11."
+            ? L("Le DNS chiffré intégré à Windows nécessite Windows 11.")
             : provider is null
-                ? "Disponible uniquement pour les fournisseurs de la liste (modèle de chiffrement connu)."
-                : "Windows enregistre le modèle DoH de " + provider.Name + " et chiffre les requêtes vers ses serveurs. Si le chiffrement échoue, " +
-                  "Windows repasse en DNS classique pour ne pas couper Internet (réglage « DNS chiffré » de l'onglet Réglages pour l'exiger).";
+                ? L("Disponible uniquement pour les fournisseurs de la liste (modèle de chiffrement connu).")
+                : L("Windows enregistre le modèle DoH de {0} et chiffre les requêtes vers ses serveurs. Si le chiffrement échoue, Windows repasse en DNS classique pour ne pas couper Internet (réglage « DNS chiffré » de l'onglet Réglages pour l'exiger).", provider.Name);
 
         string? error = null;
         if (key == DnsProviders.Custom)
         {
             try { DnsProviders.ParseCustom(_custom.Text); }
-            catch (ValidationException ex) { error = _custom.Text.Trim().Length == 0 ? "Saisissez au moins une adresse, par exemple 192.168.1.10." : ex.Message; }
+            catch (ValidationException ex) { error = _custom.Text.Trim().Length == 0 ? L("Saisissez au moins une adresse, par exemple 192.168.1.10.") : ex.Message; }
         }
         _customError.Text = error ?? "";
         _customError.Visibility = error is null ? Visibility.Collapsed : Visibility.Visible;
@@ -262,7 +257,7 @@ internal sealed class DnsPanel : UserControl
         if (outcome.Success)
         {
             var undo = BuildUndo(outcome.Data);
-            AppHost.Toasts.Show(outcome.Message, ToastKind.Success, undo is null ? null : "Annuler", undo is null ? null : () => _ = RestoreAsync(undo));
+            AppHost.Toasts.Show(outcome.Message, ToastKind.Success, undo is null ? null : L("Annuler"), undo is null ? null : () => _ = RestoreAsync(undo));
             await _page.RefreshAsync();
         }
         else if (!outcome.Cancelled)
@@ -288,7 +283,7 @@ internal sealed class DnsPanel : UserControl
     private async Task RestoreAsync(Dictionary<string, string> parameters)
     {
         var outcome = await AppHost.Engine.RunActionAsync(NetworkActionIds.SetDns, parameters);
-        AppHost.Toasts.Show(outcome.Success ? "Configuration DNS précédente rétablie." : outcome.Message,
+        AppHost.Toasts.Show(outcome.Success ? L("Configuration DNS précédente rétablie.") : outcome.Message,
             outcome.Success ? ToastKind.Success : ToastKind.Error);
         await _page.RefreshAsync();
     }

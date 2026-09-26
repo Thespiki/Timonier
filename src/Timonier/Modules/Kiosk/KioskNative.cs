@@ -53,7 +53,7 @@ internal static unsafe partial class KioskNative
             if (!AdjustTokenPrivileges(token, false, ref tp, (uint)sizeof(TokenPrivileges), 0, 0))
                 throw new Win32Exception(Marshal.GetLastWin32Error(), "AdjustTokenPrivileges");
             if (enable && Marshal.GetLastWin32Error() == ERROR_NOT_ALL_ASSIGNED)
-                throw new Win32Exception(ERROR_NOT_ALL_ASSIGNED, $"Privilège {name} non détenu par le processus administrateur.");
+                throw new Win32Exception(ERROR_NOT_ALL_ASSIGNED, L("Privilège {0} non détenu par le processus administrateur.", name));
         }
         finally { CloseHandle(token); }
     }

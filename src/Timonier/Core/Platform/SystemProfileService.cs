@@ -20,6 +20,8 @@ public static partial class SystemProfileService
     public static SystemProfile LoadFast()
     {
         var p = TryLoadCache() ?? new SystemProfile();
+        // Le cache garde le libellé dans la langue du lancement précédent : on le recalcule dans la langue actuelle.
+        if (p.ManufacturerRaw.Length > 0 || p.Manufacturer.Length > 0) p.Manufacturer = NormalizeManufacturer(p.ManufacturerRaw);
         ReadWindowsInfo(p);
         ReadSessionInfo(p);
         return p;
@@ -164,11 +166,23 @@ public static partial class SystemProfileService
         if (p.IsVirtualMachine) p.FormFactor = FormFactor.VirtualMachine;
     }
 
+    /// <summary>
+    /// Libellé (traduit) placé dans <see cref="SystemProfile.Manufacturer"/> quand le fabricant n'est pas renseigné :
+    /// le comparer à cette propriété, jamais à un texte écrit en dur.
+    /// </summary>
+    public static string UnknownManufacturer => L("Fabricant non renseigné");
+
+    /// <summary>Le fabricant brut (micrologiciel) est-il absent ou un texte de remplissage ? Indépendant de la langue.</summary>
+    public static bool IsUnknownManufacturer(string raw)
+    {
+        var r = raw.Trim().ToLowerInvariant();
+        return r.Length == 0 || r.Contains("to be filled") || r.Contains("system manufacturer") || r == "default string" || r == "o.e.m.";
+    }
+
     internal static string NormalizeManufacturer(string raw)
     {
+        if (IsUnknownManufacturer(raw)) return UnknownManufacturer;
         var r = raw.ToLowerInvariant();
-        if (r.Length == 0 || r.Contains("to be filled") || r.Contains("system manufacturer") || r == "default string" || r == "o.e.m.")
-            return "Fabricant non renseigné";
         (string needle, string brand)[] map =
         [
             ("lenovo", "Lenovo"), ("hewlett", "HP"), ("hp", "HP"), ("dell", "Dell"), ("asus", "ASUS"), ("acer", "Acer"),
@@ -251,7 +265,7 @@ public static partial class SystemProfileService
             disks.Add(new DiskInfo
             {
                 Model = (d["FriendlyName"] as string ?? "").Trim(),
-                Bus = bus switch { 17 => "NVMe", 11 => "SATA", 7 => "USB", 8 => "RAID", 10 => "SAS", 12 => "SD", 13 => "MMC", 15 => "Virtuel", _ => "Autre" },
+                Bus = bus switch { 17 => "NVMe", 11 => "SATA", 7 => "USB", 8 => "RAID", 10 => "SAS", 12 => "SD", 13 => "MMC", 15 => LC("disk bus", "Virtuel"), _ => LC("disk bus", "Autre") },
                 Media = bus == 17 ? DiskMedia.Nvme : media switch { 3 => DiskMedia.Hdd, 4 => DiskMedia.Ssd, _ => bus is 12 or 13 ? DiskMedia.Ssd : DiskMedia.Unknown },
                 SizeBytes = Convert.ToInt64(d["Size"] ?? 0L),
                 IsSystemDisk = systemDisk.HasValue && d["DeviceId"] as string == systemDisk.Value.ToString(),

@@ -27,7 +27,7 @@ public sealed partial class PerformancePage
         left.Children.Add(new Border { Child = PerfUi.IconCircle(PerformanceModule.Glyph, 52, 22), HorizontalAlignment = HorizontalAlignment.Left });
         _tierLabel.Margin = new Thickness(0, 12, 0, 0);
         left.Children.Add(_tierLabel);
-        left.Children.Add(PerfUi.Text("Pp.Caption", "Niveau de performance estimé"));
+        left.Children.Add(PerfUi.Text("Pp.Caption", L("Niveau de performance estimé")));
         var gauge = new UniformGrid { Rows = 1, Columns = 3, Height = 6, Margin = new Thickness(0, 10, 0, 0), Width = 150, HorizontalAlignment = HorizontalAlignment.Left };
         foreach (var bar in _tierBars)
         {
@@ -48,7 +48,7 @@ public sealed partial class PerformancePage
         var content = new StackPanel();
         content.Children.Add(grid);
         content.Children.Add(PerfUi.Divider(14, 12));
-        var tipsTitle = PerfUi.Text("Pp.CardTitle", "Ce que Timonier recommande pour ce matériel");
+        var tipsTitle = PerfUi.Text("Pp.CardTitle", L("Ce que Timonier recommande pour ce matériel"));
         tipsTitle.FontWeight = FontWeights.SemiBold;
         tipsTitle.Margin = new Thickness(0, 0, 0, 6);
         content.Children.Add(tipsTitle);
@@ -61,7 +61,7 @@ public sealed partial class PerformancePage
     private void RefreshHardware()
     {
         var p = AppHost.Profile;
-        _tierLabel.Text = p.Tier == PerformanceTier.Unknown ? "Analyse…" : p.TierLabel;
+        _tierLabel.Text = p.Tier == PerformanceTier.Unknown ? L("Analyse…") : p.TierLabel;
         _tierSummary.Text = HardwareAdvice.TierSummary(p);
         var level = p.Tier switch { PerformanceTier.Low => 1, PerformanceTier.Medium => 2, PerformanceTier.High => 3, _ => 0 };
         for (var i = 0; i < _tierBars.Length; i++)
@@ -72,7 +72,7 @@ public sealed partial class PerformancePage
         {
             var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
             row.Children.Add(new ProgressBar { IsIndeterminate = true, Width = 120, Height = 3, VerticalAlignment = VerticalAlignment.Center });
-            row.Children.Add(PerfUi.Text("Pp.Caption", "Analyse du matériel en cours…", new Thickness(12, 0, 0, 0)));
+            row.Children.Add(PerfUi.Text("Pp.Caption", L("Analyse du matériel en cours…"), new Thickness(12, 0, 0, 0)));
             _factsPanel.Children.Add(row);
         }
         else
@@ -83,7 +83,7 @@ public sealed partial class PerformancePage
         _tipsPanel.Children.Clear();
         var tips = HardwareAdvice.Tips(p);
         if (tips.Count == 0)
-            _tipsPanel.Children.Add(PerfUi.Text("Pp.Caption", "Les conseils s'afficheront dès que le matériel aura été analysé."));
+            _tipsPanel.Children.Add(PerfUi.Text("Pp.Caption", L("Les conseils s'afficheront dès que le matériel aura été analysé.")));
         foreach (var tip in tips) _tipsPanel.Children.Add(BuildTipRow(tip));
     }
 
@@ -125,7 +125,7 @@ public sealed partial class PerformancePage
         dock.Children.Add(icon);
         if (tip.TweakId is { } id)
         {
-            var link = new Button { Content = "Voir le réglage", VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(12, 0, 0, 0) };
+            var link = new Button { Content = L("Voir le réglage"), VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(12, 0, 0, 0) };
             link.SetResourceReference(StyleProperty, "Pp.LinkButton");
             link.Click += (_, _) => OnNavigatedTo("tweak:" + id);
             DockPanel.SetDock(link, Dock.Right);
@@ -148,27 +148,25 @@ public sealed partial class PerformancePage
         DockPanel.SetDock(circle, Dock.Left);
         header.Children.Add(circle);
         var titles = new StackPanel();
-        var title = PerfUi.Text("Pp.CardTitle", "Options graphiques de Windows pour les jeux");
+        var title = PerfUi.Text("Pp.CardTitle", L("Options graphiques de Windows pour les jeux"));
         title.FontWeight = FontWeights.SemiBold;
         titles.Children.Add(title);
         titles.Children.Add(PerfUi.Text("Pp.Caption",
-            "Paramètres > Système > Écran > Graphiques. Réglages de votre compte, pris en compte au prochain lancement des jeux."));
+            L("Paramètres > Système > Écran > Graphiques. Réglages de votre compte, pris en compte au prochain lancement des jeux.")));
         header.Children.Add(titles);
         content.Children.Add(header);
 
         var build = AppHost.Profile.Build;
         content.Children.Add(PerfUi.Divider(12, 4));
         content.Children.Add(BuildDxRow("SwapEffectUpgradeEnable",
-            "Optimisations pour les jeux fenêtrés",
-            "Fait passer les jeux DirectX 10 et 11 en fenêtre ou en fenêtré sans bordure au mode de présentation moderne : " +
-            "latence réduite, et HDR automatique ou fréquence variable possibles. Sans effet sur les jeux DirectX 12 ou en plein écran exclusif.",
-            build >= 22000 ? null : "Nécessite Windows 11."));
+            L("Optimisations pour les jeux fenêtrés"),
+            L("Fait passer les jeux DirectX 10 et 11 en fenêtre ou en fenêtré sans bordure au mode de présentation moderne : latence réduite, et HDR automatique ou fréquence variable possibles. Sans effet sur les jeux DirectX 12 ou en plein écran exclusif."),
+            build >= 22000 ? null : L("Nécessite Windows 11.")));
         content.Children.Add(PerfUi.Divider(4, 4));
         content.Children.Add(BuildDxRow("VRROptimizeEnable",
-            "Optimisations pour la fréquence d'actualisation variable",
-            "Permet à la fréquence variable (G-SYNC compatible, FreeSync, Adaptive-Sync) de fonctionner avec les jeux DirectX 11 " +
-            "qui ne la gèrent pas eux-mêmes. Sans effet si l'écran n'est pas compatible VRR.",
-            build >= 18362 ? null : "Nécessite Windows 10 version 1903 ou plus récente."));
+            L("Optimisations pour la fréquence d'actualisation variable"),
+            L("Permet à la fréquence variable (G-SYNC compatible, FreeSync, Adaptive-Sync) de fonctionner avec les jeux DirectX 11 qui ne la gèrent pas eux-mêmes. Sans effet si l'écran n'est pas compatible VRR."),
+            build >= 18362 ? null : L("Nécessite Windows 10 version 1903 ou plus récente.")));
 
         return PerfUi.Card(content, new Thickness(0, 8, 0, 4)).WithPadding(new Thickness(20, 16, 20, 12));
     }
@@ -184,9 +182,9 @@ public sealed partial class PerformancePage
         g.Children.Add(texts);
 
         var combo = new ComboBox { Width = 200, VerticalAlignment = VerticalAlignment.Center, IsEnabled = unavailable is null };
-        combo.Items.Add(new ComboBoxItem { Content = "Par défaut de Windows", Tag = "default" });
-        combo.Items.Add(new ComboBoxItem { Content = "Activé", Tag = "1" });
-        combo.Items.Add(new ComboBoxItem { Content = "Désactivé", Tag = "0" });
+        combo.Items.Add(new ComboBoxItem { Content = L("Par défaut de Windows"), Tag = "default" });
+        combo.Items.Add(new ComboBoxItem { Content = L("Activé"), Tag = "1" });
+        combo.Items.Add(new ComboBoxItem { Content = L("Désactivé"), Tag = "0" });
         System.Windows.Automation.AutomationProperties.SetName(combo, title);
         combo.SelectionChanged += async (_, _) =>
         {

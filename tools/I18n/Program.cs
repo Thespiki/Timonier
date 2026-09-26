@@ -28,7 +28,14 @@ return command switch
 {
     "extract" => Extract(),
     "check" => Check(),
-    "rekey" when args.Length == 2 => Rekey(args[1]),
+    "rekey" when args.Length >= 2 => Rekey(args[1..]),
+    "chunks" when args.Length >= 2 && int.TryParse(args[1], out var chunkSize) =>
+        Chunker.Split(catalogPath, args.Length > 2 ? args[2] : Path.Combine(root, "artifacts", "i18n", "chunks"), chunkSize),
+    // import <langue> <dossier des traductions> [--source-switch] [--chunks <dossier des lots>]
+    "import" when args.Length >= 3 => Chunker.Import(args[1],
+        args.SkipWhile(a => a != "--chunks").Skip(1).FirstOrDefault() ?? Path.Combine(root, "artifacts", "i18n", "chunks"),
+        args[2], locDir, Path.Combine(root, "artifacts"), args.Contains("--source-switch"),
+        args.SkipWhile(a => a != "--only").Skip(1).FirstOrDefault()),
     // wrap [préfixe…] : limite aux fichiers dont le chemin relatif à src/<app> commence par l'un des préfixes.
     "wrap" => Wrapper.Run(SourceFiles("*.cs").Where(f => !Path.GetRelativePath(appDir, f).Replace('\\', '/').StartsWith("Core/Search/", StringComparison.Ordinal)
             && (args.Length == 1 || args.Skip(1).Any(p => Path.GetRelativePath(appDir, f).Replace('\\', '/').StartsWith(p, StringComparison.OrdinalIgnoreCase)))),
@@ -199,47 +206,133 @@ static HashSet<int> Placeholders(string s) =>
 
 // ---------------------------------------------------------------- changement de textes source
 
-int Rekey(string mapPath)
+// rekey [--check] map1.json [map2.json…]
+// Cartes : { "strings":  { "ancien": "nouveau" | { "text": "nouveau", "context": "ctx" } },
+//            "contexts": { "ctx": { "ancien": "nouveau" } },
+//            "plurals":  { "ancien pluriel": { "one": "nouveau singulier", "other": "nouveau pluriel" } },
+//            "keepOldAs": "fr" }  ← facultatif : les anciens textes deviennent la traduction de cette langue.
+// Un texte simple peut recevoir un contexte (L → LC) : c'est ainsi qu'on sépare deux anciens textes qui auraient la
+// même traduction (ex. « Désactivé » et « Désactivée » → « Off ») sans perdre la nuance dans l'ancienne langue.
+// --check : n'écrit rien ; signale les textes du catalogue sans correspondance et les collisions.
+int Rekey(string[] mapArgs)
 {
-    // map.json : { "strings": { "ancien": "nouveau" }, "contexts": { "ctx": { "ancien": "nouveau" } },
-    //              "plurals": { "ancien pluriel": { "one": "nouveau singulier", "other": "nouveau pluriel" } },
-    //              "keepOldAs": "fr" }   ← facultatif : écrit les anciens textes comme traduction dans <code>.json
-    var map = JsonNode.Parse(File.ReadAllText(mapPath))!;
-    var simple = new Dictionary<string, string>(StringComparer.Ordinal);
-    if (map["strings"] is JsonObject s) foreach (var (k, v) in s) simple[k] = v!.GetValue<string>();
+    var checkOnly = mapArgs.Contains("--check");
+    var partial = mapArgs.Contains("--partial");   // accepte des textes sans correspondance (essais, migration par étapes)
+    var paths = mapArgs.Where(a => !a.StartsWith("--", StringComparison.Ordinal)).ToList();
+    var simple = new Dictionary<string, (string? Ctx, string Text)>(StringComparer.Ordinal);
     var ctxMap = new Dictionary<string, string>(StringComparer.Ordinal);
-    if (map["contexts"] is JsonObject c) foreach (var (ctx, g) in c) foreach (var (k, v) in g!.AsObject()) ctxMap[ctx + '\u0004' + k] = v!.GetValue<string>();
     var plural = new Dictionary<string, (string One, string Other)>(StringComparer.Ordinal);
-    if (map["plurals"] is JsonObject p) foreach (var (k, v) in p) plural[k] = (v!["one"]!.GetValue<string>(), v!["other"]!.GetValue<string>());
+    string? keepCode = null;
+    var problems = new List<string>();
+
+    foreach (var path in paths)
+    {
+        var map = JsonNode.Parse(File.ReadAllText(path))!;
+        keepCode ??= map["keepOldAs"]?.GetValue<string>();
+        if (map["strings"] is JsonObject s)
+            foreach (var (k, v) in s)
+            {
+                (string? Ctx, string Text) target = v is JsonObject o
+                    ? (o["context"]?.GetValue<string>(), o["text"]!.GetValue<string>())
+                    : (null, v!.GetValue<string>());
+                if (simple.TryGetValue(k, out var prev) && prev != target) problems.Add($"conflit entre cartes pour « {Short(k)} »");
+                simple[k] = target;
+            }
+        if (map["contexts"] is JsonObject c)
+            foreach (var (ctx, g) in c)
+                foreach (var (k, v) in g!.AsObject())
+                {
+                    var id = ctx + '\u0004' + k;
+                    if (ctxMap.TryGetValue(id, out var prev) && prev != v!.GetValue<string>()) problems.Add($"conflit entre cartes pour « {ctx}/{Short(k)} »");
+                    ctxMap[id] = v!.GetValue<string>();
+                }
+        if (map["plurals"] is JsonObject p)
+            foreach (var (k, v) in p) plural[k] = (v!["one"]!.GetValue<string>(), v!["other"]!.GetValue<string>());
+    }
 
     var (entries, errors) = Scan();
     if (errors.Count > 0) { foreach (var e in errors) Console.Error.WriteLine("ERREUR " + e); return 1; }
 
-    // 1) Code C# : réécriture des littéraux (espaces et commentaires conservés).
+    // Couverture : chaque texte du code doit avoir sa correspondance (sinon le code mélangerait deux langues source).
+    var unmapped = entries.Values.Where(e => e.One is not null ? !plural.ContainsKey(e.Key)
+        : e.Context is not null ? !ctxMap.ContainsKey(e.Id) : !simple.ContainsKey(e.Key)).ToList();
+    if (!partial)
+    {
+        foreach (var e in unmapped.Take(50)) problems.Add($"sans correspondance : {(e.Context is null ? "" : e.Context + " / ")}« {Short(e.Key)} » ({e.Refs.FirstOrDefault()})");
+        if (unmapped.Count > 50) problems.Add($"… {unmapped.Count - 50} autre(s) texte(s) sans correspondance");
+    }
+
+    // Variables : le nouveau texte garde exactement les emplacements {n} de l'ancien.
+    foreach (var (old, nw) in simple)
+        if (!SamePlaceholders(old, nw.Text, allowSubset: false)) problems.Add($"variables différentes : « {Short(old)} » → « {Short(nw.Text)} »");
+    foreach (var (id, nw) in ctxMap)
+        if (!SamePlaceholders(id[(id.IndexOf('\u0004') + 1)..], nw, allowSubset: false)) problems.Add($"variables différentes : « {Short(id)} » → « {Short(nw)} »");
+    foreach (var (old, nw) in plural)
+        if (!SamePlaceholders(old, nw.Other, allowSubset: false)) problems.Add($"variables différentes (pluriel) : « {Short(old)} » → « {Short(nw.Other)} »");
+
+    // Collisions : deux anciens textes différents ne doivent pas aboutir à la même nouvelle clé.
+    var targets = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+    void Target(string key, string source) { if (!targets.TryGetValue(key, out var l)) targets[key] = l = []; if (!l.Contains(source)) l.Add(source); }
+    foreach (var e in entries.Values)
+    {
+        if (e.One is not null && plural.TryGetValue(e.Key, out var pl)) Target("\u0001" + pl.Other, e.Key);
+        else if (e.Context is not null && ctxMap.TryGetValue(e.Id, out var ct)) Target(e.Context + '\u0004' + ct, e.Id);
+        else if (e.Context is null && simple.TryGetValue(e.Key, out var st)) Target(st.Ctx is null ? st.Text : st.Ctx + '\u0004' + st.Text, e.Key);
+    }
+    var collisions = targets.Where(t => t.Value.Count > 1).ToList();
+    foreach (var (key, sources) in collisions)
+        problems.Add($"collision : « {Short(key.Replace('\u0004', '/').TrimStart('\u0001'))} » ← {string.Join(" | ", sources.Select(x => "« " + Short(x.Replace('\u0004', '/').TrimStart('\u0001')) + " »"))}");
+
+    Console.WriteLine($"{entries.Count} textes, {unmapped.Count} sans correspondance, {collisions.Count} collision(s)");
+    foreach (var pr in problems) Console.WriteLine("  - " + pr);
+    if (checkOnly || problems.Count > 0) return problems.Count > 0 ? 1 : 0;
+
+    // 1) Code C# : réécriture des littéraux (espaces et commentaires conservés) ; L → LC quand un contexte est ajouté.
     var options = new CSharpParseOptions(LanguageVersion.Preview);
     var changedFiles = 0;
+    static LiteralExpressionSyntax Lit(string value, LiteralExpressionSyntax like) =>
+        SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression,
+            SyntaxFactory.Literal(like.Token.LeadingTrivia, SymbolDisplay.FormatLiteral(value, true), value, like.Token.TrailingTrivia));
     foreach (var file in SourceFiles("*.cs"))
     {
-        var original = File.ReadAllText(file);
-        var tree = CSharpSyntaxTree.ParseText(original, options, file);
-        var replacements = new Dictionary<SyntaxToken, SyntaxToken>();
+        var tree = CSharpSyntaxTree.ParseText(File.ReadAllText(file), options, file);
+        // Chaque remplacement est calculé à partir du nœud déjà réécrit (appels L imbriqués dans les arguments).
+        var replacements = new Dictionary<SyntaxNode, Func<SyntaxNode, SyntaxNode>>();
         foreach (var call in tree.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>())
         {
             var name = LocMethod(call);
             if (name is null) continue;
             var a = call.ArgumentList.Arguments;
-            SyntaxToken Tok(int i) => ((LiteralExpressionSyntax)a[i].Expression).Token;
-            void Swap(SyntaxToken t, string value) => replacements[t] = SyntaxFactory.Literal(t.LeadingTrivia, SymbolDisplay.FormatLiteral(value, true), value, t.TrailingTrivia);
+            LiteralExpressionSyntax Arg(int i) => (LiteralExpressionSyntax)a[i].Expression;
             switch (name)
             {
-                case "L" when simple.TryGetValue(Tok(0).ValueText, out var nw): Swap(Tok(0), nw); break;
-                case "LC" when ctxMap.TryGetValue(Tok(0).ValueText + '\u0004' + Tok(1).ValueText, out var nw): Swap(Tok(1), nw); break;
-                case "LP" when plural.TryGetValue(Tok(2).ValueText, out var nw): Swap(Tok(1), nw.One); Swap(Tok(2), nw.Other); break;
+                case "L" when simple.TryGetValue(Arg(0).Token.ValueText, out var nw):
+                    if (nw.Ctx is null) { var lit0 = Arg(0); replacements[lit0] = _ => Lit(nw.Text, lit0); break; }
+                    replacements[call] = rewritten =>
+                    {
+                        var r = (InvocationExpressionSyntax)rewritten;
+                        var ra = r.ArgumentList.Arguments;
+                        var args = new List<ArgumentSyntax> { SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(nw.Ctx))) };
+                        args.Add(ra[0].WithExpression(Lit(nw.Text, (LiteralExpressionSyntax)ra[0].Expression)));
+                        args.AddRange(ra.Skip(1));
+                        var commas = Enumerable.Range(0, args.Count - 1).Select(_ => SyntaxFactory.Token(SyntaxKind.CommaToken).WithTrailingTrivia(SyntaxFactory.Space));
+                        var newExpr = r.Expression is MemberAccessExpressionSyntax ma
+                            ? (ExpressionSyntax)ma.WithName(SyntaxFactory.IdentifierName("LC"))
+                            : SyntaxFactory.IdentifierName("LC").WithTriviaFrom(r.Expression);
+                        return r.WithExpression(newExpr).WithArgumentList(SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(args, commas)).WithTriviaFrom(r.ArgumentList));
+                    };
+                    break;
+                case "LC" when ctxMap.TryGetValue(Arg(0).Token.ValueText + '\u0004' + Arg(1).Token.ValueText, out var nwc):
+                    { var lit1 = Arg(1); replacements[lit1] = _ => Lit(nwc, lit1); }
+                    break;
+                case "LP" when plural.TryGetValue(Arg(2).Token.ValueText, out var nwp):
+                    { var l1 = Arg(1); var l2 = Arg(2); replacements[l1] = _ => Lit(nwp.One, l1); replacements[l2] = _ => Lit(nwp.Other, l2); }
+                    break;
             }
         }
         if (replacements.Count == 0) continue;
-        var rewritten = tree.GetRoot().ReplaceTokens(replacements.Keys, (o, _) => replacements[o]).ToFullString();
-        File.WriteAllText(file, rewritten, new UTF8Encoding(HasBom(file)));
+        var root2 = tree.GetRoot().ReplaceNodes(replacements.Keys, (o, rewritten) => replacements[o](rewritten));
+        File.WriteAllText(file, root2.ToFullString(), new UTF8Encoding(HasBom(file)));
         changedFiles++;
     }
 
@@ -250,45 +343,53 @@ int Rekey(string mapPath)
         var rewritten = XamlL().Replace(text, m =>
         {
             var old = Regex.Unescape(m.Groups["text"].Value.Replace("\\'", "'"));
-            var key = m.Groups["ctx"].Success ? m.Groups["ctx"].Value + '\u0004' + old : old;
-            var nw = m.Groups["ctx"].Success ? ctxMap.GetValueOrDefault(key) : simple.GetValueOrDefault(key);
-            return nw is null ? m.Value : m.Value.Replace("'" + m.Groups["text"].Value + "'", "'" + nw.Replace("'", "\\'") + "'");
+            if (m.Groups["ctx"].Success)
+                return ctxMap.TryGetValue(m.Groups["ctx"].Value + '\u0004' + old, out var nc)
+                    ? m.Value.Replace("'" + m.Groups["text"].Value + "'", "'" + nc.Replace("'", "\\'") + "'") : m.Value;
+            if (!simple.TryGetValue(old, out var nw)) return m.Value;
+            var esc = nw.Text.Replace("'", "\\'");
+            return nw.Ctx is null ? m.Value.Replace("'" + m.Groups["text"].Value + "'", "'" + esc + "'") : $"{{loc:L Text='{esc}', Context={nw.Ctx}}}";
         });
         if (rewritten != text) { File.WriteAllText(file, rewritten, new UTF8Encoding(HasBom(file))); changedFiles++; }
     }
 
-    // 3) Fichiers de langue : mêmes traductions sous les nouvelles clés.
+    // 3) Fichiers de langue existants : mêmes traductions sous les nouvelles clés (un texte peut passer dans « contexts »).
     foreach (var file in Directory.GetFiles(locDir, "*.json").Where(f => !Path.GetFileName(f).StartsWith('_')))
     {
         var doc = JsonNode.Parse(File.ReadAllText(file))!.AsObject();
-        doc["strings"] = RekeyObject(doc["strings"] as JsonObject, simple);
-        if (doc["contexts"] is JsonObject ctxs)
-        {
-            var result = new JsonObject();
-            foreach (var (ctx, g) in ctxs)
-                result[ctx] = RekeyObject(g as JsonObject, ctxMap.Where(kv => kv.Key.StartsWith(ctx + '\u0004', StringComparison.Ordinal))
-                    .ToDictionary(kv => kv.Key[(ctx.Length + 1)..], kv => kv.Value));
-            doc["contexts"] = result;
-        }
+        var strings = new JsonObject();
+        var contexts = new JsonObject();
+        if (doc["contexts"] is JsonObject oldCtx)
+            foreach (var (ctx, g) in oldCtx)
+                foreach (var (k, v) in g!.AsObject())
+                    Put(contexts, ctx, ctxMap.GetValueOrDefault(ctx + '\u0004' + k) ?? k, v?.DeepClone());
+        if (doc["strings"] is JsonObject oldStr)
+            foreach (var (k, v) in oldStr)
+            {
+                if (!simple.TryGetValue(k, out var nw)) { strings[k] = v?.DeepClone(); continue; }
+                if (nw.Ctx is null) strings[nw.Text] = v?.DeepClone(); else Put(contexts, nw.Ctx, nw.Text, v?.DeepClone());
+            }
+        doc["strings"] = strings;
+        doc["contexts"] = contexts;
         doc["plurals"] = RekeyObject(doc["plurals"] as JsonObject, plural.ToDictionary(kv => kv.Key, kv => kv.Value.Other));
         WriteJson(file, doc);
     }
 
     // 4) Anciens textes conservés comme traduction (ex. le français d'origine quand l'anglais devient la source).
-    if (map["keepOldAs"]?.GetValue<string>() is { } keepCode)
+    if (keepCode is not null)
     {
         var path = Path.Combine(locDir, keepCode + ".json");
         var doc = File.Exists(path) ? JsonNode.Parse(File.ReadAllText(path))!.AsObject() : new JsonObject { ["language"] = keepCode };
         var strings = doc["strings"] as JsonObject ?? new JsonObject();
-        foreach (var (old, nw) in simple) strings[nw] = old;
-        doc["strings"] = strings;
         var contexts = doc["contexts"] as JsonObject ?? new JsonObject();
+        foreach (var (old, nw) in simple)
+            if (nw.Ctx is null) strings[nw.Text] = old; else Put(contexts, nw.Ctx, nw.Text, old);
         foreach (var (key, nw) in ctxMap)
         {
             var ctx = key[..key.IndexOf('\u0004')];
-            if (contexts[ctx] is not JsonObject g) contexts[ctx] = g = new JsonObject();
-            g[nw] = key[(ctx.Length + 1)..];
+            Put(contexts, ctx, nw, key[(ctx.Length + 1)..]);
         }
+        doc["strings"] = strings;
         doc["contexts"] = contexts;
         var plurals = doc["plurals"] as JsonObject ?? new JsonObject();
         foreach (var e in entries.Values.Where(e => e.One is not null && plural.ContainsKey(e.Key)))
@@ -299,6 +400,12 @@ int Rekey(string mapPath)
 
     Console.WriteLine($"{changedFiles} fichier(s) source réécrit(s). Relancez « extract » puis « check ».");
     return 0;
+
+    static void Put(JsonObject contexts, string ctx, string key, JsonNode? value)
+    {
+        if (contexts[ctx] is not JsonObject g) contexts[ctx] = g = new JsonObject();
+        g[key] = value;
+    }
 }
 
 static JsonObject RekeyObject(JsonObject? obj, IReadOnlyDictionary<string, string> map)

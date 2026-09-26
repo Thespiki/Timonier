@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Timonier.Core.Localization;
 using static Timonier.Modules.Users.UsersUi;
 
 namespace Timonier.Modules.Users;
@@ -12,7 +13,12 @@ namespace Timonier.Modules.Users;
 /// </summary>
 internal sealed class HoursGrid : Grid
 {
-    private static readonly string[] Days = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+    /// <summary>Jour abrégé de la ligne affichée (lundi = 0) dans la culture de l'interface (« Lun », « Mon »…).</summary>
+    private static string ShortDay(int row)
+    {
+        var name = Loc.Culture.DateTimeFormat.GetAbbreviatedDayName((DayOfWeek)((row + 1) % 7)).TrimEnd('.');
+        return name.Length > 0 ? char.ToUpper(name[0], Loc.Culture) + name[1..] : name;
+    }
     private readonly Border[] _cells = new Border[LogonHoursMap.Hours];
     private readonly bool[] _state = new bool[LogonHoursMap.Hours];
     private bool? _paint;
@@ -35,23 +41,23 @@ internal sealed class HoursGrid : Grid
             label.HorizontalAlignment = HorizontalAlignment.Left;
             label.Margin = new Thickness(2, 0, 0, 4);
             label.Tag = -100 - h;
-            label.ToolTip = $"{h} h – {h + 1} h : inverser toute la colonne";
+            label.ToolTip = L("{0} h – {1} h : inverser toute la colonne", h, h + 1);
             SetColumn(label, h + 1);
             Children.Add(label);
         }
         for (var r = 0; r < 7; r++)
         {
-            var day = Caption(Days[r]);
+            var day = Caption(ShortDay(r));
             day.VerticalAlignment = VerticalAlignment.Center;
             day.Tag = -10 - r;
-            day.ToolTip = "Inverser toute la journée";
+            day.ToolTip = L("Inverser toute la journée");
             SetRow(day, r + 1);
             Children.Add(day);
             for (var h = 0; h < 24; h++)
             {
                 var index = IndexOf(r, h);
                 var cell = new Border { CornerRadius = new CornerRadius(3), Margin = new Thickness(1.5), BorderThickness = new Thickness(1), Tag = index };
-                cell.ToolTip = $"{FullDay(r)}, {h} h – {h + 1} h";
+                cell.ToolTip = L("{0}, {1} h – {2} h", FullDay(r), h, h + 1);
                 SetRow(cell, r + 1);
                 SetColumn(cell, h + 1);
                 Children.Add(cell);
@@ -68,7 +74,7 @@ internal sealed class HoursGrid : Grid
     /// <summary>Index local (dimanche = 0, comme DayOfWeek) d'une ligne affichée (lundi = 0).</summary>
     private static int IndexOf(int row, int hour) => LogonHoursMap.LocalIndex((DayOfWeek)((row + 1) % 7), hour);
 
-    private static string FullDay(int row) => CultureInfo.GetCultureInfo("fr-FR").DateTimeFormat.GetDayName((DayOfWeek)((row + 1) % 7));
+    private static string FullDay(int row) => Loc.Culture.DateTimeFormat.GetDayName((DayOfWeek)((row + 1) % 7));
 
     public bool[] State
     {
@@ -159,17 +165,17 @@ internal sealed class LogonHoursPanel : StackPanel
 
     public LogonHoursPanel()
     {
-        Children.Add(SectionHeader("Plages horaires de connexion", out var heading));
+        Children.Add(SectionHeader(L("Plages horaires de connexion"), out var heading));
         Heading = heading;
         Children.Add(_empty);
 
         _account.SelectionChanged += (_, _) => { if (!_suppress) LoadSelected(); };
-        System.Windows.Automation.AutomationProperties.SetName(_account, "Compte");
+        System.Windows.Automation.AutomationProperties.SetName(_account, L("Compte"));
         _grid.StateChanged += UpdateSummary;
 
         var top = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         var pick = new StackPanel { Orientation = Orientation.Horizontal };
-        var who = Caption("Compte");
+        var who = Caption(L("Compte"));
         who.VerticalAlignment = VerticalAlignment.Center;
         who.Margin = new Thickness(0, 0, 10, 0);
         pick.Children.Add(who);
@@ -187,33 +193,33 @@ internal sealed class LogonHoursPanel : StackPanel
             b.Margin = new Thickness(0, 0, 4, 0);
             presets.Children.Add(b);
         }
-        var label = Caption("Préréglages :");
+        var label = Caption(L("Préréglages :"));
         label.VerticalAlignment = VerticalAlignment.Center;
         label.Margin = new Thickness(8, 0, 4, 0);
         presets.Children.Add(label);
-        Preset("Soirs de semaine", "Lundi au vendredi de 17 h à 20 h, samedi et dimanche de 9 h à 20 h",
+        Preset(L("Soirs de semaine"), L("Lundi au vendredi de 17 h à 20 h, samedi et dimanche de 9 h à 20 h"),
             (dow, h) => dow is >= 1 and <= 5 ? h is >= 17 and < 20 : h is >= 9 and < 20);
-        Preset("Journée", "Tous les jours de 8 h à 20 h", (_, h) => h is >= 8 and < 20);
-        Preset("Tout autoriser", "Aucune restriction horaire", (_, _) => true);
-        Preset("Tout effacer", "Point de départ pour dessiner vos propres plages", (_, _) => false);
+        Preset(L("Journée"), L("Tous les jours de 8 h à 20 h"), (_, h) => h is >= 8 and < 20);
+        Preset(L("Tout autoriser"), L("Aucune restriction horaire"), (_, _) => true);
+        Preset(L("Tout effacer"), L("Point de départ pour dessiner vos propres plages"), (_, _) => false);
         _editor.Children.Add(presets);
 
         _editor.Children.Add(_grid);
 
         var legend = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(44, 10, 0, 0) };
         legend.Children.Add(Swatch("Pp.Accent", "Pp.Accent"));
-        legend.Children.Add(LegendText("Connexion autorisée"));
+        legend.Children.Add(LegendText(L("Connexion autorisée")));
         legend.Children.Add(Swatch("Pp.ControlFill", "Pp.ControlStroke"));
-        legend.Children.Add(LegendText("Bloquée"));
-        var how = Caption("Cliquez ou faites glisser pour modifier ; cliquez sur un jour ou une heure pour toute la ligne.");
+        legend.Children.Add(LegendText(L("Bloquée")));
+        var how = Caption(L("Cliquez ou faites glisser pour modifier ; cliquez sur un jour ou une heure pour toute la ligne."));
         how.VerticalAlignment = VerticalAlignment.Center;
         how.Margin = new Thickness(8, 0, 0, 0);
         legend.Children.Add(how);
         _editor.Children.Add(legend);
 
-        _save = MakeButton("Enregistrer", GlyphAdmin, "Pp.AccentButton", async (_, _) => await SaveAsync());
-        _save.ToolTip = "Nécessite les droits administrateur";
-        _revert = MakeButton("Annuler les modifications", null, "Pp.SubtleButton", (_, _) => { _grid.State = _saved; });
+        _save = MakeButton(L("Enregistrer"), GlyphAdmin, "Pp.AccentButton", async (_, _) => await SaveAsync());
+        _save.ToolTip = L("Nécessite les droits administrateur");
+        _revert = MakeButton(L("Annuler les modifications"), null, "Pp.SubtleButton", (_, _) => { _grid.State = _saved; });
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 14, 0, 0) };
         actions.Children.Add(_save);
         _revert.Margin = new Thickness(8, 0, 0, 0);
@@ -248,13 +254,10 @@ internal sealed class LogonHoursPanel : StackPanel
         var utc = "UTC" + (offset >= TimeSpan.Zero ? "+" : "−") + offset.ToString(offset.Minutes == 0 ? "%h" : @"h\:mm", CultureInfo.InvariantCulture);
         var s = new StackPanel { Margin = new Thickness(0, 8, 0, 0) };
         s.Children.Add(Timonier.UI.Controls.PageScaffold.InfoBar(
-            "Windows refuse toute nouvelle ouverture de session en dehors des plages autorisées, mais ne ferme pas une session déjà " +
-            "ouverte quand l'heure limite arrive. Pour un encadrement strict, combinez avec l'accès guidé, le temps d'écran de " +
-            "Famille Microsoft ou votre propre supervision.", GlyphInfo));
+            L("Windows refuse toute nouvelle ouverture de session en dehors des plages autorisées, mais ne ferme pas une session déjà ouverte quand l'heure limite arrive. Pour un encadrement strict, combinez avec l'accès guidé, le temps d'écran de Famille Microsoft ou votre propre supervision."), GlyphInfo));
         s.Children.Add(Timonier.UI.Controls.PageScaffold.InfoBar(
-            $"Windows enregistre ces plages en heure universelle : Timonier les convertit depuis votre fuseau actuel ({utc}). " +
-            "Au passage à l'heure d'été ou d'hiver, elles se décalent d'une heure : revenez les enregistrer à nouveau." +
-            (LogonHoursMap.OffsetHasMinutes() ? " Votre fuseau a un décalage non entier : les plages sont arrondies à l'heure." : ""),
+            L("Windows enregistre ces plages en heure universelle : Timonier les convertit depuis votre fuseau actuel ({0}). Au passage à l'heure d'été ou d'hiver, elles se décalent d'une heure : revenez les enregistrer à nouveau.", utc)
+            + (LogonHoursMap.OffsetHasMinutes() ? L(" Votre fuseau a un décalage non entier : les plages sont arrondies à l'heure.") : ""),
             GlyphClock));
         return s;
     }
@@ -270,7 +273,7 @@ internal sealed class LogonHoursPanel : StackPanel
         foreach (var a in _eligible)
         {
             var label = a.DisplayName == a.Name ? a.Name : $"{a.DisplayName} ({a.Name})";
-            if (!a.Enabled) label += " — désactivé";
+            if (!a.Enabled) label = L("{0} — désactivé", label);
             _account.Items.Add(new ComboBoxItem { Content = label, Tag = a.Sid });
         }
         var index = _eligible.FindIndex(a => a.Sid == previous);
@@ -285,10 +288,9 @@ internal sealed class LogonHoursPanel : StackPanel
         }
         if (_eligible.Count == 0)
         {
-            _empty.Content = EmptyState(GlyphClock, "Aucun compte standard à encadrer",
-                "Les plages horaires s'appliquent aux comptes standard (par exemple celui d'un enfant), jamais à votre propre compte " +
-                "ni à un administrateur, qui pourrait les retirer lui-même.",
-                MakeButton("Créer un compte standard", GlyphAdd, "Pp.AccentButton", (_, _) => CreateRequested?.Invoke()));
+            _empty.Content = EmptyState(GlyphClock, L("Aucun compte standard à encadrer"),
+                L("Les plages horaires s'appliquent aux comptes standard (par exemple celui d'un enfant), jamais à votre propre compte ni à un administrateur, qui pourrait les retirer lui-même."),
+                MakeButton(L("Créer un compte standard"), GlyphAdd, "Pp.AccentButton", (_, _) => CreateRequested?.Invoke()));
             _card.Visibility = Visibility.Collapsed;
             return;
         }
@@ -326,12 +328,12 @@ internal sealed class LogonHoursPanel : StackPanel
         var allowed = _grid.AllowedCount;
         _summary.Text = allowed switch
         {
-            LogonHoursMap.Hours => "Aucune restriction : connexion possible à toute heure",
-            0 => "Aucune heure autorisée : le compte ne pourra plus se connecter",
-            _ => $"{allowed} h autorisées par semaine",
+            LogonHoursMap.Hours => L("Aucune restriction : connexion possible à toute heure"),
+            0 => L("Aucune heure autorisée : le compte ne pourra plus se connecter"),
+            _ => LP(allowed, "{0} h autorisée par semaine", "{0} h autorisées par semaine"),
         };
         var dirty = !_grid.State.SequenceEqual(_saved);
-        _dirty.Text = dirty ? "Modifications non enregistrées" : "";
+        _dirty.Text = dirty ? L("Modifications non enregistrées") : "";
         _save.IsEnabled = dirty && !_busy && Selected is not null;
         _revert.IsEnabled = dirty && !_busy;
     }
@@ -340,8 +342,8 @@ internal sealed class LogonHoursPanel : StackPanel
     {
         if (Selected is not { } a || _busy) return;
         var state = _grid.State;
-        if (state.All(b => !b) && !await AppHost.Dialogs.ConfirmAsync("Bloquer toutes les heures",
-                $"« {a.Name} » ne pourra plus ouvrir de session du tout, à aucun moment. Continuer ?", "Tout bloquer", danger: true))
+        if (state.All(b => !b) && !await AppHost.Dialogs.ConfirmAsync(L("Bloquer toutes les heures"),
+                L("« {0} » ne pourra plus ouvrir de session du tout, à aucun moment. Continuer ?", a.Name), L("Tout bloquer"), danger: true))
             return;
         var bitmap = LogonHoursMap.ToUtcBitmap(state, LogonHoursMap.CurrentOffsetHours());
         _busy = true;

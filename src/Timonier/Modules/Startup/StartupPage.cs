@@ -30,12 +30,12 @@ public sealed class StartupPage : UserControl, INavigationAware
 
     public StartupPage()
     {
-        var stack = PageScaffold.Create(this, "Démarrage et services",
-            "Choisissez ce qui se lance avec Windows : applications à l'ouverture de session, services et tâches planifiées.",
+        var stack = PageScaffold.Create(this, L("Démarrage et services"),
+            L("Choisissez ce qui se lance avec Windows : applications à l'ouverture de session, services et tâches planifiées."),
             StartupModule.Glyph);
-        _tabs.Add("Applications au démarrage", StartupModule.AppsGlyph);
-        _tabs.Add("Services", StartupModule.ServicesGlyph);
-        _tabs.Add("Tâches planifiées", StartupModule.TasksGlyph);
+        _tabs.Add(L("Applications au démarrage"), StartupModule.AppsGlyph);
+        _tabs.Add(L("Services"), StartupModule.ServicesGlyph);
+        _tabs.Add(L("Tâches planifiées"), StartupModule.TasksGlyph);
         _tabs.Margin = new Thickness(0, 0, 0, 16);
         _tabs.SelectionChanged += (_, i) => _ = ShowAsync(i);
         stack.Children.Add(_tabs);

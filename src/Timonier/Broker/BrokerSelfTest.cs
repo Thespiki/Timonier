@@ -65,22 +65,22 @@ public static class BrokerSelfTest
             Check("Connexion + hello + vérification du PID serveur", client.IsRunning, $"pid broker {client.BrokerProcessId}");
 
             var r1 = await client.SendRawAsync(new BrokerRequest { Op = "apply", TweakId = "inexistant.tweak", Option = "on" }, timeout.Token);
-            Check("Réglage inconnu refusé", !r1.Ok && r1.Message == "Réglage inconnu.", r1.Message ?? "");
+            Check("Réglage inconnu refusé", !r1.Ok && r1.Message == L("Réglage inconnu."), r1.Message ?? "");
 
             var r2 = await client.SendRawAsync(new BrokerRequest { Op = "apply", TweakId = "custom.explorer.extensions", Option = "bogus" }, timeout.Token);
-            Check("Option inconnue refusée", !r2.Ok && r2.Message == "Option inconnue.", r2.Message ?? "");
+            Check("Option inconnue refusée", !r2.Ok && r2.Message == L("Option inconnue."), r2.Message ?? "");
 
             var r2b = await client.SendRawAsync(new BrokerRequest { Op = "apply", TweakId = "custom.explorer.extensions", Option = "on" }, timeout.Token);
-            Check("Réglage non-admin refusé par le broker (moindre privilège)", !r2b.Ok && r2b.Message == "Ce réglage ne s'applique pas en mode administrateur.", r2b.Message ?? "");
+            Check("Réglage non-admin refusé par le broker (moindre privilège)", !r2b.Ok && r2b.Message == L("Ce réglage ne s'applique pas en mode administrateur."), r2b.Message ?? "");
 
             var r3 = await client.SendRawAsync(new BrokerRequest { Op = "action", ActionId = "inexistant.action", Params = [] }, timeout.Token);
-            Check("Action inconnue refusée", !r3.Ok && r3.Message == "Action inconnue.", r3.Message ?? "");
+            Check("Action inconnue refusée", !r3.Ok && r3.Message == L("Action inconnue."), r3.Message ?? "");
 
             var r4 = await client.SendRawAsync(new BrokerRequest { Op = "undo", EntryId = Guid.NewGuid() }, timeout.Token);
-            Check("Annulation d'une entrée inexistante refusée", !r4.Ok && r4.Message == "Entrée de journal introuvable.", r4.Message ?? "");
+            Check("Annulation d'une entrée inexistante refusée", !r4.Ok && r4.Message == L("Entrée de journal introuvable."), r4.Message ?? "");
 
             var r5 = await client.SendRawAsync(new BrokerRequest { Op = "rm -rf" }, timeout.Token);
-            Check("Opération inconnue refusée", !r5.Ok && r5.Message == "Opération inconnue.", r5.Message ?? "");
+            Check("Opération inconnue refusée", !r5.Ok && r5.Message == L("Opération inconnue."), r5.Message ?? "");
 
             var brokerPid = client.BrokerProcessId;
             await client.StopAsync();

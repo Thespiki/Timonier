@@ -154,13 +154,13 @@ public sealed class ModuleRegistry
 
     public void AddHealthCheck(IHealthCheck check)
     {
-        if (!_health.TryAdd(check.Id, check)) _errors.Add($"Contrôle de santé en double : {check.Id}");
+        if (!_health.TryAdd(check.Id, check)) _errors.Add(L("Contrôle de santé en double : {0}", check.Id));
     }
 
     /// <summary>Ajoute une action rapide (tableau de bord) ; elle est aussi indexée par la recherche.</summary>
     public void AddQuickAction(QuickAction action)
     {
-        if (!_quick.TryAdd(action.Id, action)) { _errors.Add($"Action rapide en double : {action.Id}"); return; }
+        if (!_quick.TryAdd(action.Id, action)) { _errors.Add(L("Action rapide en double : {0}", action.Id)); return; }
         _search.Add(new SearchEntry
         {
             Id = "quick:" + action.Id,
@@ -183,12 +183,12 @@ public sealed class ModuleRegistry
 
     public void AddCategory(CategoryInfo category)
     {
-        if (!_categories.TryAdd(category.Id, category)) _errors.Add($"Catégorie en double : {category.Id}");
+        if (!_categories.TryAdd(category.Id, category)) _errors.Add(L("Catégorie en double : {0}", category.Id));
     }
 
     public void AddTweak(TweakDefinition tweak)
     {
-        if (!_tweaks.TryAdd(tweak.Id, tweak)) _errors.Add($"Réglage en double : {tweak.Id}");
+        if (!_tweaks.TryAdd(tweak.Id, tweak)) _errors.Add(L("Réglage en double : {0}", tweak.Id));
     }
 
     public void AddTweaks(IEnumerable<TweakDefinition> tweaks)
@@ -198,12 +198,12 @@ public sealed class ModuleRegistry
 
     public void AddAction(IActionHandler handler)
     {
-        if (!_actions.TryAdd(handler.Id, handler)) _errors.Add($"Action en double : {handler.Id}");
+        if (!_actions.TryAdd(handler.Id, handler)) _errors.Add(L("Action en double : {0}", handler.Id));
     }
 
     public void AddPage(PageInfo page)
     {
-        if (!_pages.TryAdd(page.Id, page)) _errors.Add($"Page en double : {page.Id}");
+        if (!_pages.TryAdd(page.Id, page)) _errors.Add(L("Page en double : {0}", page.Id));
     }
 
     public void AddSearchEntry(SearchEntry entry) => _search.Add(entry);
@@ -236,7 +236,7 @@ public sealed class ModuleRegistry
             }
             catch (Exception ex)
             {
-                registry._errors.Add($"Module {type.Name} : {ex.Message}");
+                registry._errors.Add(L("Module {0} : {1}", type.Name, ex.Message));
                 Log.Error("Catalog", "module " + type.Name, ex);
             }
         }
@@ -248,9 +248,9 @@ public sealed class ModuleRegistry
     {
         foreach (var t in _tweaks.Values)
         {
-            if (!_categories.ContainsKey(t.Category)) _errors.Add($"{t.Id} : catégorie inconnue « {t.Category} »");
-            if (t.Recommended is not null && t.GetOption(t.Recommended) is null) _errors.Add($"{t.Id} : option recommandée inconnue");
-            if (t.WindowsDefault is not null && t.GetOption(t.WindowsDefault) is null) _errors.Add($"{t.Id} : option par défaut inconnue");
+            if (!_categories.ContainsKey(t.Category)) _errors.Add(L("{0} : catégorie inconnue « {1} »", t.Id, t.Category));
+            if (t.Recommended is not null && t.GetOption(t.Recommended) is null) _errors.Add(L("{0} : option recommandée inconnue", t.Id));
+            if (t.WindowsDefault is not null && t.GetOption(t.WindowsDefault) is null) _errors.Add(L("{0} : option par défaut inconnue", t.Id));
         }
     }
 }

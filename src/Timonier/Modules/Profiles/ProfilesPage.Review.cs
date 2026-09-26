@@ -49,57 +49,55 @@ public sealed partial class ProfilesPage
     {
         _summary = null;
         _applyButton = null;
-        NavLeft(Button("Précédent", "", "Pp.Button", (_, _) => { _planCts?.Cancel(); GoTo(Step.Choose); }));
+        NavLeft(Button(L("Précédent"), "", "Pp.Button", (_, _) => { _planCts?.Cancel(); GoTo(Step.Choose); }));
 
         if (_planError is not null)
         {
-            _body.Children.Add(StateCard("", "Le plan n'a pas pu être calculé", _planError,
-                action: Button("Réessayer", "", "Pp.Button", (_, _) => { ComputePlan(); Render(); })));
+            _body.Children.Add(StateCard("", L("Le plan n'a pas pu être calculé"), _planError,
+                action: Button(L("Réessayer"), "", "Pp.Button", (_, _) => { ComputePlan(); Render(); })));
             return;
         }
         if (_plan is not { } plan)
         {
-            _body.Children.Add(StateCard("", "Calcul du plan…",
+            _body.Children.Add(StateCard("", L("Calcul du plan…"),
                 AppHost.Profile.HardwareLoaded
-                    ? "Lecture de l'état actuel de chaque réglage concerné (sans rien modifier)."
-                    : "Fin de la détection du matériel, puis lecture de l'état actuel de chaque réglage (sans rien modifier).",
+                    ? L("Lecture de l'état actuel de chaque réglage concerné (sans rien modifier).")
+                    : L("Fin de la détection du matériel, puis lecture de l'état actuel de chaque réglage (sans rien modifier)."),
                 busy: true));
             return;
         }
 
         // --- Résumé et options
         var top = new StackPanel();
-        top.Children.Add(Text("Résumé du plan", "Pp.CardTitle"));
+        top.Children.Add(Text(L("Résumé du plan"), "Pp.CardTitle"));
         _summary = Text("");
         _summary.Margin = new Thickness(0, 4, 0, 8);
         top.Children.Add(_summary);
         top.Children.Add(Caption(_import is not null
-            ? $"Plan importé depuis « {_import.FileName} » : chaque ligne a été vérifiée pour ce PC. Décochez ce que vous ne voulez pas."
-            : "Profils : " + string.Join(", ", plan.Profiles.Select(p => p.Title)) + ". Décochez ce que vous ne voulez pas appliquer."));
+            ? L("Plan importé depuis « {0} » : chaque ligne a été vérifiée pour ce PC. Décochez ce que vous ne voulez pas.", _import.FileName)
+            : L("Profils : {0}. Décochez ce que vous ne voulez pas appliquer.", string.Join(", ", plan.Profiles.Select(p => p.Title)))));
         top.Children.Add(Divider(10, 8));
         if (AppHost.Registry.GetAction(RestorePointAction) is not null)
         {
-            var restore = new CheckBox { IsChecked = _createRestorePoint, Content = "Créer un point de restauration système avant d'appliquer (recommandé)" };
+            var restore = new CheckBox { IsChecked = _createRestorePoint, Content = L("Créer un point de restauration système avant d'appliquer (recommandé)") };
             restore.Click += (_, _) => _createRestorePoint = restore.IsChecked == true;
             top.Children.Add(restore);
-            top.Children.Add(Caption("Il permet de revenir à l'état actuel de Windows depuis les options de récupération, en plus du Journal de Timonier."));
+            top.Children.Add(Caption(L("Il permet de revenir à l'état actuel de Windows depuis les options de récupération, en plus du Journal de Timonier.")));
         }
         else
         {
-            top.Children.Add(Caption("La création d'un point de restauration n'est pas disponible dans cette version de Timonier. " +
-                                     "Les réglages appliqués restent annulables un par un depuis le Journal."));
+            top.Children.Add(Caption(L("La création d'un point de restauration n'est pas disponible dans cette version de Timonier. Les réglages appliqués restent annulables un par un depuis le Journal.")));
         }
         _body.Children.Add(Card(top));
 
         foreach (var notice in plan.Notices)
             _body.Children.Add(InfoBar(notice, "", "Pp.InfoBar.Warning"));
         if (_import is not null)
-            _body.Children.Add(InfoBar("Un fichier importé peut venir de n'importe où : seuls des réglages connus de Timonier et des applications " +
-                                       "au format winget ont été retenus, et rien ne sera appliqué sans votre confirmation.", ""));
+            _body.Children.Add(InfoBar(L("Un fichier importé peut venir de n'importe où : seuls des réglages connus de Timonier et des applications au format winget ont été retenus, et rien ne sera appliqué sans votre confirmation."), ""));
         foreach (var p in plan.Profiles.Where(p => p.Notes is not null && p.Id != ProfileCatalog.LowEnd))
         {
             var link = p.LinkPageId is { } pageId && AppHost.Registry.GetPage(pageId) is not null
-                ? Button(p.LinkLabel ?? "Ouvrir", null, "Pp.Button", (_, _) => AppHost.Navigator.Navigate(pageId))
+                ? Button(p.LinkLabel ?? L("Ouvrir"), null, "Pp.Button", (_, _) => AppHost.Navigator.Navigate(pageId))
                 : null;
             _body.Children.Add(InfoBar($"{p.Title} — {p.Notes}","", "Pp.InfoBar", link));
         }
@@ -109,20 +107,20 @@ public sealed partial class ProfilesPage
         var conflicts = main.Count(t => t.HasConflict);
         if (conflicts > 0)
             _body.Children.Add(InfoBar(
-                $"{conflicts} réglage{(conflicts > 1 ? "s sont demandés" : " est demandé")} différemment par deux profils. " +
-                "Par défaut, le choix du profil le plus haut dans la liste des profils l'emporte ; vous pouvez le changer sur la ligne concernée.",
+                LP(conflicts, "{0} réglage est demandé différemment par deux profils. Par défaut, le choix du profil le plus haut dans la liste des profils l'emporte ; vous pouvez le changer sur la ligne concernée.",
+                    "{0} réglages sont demandés différemment par deux profils. Par défaut, le choix du profil le plus haut dans la liste des profils l'emporte ; vous pouvez le changer sur la ligne concernée."),
                 ""));
 
         // --- Réglages
         var toChange = main.Count(t => !t.AtTarget);
         var preChecked = main.Count(t => t.Selected && !t.AtTarget);
-        _body.Children.Add(Section(toChange == preChecked ? $"Réglages à modifier ({toChange})" : $"Réglages à modifier ({preChecked} cochés sur {toChange})"));
+        _body.Children.Add(Section(toChange == preChecked ? L("Réglages à modifier ({0})", toChange) : LP(preChecked, "Réglages à modifier ({0} coché sur {1})", "Réglages à modifier ({0} cochés sur {1})", toChange)));
         if (main.Count == 0)
         {
-            _body.Children.Add(StateCard("", plan.Tweaks.Count == 0 ? "Aucun réglage dans ce plan" : "Tout est déjà en place",
+            _body.Children.Add(StateCard("", plan.Tweaks.Count == 0 ? L("Aucun réglage dans ce plan") : L("Tout est déjà en place"),
                 plan.Tweaks.Count == 0
-                    ? "Les profils choisis ne demandent aucun réglage disponible sur ce PC."
-                    : "Ce PC est déjà configuré comme le demandent les profils choisis."));
+                    ? L("Les profils choisis ne demandent aucun réglage disponible sur ce PC.")
+                    : L("Ce PC est déjà configuré comme le demandent les profils choisis.")));
         }
         foreach (var group in main.GroupBy(t => t.CategoryTitle))
         {
@@ -146,22 +144,22 @@ public sealed partial class ProfilesPage
             var list = new StackPanel();
             foreach (var row in done)
                 list.Children.Add(SimpleRow("", "Pp.Success", row.Tweak.Title, $"{row.CategoryTitle} · {row.TargetLabel}"));
-            _body.Children.Add(Collapsible($"Déjà en place ({done.Count})", Card(list, 0)));
+            _body.Children.Add(Collapsible(L("Déjà en place ({0})", done.Count), Card(list, 0)));
         }
         if (plan.Unavailable.Count > 0)
         {
             var list = new StackPanel();
             foreach (var row in plan.Unavailable)
-                list.Children.Add(SimpleRow("", "Pp.TextTertiary", row.Tweak.Title, "Non disponible sur ce PC : " + row.Unavailable));
-            _body.Children.Add(Collapsible($"Non disponible sur ce PC ({plan.Unavailable.Count})", Card(list, 0)));
+                list.Children.Add(SimpleRow("", "Pp.TextTertiary", row.Tweak.Title, L("Non disponible sur ce PC : {0}", row.Unavailable)));
+            _body.Children.Add(Collapsible(L("Non disponible sur ce PC ({0})", plan.Unavailable.Count), Card(list, 0)));
         }
 
         // --- Applications
         RenderApps(plan);
 
-        var export = Button("Exporter ce plan…", "", "Pp.SubtleButton", (_, _) => _ = ExportAsync());
+        var export = Button(L("Exporter ce plan…"), "", "Pp.SubtleButton", (_, _) => _ = ExportAsync());
         NavLeft(export);
-        _applyButton = Button("Appliquer", "", "Pp.AccentButton", (_, _) => _ = StartApplyAsync());
+        _applyButton = Button(L("Appliquer"), "", "Pp.AccentButton", (_, _) => _ = StartApplyAsync());
         NavRight(_applyButton);
         UpdateSummary();
     }
@@ -187,25 +185,26 @@ public sealed partial class ProfilesPage
         text.Children.Add(change);
 
         var badges = new WrapPanel { Margin = new Thickness(0, 6, 0, 0) };
-        if (t.RequiresAdmin) badges.Children.Add(Badge("Administrateur", "Neutral", "", "Appliqué par la session administrateur (une seule autorisation pour tout le plan)."));
-        if (t.Effect.HasFlag(ApplyEffect.Reboot)) badges.Children.Add(Badge("Redémarrage", "Info", ""));
-        else if (t.Effect.HasFlag(ApplyEffect.SignOut)) badges.Children.Add(Badge("Déconnexion", "Info", ""));
-        else if (t.Effect.HasFlag(ApplyEffect.RestartExplorer)) badges.Children.Add(Badge("Explorateur relancé", "Info"));
-        if (t.Risk == RiskLevel.Moderate) badges.Children.Add(Badge("Risque modéré", "Warning", ""));
-        if (t.Risk == RiskLevel.Advanced) badges.Children.Add(Badge("Avancé", "Danger", "", "Réservé aux utilisateurs avertis : jamais coché d'office."));
-        if (!t.IsReversible) badges.Children.Add(Badge("Non annulable", "Danger"));
-        if (row.HasConflict) badges.Children.Add(Badge("Profils en désaccord", "Accent"));
+        if (t.RequiresAdmin) badges.Children.Add(Badge(L("Administrateur"), "Neutral", "", L("Appliqué par la session administrateur (une seule autorisation pour tout le plan).")));
+        if (t.Effect.HasFlag(ApplyEffect.Reboot)) badges.Children.Add(Badge(L("Redémarrage"), "Info", ""));
+        else if (t.Effect.HasFlag(ApplyEffect.SignOut)) badges.Children.Add(Badge(L("Déconnexion"), "Info", ""));
+        else if (t.Effect.HasFlag(ApplyEffect.RestartExplorer)) badges.Children.Add(Badge(L("Explorateur relancé"), "Info"));
+        if (t.Risk == RiskLevel.Moderate) badges.Children.Add(Badge(L("Risque modéré"), "Warning", ""));
+        if (t.Risk == RiskLevel.Advanced) badges.Children.Add(Badge(L("Avancé"), "Danger", "", L("Réservé aux utilisateurs avertis : jamais coché d'office.")));
+        if (!t.IsReversible) badges.Children.Add(Badge(L("Non annulable"), "Danger"));
+        if (row.HasConflict) badges.Children.Add(Badge(L("Profils en désaccord"), "Accent"));
         if (row.LessSafe)
-            badges.Children.Add(Badge("Sécurité : à vérifier", "Warning","",
-                "Option venue du fichier importé, que Timonier ne propose pas pour ce PC : elle peut affaiblir sa protection. Laissée décochée."));
-        else if (row.OptIn && t.Risk != RiskLevel.Advanced) badges.Children.Add(Badge("À cocher si besoin", "Neutral", null, "Utile, mais peut gêner certains logiciels : laissé décoché par défaut."));
+            badges.Children.Add(Badge(L("Sécurité : à vérifier"), "Warning","",
+                L("Option venue du fichier importé, que Timonier ne propose pas pour ce PC : elle peut affaiblir sa protection. Laissée décochée.")));
+        else if (row.OptIn && t.Risk != RiskLevel.Advanced) badges.Children.Add(Badge(L("À cocher si besoin"), "Neutral", null, L("Utile, mais peut gêner certains logiciels : laissé décoché par défaut.")));
         if (badges.Children.Count > 0) text.Children.Add(badges);
 
         // Blocage de l'accès au compte, aux contacts, au calendrier, aux e-mails… : dire ce qui cessera de fonctionner.
         if (ProfileCatalog.IsPersonalDataPermission(t.Id) && row.Target == TweakDefinition.Off)
         {
-            var impact = Caption((row.OptIn ? "Laissé décoché : le" : "Le") +
-                                 " bloquer empêche Courrier, Calendrier, Outlook ou Lien avec Windows d'accéder à ces données.", "Pp.TextSecondary");
+            var impact = Caption(row.OptIn
+                ? L("Laissé décoché : le bloquer empêche Courrier, Calendrier, Outlook ou Lien avec Windows d'accéder à ces données.")
+                : L("Le bloquer empêche Courrier, Calendrier, Outlook ou Lien avec Windows d'accéder à ces données."), "Pp.TextSecondary");
             impact.Margin = new Thickness(0, 4, 0, 0);
             text.Children.Add(impact);
         }
@@ -216,7 +215,7 @@ public sealed partial class ProfilesPage
             warn.Margin = new Thickness(0, 4, 0, 0);
             text.Children.Add(warn);
         }
-        var sources = Caption("Demandé par : " + string.Join(", ", row.Wants.Select(w => w.SourceTitle).Distinct()), "Pp.TextTertiary");
+        var sources = Caption(L("Demandé par : {0}", string.Join(", ", row.Wants.Select(w => w.SourceTitle).Distinct())), "Pp.TextTertiary");
         sources.Margin = new Thickness(0, 4, 0, 0);
         text.Children.Add(sources);
         grid.Children.Add(text);
@@ -224,18 +223,18 @@ public sealed partial class ProfilesPage
         void RefreshChange()
         {
             change.Inlines.Clear();
-            change.Inlines.Add(new Run("Actuellement : " + row.CurrentLabel + "   →   "));
+            change.Inlines.Add(new Run(L("Actuellement : {0}", row.CurrentLabel) + "   →   "));
             var target = new Run(row.TargetLabel) { FontWeight = FontWeights.SemiBold };
             target.SetResourceReference(TextElement.ForegroundProperty, "Pp.TextPrimary");
             change.Inlines.Add(target);
-            if (row.AtTarget) change.Inlines.Add(new Run("  (déjà en place)"));
+            if (row.AtTarget) change.Inlines.Add(new Run("  " + L("(déjà en place)")));
         }
         RefreshChange();
 
         if (row.HasConflict)
         {
             var combo = new ComboBox { MinWidth = 190, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(12, 0, 0, 0) };
-            System.Windows.Automation.AutomationProperties.SetName(combo, "Option retenue pour " + t.Title);
+            System.Windows.Automation.AutomationProperties.SetName(combo, L("Option retenue pour {0}", t.Title));
             foreach (var option in row.Wants.Select(w => w.Option).Distinct())
             {
                 var by = string.Join(", ", row.Wants.Where(w => w.Option == option).Select(w => w.SourceTitle));
@@ -283,18 +282,17 @@ public sealed partial class ProfilesPage
     {
         var candidates = plan.Apps.Where(a => !a.Installed).ToList();
         var installed = plan.Apps.Where(a => a.Installed).ToList();
-        _body.Children.Add(Section($"Applications ({candidates.Count(a => a.Selected)} cochée{(candidates.Count(a => a.Selected) > 1 ? "s" : "")})"));
+        _body.Children.Add(Section(LP(candidates.Count(a => a.Selected), "Applications ({0} cochée)", "Applications ({0} cochées)")));
         if (plan.Apps.Count == 0 && plan.SkippedHeavyApps == 0)
         {
-            _body.Children.Add(StateCard("", "Aucune application proposée", "Les profils choisis n'installent pas d'application. Le catalogue complet est dans la page Applications."));
+            _body.Children.Add(StateCard("", L("Aucune application proposée"), L("Les profils choisis n'installent pas d'application. Le catalogue complet est dans la page Applications.")));
             return;
         }
 
         var hasWinget = AppHost.Registry.GetAction(WingetInstallAction) is not null;
         var intro = Caption(hasWinget
-            ? "Installées une par une avec winget depuis leur source officielle (téléchargement Internet). Installer une application vaut acceptation de sa licence. " +
-              "Celles qui sont cochées ont été choisies par les profils ; les autres sont des suggestions."
-            : "Le module Applications n'est pas disponible : les applications ne pourront pas être installées depuis cet assistant.");
+            ? L("Installées une par une avec winget depuis leur source officielle (téléchargement Internet). Installer une application vaut acceptation de sa licence. Celles qui sont cochées ont été choisies par les profils ; les autres sont des suggestions.")
+            : L("Le module Applications n'est pas disponible : les applications ne pourront pas être installées depuis cet assistant."));
         intro.Margin = new Thickness(0, 0, 0, 8);
         _body.Children.Add(intro);
 
@@ -302,23 +300,24 @@ public sealed partial class ProfilesPage
         var main = candidates.Where(a => a.Preselected || !a.InCatalog).ToList();
         var suggestions = candidates.Except(main).ToList();
         if (main.Count > 0) _body.Children.Add(Card(AppList(main, hasWinget)));
-        else if (suggestions.Count > 0) _body.Children.Add(Caption("Aucune application n'est cochée d'office : voyez les suggestions ci-dessous si besoin."));
+        else if (suggestions.Count > 0) _body.Children.Add(Caption(L("Aucune application n'est cochée d'office : voyez les suggestions ci-dessous si besoin.")));
         if (suggestions.Count > 0)
-            _body.Children.Add(Collapsible($"Autres suggestions ({suggestions.Count})", Card(AppList(suggestions, hasWinget), 0)));
+            _body.Children.Add(Collapsible(L("Autres suggestions ({0})", suggestions.Count), Card(AppList(suggestions, hasWinget), 0)));
 
         if (plan.SkippedHeavyApps > 0)
-            _body.Children.Add(InfoBar($"{plan.SkippedHeavyApps} application{(plan.SkippedHeavyApps > 1 ? "s exigeantes ne sont pas proposées" : " exigeante n'est pas proposée")} " +
-                                       "sur ce PC modeste. Vous les trouverez quand même dans la page Applications.", ""));
+            _body.Children.Add(InfoBar(LP(plan.SkippedHeavyApps,
+                "{0} application exigeante n'est pas proposée sur ce PC modeste. Vous la trouverez quand même dans la page Applications.",
+                "{0} applications exigeantes ne sont pas proposées sur ce PC modeste. Vous les trouverez quand même dans la page Applications."), ""));
         if (installed.Count > 0)
         {
             var list = new StackPanel();
             foreach (var app in installed)
-                list.Children.Add(SimpleRow("", "Pp.Success", app.Name, "Déjà installée"));
-            _body.Children.Add(Collapsible($"Déjà installées ({installed.Count})", Card(list, 0)));
+                list.Children.Add(SimpleRow("", "Pp.Success", app.Name, L("Déjà installée")));
+            _body.Children.Add(Collapsible(L("Déjà installées ({0})", installed.Count), Card(list, 0)));
         }
         else if (!plan.InstalledAppsKnown)
         {
-            _body.Children.Add(Caption("La liste des programmes installés n'a pas pu être lue : winget ignorera simplement une application déjà présente."));
+            _body.Children.Add(Caption(L("La liste des programmes installés n'a pas pu être lue : winget ignorera simplement une application déjà présente.")));
         }
     }
 
@@ -346,11 +345,13 @@ public sealed partial class ProfilesPage
                 name.Margin = new Thickness(0, 0, 8, 0);
                 head.Children.Add(name);
                 if (!app.InCatalog)
-                    head.Children.Add(Badge("Hors catalogue vérifié", "Warning", "",
-                        "Identifiant venu du fichier importé : Windows demandera une confirmation administrateur supplémentaire."));
+                    head.Children.Add(Badge(L("Hors catalogue vérifié"), "Warning", "",
+                        L("Identifiant venu du fichier importé : Windows demandera une confirmation administrateur supplémentaire.")));
                 text.Children.Add(head);
                 if (app.Description is not null) text.Children.Add(Caption(app.Description));
-                var src = Caption((app.InCatalog ? "Proposé par : " : "Identifiant winget : " + app.Id + " · ") + string.Join(", ", app.Sources), "Pp.TextTertiary");
+                var src = Caption(app.InCatalog
+                    ? L("Proposé par : {0}", string.Join(", ", app.Sources))
+                    : L("Identifiant winget : {0} · {1}", app.Id, string.Join(", ", app.Sources)), "Pp.TextTertiary");
                 src.Margin = new Thickness(0, 2, 0, 0);
                 text.Children.Add(src);
                 grid.Children.Add(text);
@@ -371,28 +372,30 @@ public sealed partial class ProfilesPage
 
         var parts = new List<string>
         {
-            tweaks.Count == 0 ? "Aucun réglage" : $"{tweaks.Count} réglage{(tweaks.Count > 1 ? "s" : "")}" + (admin > 0 ? $" (dont {admin} avec les droits d'administrateur)" : ""),
-            apps.Count == 0 ? "aucune application" : $"{apps.Count} application{(apps.Count > 1 ? "s" : "")}",
+            tweaks.Count == 0 ? L("Aucun réglage")
+                : admin > 0 ? LP(tweaks.Count, "{0} réglage (dont {1} avec les droits d'administrateur)", "{0} réglages (dont {1} avec les droits d'administrateur)", admin)
+                : LP(tweaks.Count, "{0} réglage", "{0} réglages"),
+            apps.Count == 0 ? L("aucune application") : LP(apps.Count, "{0} application", "{0} applications"),
         };
         var text = string.Join(", ", parts) + ".";
-        if (EffectsText(effects) is { } fx) text += " Effets : " + fx + ".";
-        if (irreversible > 0) text += $" {irreversible} changement{(irreversible > 1 ? "s" : "")} non annulable{(irreversible > 1 ? "s" : "")}.";
-        if (admin > 0 || apps.Count > 0) text += " Windows demandera au plus une fois l'autorisation administrateur (UAC) pour l'ensemble.";
+        if (EffectsText(effects) is { } fx) text += " " + L("Effets : {0}.", fx);
+        if (irreversible > 0) text += " " + LP(irreversible, "{0} changement non annulable.", "{0} changements non annulables.");
+        if (admin > 0 || apps.Count > 0) text += " " + L("Windows demandera au plus une fois l'autorisation administrateur (UAC) pour l'ensemble.");
         _summary.Text = text;
         if (_applyButton is not null)
         {
             var total = tweaks.Count + apps.Count;
             _applyButton.IsEnabled = total > 0;
-            _applyButton.ToolTip = total > 0 ? null : "Cochez au moins un réglage ou une application.";
+            _applyButton.ToolTip = total > 0 ? null : L("Cochez au moins un réglage ou une application.");
         }
     }
 
     private static string? EffectsText(ApplyEffect effects)
     {
         var list = new List<string>();
-        if (effects.HasFlag(ApplyEffect.Reboot)) list.Add("redémarrage du PC");
-        if (effects.HasFlag(ApplyEffect.SignOut)) list.Add("déconnexion de la session");
-        if (effects.HasFlag(ApplyEffect.RestartExplorer)) list.Add("relance de l'Explorateur");
+        if (effects.HasFlag(ApplyEffect.Reboot)) list.Add(L("redémarrage du PC"));
+        if (effects.HasFlag(ApplyEffect.SignOut)) list.Add(L("déconnexion de la session"));
+        if (effects.HasFlag(ApplyEffect.RestartExplorer)) list.Add(L("relance de l'Explorateur"));
         return list.Count == 0 ? null : string.Join(", ", list);
     }
 }

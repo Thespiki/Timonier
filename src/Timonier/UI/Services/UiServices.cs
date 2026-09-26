@@ -20,12 +20,16 @@ public interface INavigationAware
 
 public interface IDialogService
 {
-    Task<bool> ConfirmAsync(string title, string message, string primary = "Continuer", string secondary = "Annuler", bool danger = false);
+    /// <summary>Confirmation. Libellés vides = libellés par défaut traduits (« Continuer » / « Annuler »).</summary>
+    Task<bool> ConfirmAsync(string title, string message, string primary = "", string secondary = "", bool danger = false);
     Task AlertAsync(string title, string message);
     /// <summary>Saisie de texte. <paramref name="validate"/> renvoie un message d'erreur ou null si valide.</summary>
     Task<string?> PromptAsync(string title, string message, string? initial = null, bool password = false, Func<string, string?>? validate = null);
-    /// <summary>Boîte de dialogue avec contenu personnalisé ; renvoie true si le bouton principal est choisi.</summary>
-    Task<bool> ShowAsync(string title, FrameworkElement content, string primary = "OK", string? secondary = "Annuler", bool danger = false);
+    /// <summary>
+    /// Boîte de dialogue avec contenu personnalisé ; renvoie true si le bouton principal est choisi. Libellé vide = libellé
+    /// par défaut traduit (« OK » / « Annuler ») ; <paramref name="secondary"/> null = pas de second bouton.
+    /// </summary>
+    Task<bool> ShowAsync(string title, FrameworkElement content, string primary = "", string? secondary = "", bool danger = false);
 }
 
 public enum ToastKind { Info, Success, Warning, Error }
@@ -113,7 +117,7 @@ public static class SystemEffects
     }
 
     public static Task RebootNowAsync() =>
-        ProcessRunner.RunAsync(SystemTool.Shutdown, ["/r", "/t", "5", "/c", "Redémarrage demandé depuis Timonier"], new RunOptions());
+        ProcessRunner.RunAsync(SystemTool.Shutdown, ["/r", "/t", "5", "/c", L("Redémarrage demandé depuis Timonier")], new RunOptions());
 
     public static Task SignOutNowAsync() =>
         ProcessRunner.RunAsync(SystemTool.Shutdown, ["/l"], new RunOptions());
@@ -141,8 +145,8 @@ public sealed class TrayIcon : IDisposable
                 Icon = System.Drawing.Icon.ExtractAssociatedIcon(AppPaths.ExecutablePath),
                 ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip(),
             };
-            _icon.ContextMenuStrip.Items.Add("Ouvrir Timonier", null, (_, _) => _open());
-            _icon.ContextMenuStrip.Items.Add("Quitter", null, (_, _) => _exit());
+            _icon.ContextMenuStrip.Items.Add(L("Ouvrir Timonier"), null, (_, _) => _open());
+            _icon.ContextMenuStrip.Items.Add(L("Quitter"), null, (_, _) => _exit());
             _icon.DoubleClick += (_, _) => _open();
         }
         var text = reasons.Count == 0 ? "Timonier" : "Timonier — " + string.Join(", ", reasons);

@@ -33,10 +33,10 @@ internal sealed class PlanTweak
     public string CurrentLabel => Current switch
     {
         null => "…",
-        { Unknown: true } => Tweak.Kind == TweakKind.Action ? "Action ponctuelle" : "État inconnu",
-        { OptionKey: { } k, Partial: true } => (Tweak.GetOption(k)?.Label ?? k) + " (partiel)",
+        { Unknown: true } => Tweak.Kind == TweakKind.Action ? L("Action ponctuelle") : L("État inconnu"),
+        { OptionKey: { } k, Partial: true } => L("{0} (partiel)", Tweak.GetOption(k)?.Label ?? k),
         { OptionKey: { } k } => Tweak.GetOption(k)?.Label ?? k,
-        _ => "État inconnu",
+        _ => L("État inconnu"),
     };
 }
 
@@ -146,7 +146,7 @@ internal static class ProfilePlanner
                 foreach (var (id, option) in import.Tweaks)
                 {
                     if (registry.GetTweak(id) is not { } t || t.GetOption(option) is null) continue;
-                    Row(t).Wants.Add(new TweakWant(ImportSource, "Fichier importé", option));
+                    Row(t).Wants.Add(new TweakWant(ImportSource, L("Fichier importé"), option));
                 }
             }
             else
@@ -215,10 +215,9 @@ internal static class ProfilePlanner
             plan.Notices.AddRange(import.Notices);
             var lessSafe = plan.Tweaks.Count(t => t.LessSafe && !t.AtTarget);
             if (lessSafe > 0)
-                plan.Notices.Add($"{lessSafe} réglage{(lessSafe > 1 ? "s" : "")} de sécurité du fichier " +
-                                 $"{(lessSafe > 1 ? "demandent" : "demande")} une option que Timonier ne propose pas pour ce PC : " +
-                                 $"{(lessSafe > 1 ? "ils restent décochés" : "il reste décoché")}. Ne " +
-                                 $"{(lessSafe > 1 ? "les" : "le")} cochez que si vous savez pourquoi.");
+                plan.Notices.Add(LP(lessSafe,
+                    "{0} réglage de sécurité du fichier demande une option que Timonier ne propose pas pour ce PC : il reste décoché. Ne le cochez que si vous savez pourquoi.",
+                    "{0} réglages de sécurité du fichier demandent une option que Timonier ne propose pas pour ce PC : ils restent décochés. Ne les cochez que si vous savez pourquoi."));
         }
         return plan;
     }
@@ -258,7 +257,7 @@ internal static class ProfilePlanner
 
         if (import is not null)
         {
-            foreach (var id in import.Apps) Add(id, true, "Fichier importé");
+            foreach (var id in import.Apps) Add(id, true, L("Fichier importé"));
         }
         else
         {

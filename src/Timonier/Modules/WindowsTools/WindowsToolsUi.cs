@@ -89,7 +89,7 @@ internal static class WindowsToolsUi
         catch (Exception ex)
         {
             Log.Warn("WindowsTools", $"ouverture de {tool.Key} : {ex.Message}");
-            AppHost.Toasts.Show($"Impossible d'ouvrir « {tool.Title} » : {ex.Message}", ToastKind.Error);
+            AppHost.Toasts.Show(L("Impossible d'ouvrir « {0} » : {1}", tool.Title, ex.Message), ToastKind.Error);
             return false;
         }
     }
@@ -105,7 +105,7 @@ internal static class WindowsToolsUi
         catch (Exception ex)
         {
             Log.Warn("WindowsTools", $"ouverture de {link.Uri} : {ex.Message}");
-            AppHost.Toasts.Show($"Impossible d'ouvrir « {link.Title} » : {ex.Message}", ToastKind.Error);
+            AppHost.Toasts.Show(L("Impossible d'ouvrir « {0} » : {1}", link.Title, ex.Message), ToastKind.Error);
             return false;
         }
     }

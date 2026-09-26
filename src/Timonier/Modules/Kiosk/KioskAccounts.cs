@@ -105,14 +105,14 @@ internal static partial class KioskAccounts
         var user = Validate.LocalUserName(name);
         using var ctx = new PrincipalContext(ContextType.Machine);
         using var u = UserPrincipal.FindByIdentity(ctx, IdentityType.SamAccountName, user)
-                      ?? throw new ValidationException($"Le compte local « {user} » n'existe pas.");
-        var sid = u.Sid?.Value ?? throw new ValidationException("SID du compte introuvable.");
-        if (IsBuiltIn(sid)) throw new ValidationException("Les comptes intégrés de Windows ne peuvent pas servir de compte kiosque.");
+                      ?? throw new ValidationException(L("Le compte local « {0} » n'existe pas.", user));
+        var sid = u.Sid?.Value ?? throw new ValidationException(L("SID du compte introuvable."));
+        if (IsBuiltIn(sid)) throw new ValidationException(L("Les comptes intégrés de Windows ne peuvent pas servir de compte kiosque."));
         if (string.Equals(sid, currentSid, StringComparison.OrdinalIgnoreCase))
-            throw new ValidationException("Le compte kiosque doit être différent de celui que vous utilisez actuellement.");
-        if (u.Enabled == false) throw new ValidationException($"Le compte « {user} » est désactivé.");
+            throw new ValidationException(L("Le compte kiosque doit être différent de celui que vous utilisez actuellement."));
+        if (u.Enabled == false) throw new ValidationException(L("Le compte « {0} » est désactivé.", user));
         if (IsAdmin(sid))
-            throw new ValidationException($"« {user} » est administrateur : utilisez un compte standard pour la borne (un administrateur peut sortir du mode kiosque).");
+            throw new ValidationException(L("« {0} » est administrateur : utilisez un compte standard pour la borne (un administrateur peut sortir du mode kiosque).", user));
         return new KioskAccount(u.SamAccountName, sid, u.DisplayName, false, true, false, ProfilePath(sid));
     }
 
@@ -121,13 +121,13 @@ internal static partial class KioskAccounts
     {
         using var ctx = new PrincipalContext(ContextType.Machine);
         using (var existing = Principal.FindByIdentity(ctx, IdentityType.SamAccountName, name))
-            if (existing is not null) throw new ValidationException($"Un compte ou un groupe nommé « {name} » existe déjà.");
+            if (existing is not null) throw new ValidationException(L("Un compte ou un groupe nommé « {0} » existe déjà.", name));
 
         using var u = new UserPrincipal(ctx)
         {
             SamAccountName = name,
             DisplayName = string.IsNullOrWhiteSpace(fullName) ? name : fullName,
-            Description = "Compte de borne (mode kiosque) créé par Timonier",
+            Description = L("Compte de borne (mode kiosque) créé par Timonier"),
             Enabled = true,
             PasswordNeverExpires = true,
         };
@@ -136,7 +136,7 @@ internal static partial class KioskAccounts
         try { u.Save(); }
         catch (PasswordException ex)
         {
-            throw new ValidationException("Mot de passe refusé par la stratégie de mots de passe de Windows : " + ex.Message);
+            throw new ValidationException(L("Mot de passe refusé par la stratégie de mots de passe de Windows : {0}", ex.Message));
         }
 
         // Les comptes locaux rejoignent normalement « Utilisateurs » : on le garantit, sans jamais ajouter d'autre groupe.

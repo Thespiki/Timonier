@@ -20,7 +20,7 @@ internal sealed record PowerSnapshot(
             PowerApi.EnumerateSchemes(), PowerApi.GetSource(), modeApi,
             modeApi ? PowerApi.GetUserMode(ac: true) : null, modeApi ? PowerApi.GetUserMode(ac: false) : null,
             PowerApi.GetEffectiveMode(), PowerApi.ReadTimeouts(),
-            PowerApi.ReadFriendlyName(PowerApi.UltimateTemplate) ?? "Performances optimales");
+            PowerApi.ReadFriendlyName(PowerApi.UltimateTemplate) ?? L("Performances optimales"));
     }
 }
 
@@ -30,7 +30,7 @@ public sealed partial class PerformancePage
 
     // Carte « Alimentation »
     private readonly TextBlock _powerTitle = PerfUi.Text("Pp.CardTitle");
-    private readonly TextBlock _powerStatus = PerfUi.Text("Pp.Caption", "Lecture de l'état de l'alimentation…");
+    private readonly TextBlock _powerStatus = PerfUi.Text("Pp.Caption", L("Lecture de l'état de l'alimentation…"));
     private readonly StackPanel _modePanel = new();
     private readonly StackPanel _plansPanel = new();
     private readonly WrapPanel _addPanel = new() { Margin = new Thickness(0, 8, 0, 0) };
@@ -40,10 +40,10 @@ public sealed partial class PerformancePage
     private bool _powerBusy;
 
     // Carte « Veille et écran »
-    private readonly ComboBox _monitorAc = TimeoutCombo("Éteindre l'écran après, sur secteur");
-    private readonly ComboBox _monitorDc = TimeoutCombo("Éteindre l'écran après, sur batterie");
-    private readonly ComboBox _sleepAc = TimeoutCombo("Mettre en veille après, sur secteur");
-    private readonly ComboBox _sleepDc = TimeoutCombo("Mettre en veille après, sur batterie");
+    private readonly ComboBox _monitorAc = TimeoutCombo(L("Éteindre l'écran après, sur secteur"));
+    private readonly ComboBox _monitorDc = TimeoutCombo(L("Éteindre l'écran après, sur batterie"));
+    private readonly ComboBox _sleepAc = TimeoutCombo(L("Mettre en veille après, sur secteur"));
+    private readonly ComboBox _sleepDc = TimeoutCombo(L("Mettre en veille après, sur batterie"));
     private readonly List<UIElement> _batteryColumn = [];
     private readonly TextBlock _sleepCaption = PerfUi.Text("Pp.Caption", "", new Thickness(0, 10, 0, 0));
     private bool _updatingTimeouts;
@@ -63,11 +63,11 @@ public sealed partial class PerformancePage
         header.Children.Add(circle);
 
         var links = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-        var settings = PerfUi.Button("Paramètres Windows", "Pp.SubtleButton", "");
-        settings.ToolTip = "Paramètres > Système > Alimentation et batterie";
+        var settings = PerfUi.Button(L("Paramètres Windows"), "Pp.SubtleButton", "");
+        settings.ToolTip = L("Paramètres > Système > Alimentation et batterie");
         settings.Click += (_, _) => OpenUri("ms-settings:powersleep");
-        var advanced = PerfUi.Button("Options avancées", "Pp.SubtleButton", "");
-        advanced.ToolTip = "Options d'alimentation du Panneau de configuration (paramètres détaillés des plans)";
+        var advanced = PerfUi.Button(L("Options avancées"), "Pp.SubtleButton", "");
+        advanced.ToolTip = L("Options d'alimentation du Panneau de configuration (paramètres détaillés des plans)");
         advanced.Click += (_, _) => Launch(SystemTool.Control, "powercfg.cpl");
         links.Children.Add(settings);
         links.Children.Add(advanced);
@@ -76,7 +76,7 @@ public sealed partial class PerformancePage
 
         var titles = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         _powerTitle.FontWeight = FontWeights.SemiBold;
-        _powerTitle.Text = "Plan d'alimentation";
+        _powerTitle.Text = L("Plan d'alimentation");
         titles.Children.Add(_powerTitle);
         titles.Children.Add(_powerStatus);
         header.Children.Add(titles);
@@ -88,17 +88,16 @@ public sealed partial class PerformancePage
         content.Children.Add(_powerError);
 
         content.Children.Add(PerfUi.Divider(14, 12));
-        content.Children.Add(SubTitle("Mode d'alimentation"));
+        content.Children.Add(SubTitle(L("Mode d'alimentation")));
         content.Children.Add(PerfUi.Text("Pp.Caption",
-            "Ajuste le plan « Utilisation normale » vers l'autonomie ou la réactivité, séparément sur secteur et sur batterie.",
+            L("Ajuste le plan « Utilisation normale » vers l'autonomie ou la réactivité, séparément sur secteur et sur batterie."),
             new Thickness(0, 2, 0, 8)));
         content.Children.Add(_modePanel);
 
         content.Children.Add(PerfUi.Divider(14, 12));
-        content.Children.Add(SubTitle("Plans d'alimentation"));
+        content.Children.Add(SubTitle(L("Plans d'alimentation")));
         content.Children.Add(PerfUi.Text("Pp.Caption",
-            "Windows 10 et 11 recommandent « Utilisation normale » (équilibré), qui s'adapte à la charge. Les autres plans sont des " +
-            "réglages fixes, utiles dans des cas précis.", new Thickness(0, 2, 0, 6)));
+            L("Windows 10 et 11 recommandent « Utilisation normale » (équilibré), qui s'adapte à la charge. Les autres plans sont des réglages fixes, utiles dans des cas précis."), new Thickness(0, 2, 0, 6)));
         content.Children.Add(_plansPanel);
         content.Children.Add(_addPanel);
         content.Children.Add(_addWarning);
@@ -114,15 +113,15 @@ public sealed partial class PerformancePage
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(200) });
         for (var i = 0; i < 3; i++) grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-        Place(grid, ColumnHeader("", "Sur secteur"), 0, 1);
-        var dcHeader = ColumnHeader("", "Sur batterie");
+        Place(grid, ColumnHeader("", L("Sur secteur")), 0, 1);
+        var dcHeader = ColumnHeader("", L("Sur batterie"));
         Place(grid, dcHeader, 0, 2);
         _batteryColumn.Add(dcHeader);
 
-        Place(grid, RowLabel("", "Éteindre l'écran après"), 1, 0);
+        Place(grid, RowLabel("", L("Éteindre l'écran après")), 1, 0);
         Place(grid, _monitorAc, 1, 1);
         Place(grid, _monitorDc, 1, 2);
-        Place(grid, RowLabel("", "Mettre en veille après"), 2, 0);
+        Place(grid, RowLabel("", L("Mettre en veille après")), 2, 0);
         Place(grid, _sleepAc, 2, 1);
         Place(grid, _sleepDc, 2, 2);
         _batteryColumn.Add(_monitorDc);
@@ -221,9 +220,9 @@ public sealed partial class PerformancePage
         catch (Exception ex)
         {
             Log.Error("Performance", "lecture de l'alimentation", ex);
-            ((TextBlock)((DockPanel)_powerError.Child).Children[1]).Text = "Impossible de lire l'état de l'alimentation : " + ex.Message;
+            ((TextBlock)((DockPanel)_powerError.Child).Children[1]).Text = L("Impossible de lire l'état de l'alimentation : {0}", ex.Message);
             _powerError.Visibility = Visibility.Visible;
-            _powerStatus.Text = "État inconnu";
+            _powerStatus.Text = L("État inconnu");
         }
         finally
         {
@@ -234,16 +233,16 @@ public sealed partial class PerformancePage
     private void RenderPower(PowerSnapshot s)
     {
         var active = s.Active;
-        _powerTitle.Text = active is null ? "Aucun plan actif détecté" : $"Plan actif : {active.Name}";
+        _powerTitle.Text = active is null ? L("Aucun plan actif détecté") : L("Plan actif : {0}", active.Name);
         var parts = new List<string>();
         if (s.Source.HasBattery)
             parts.Add(s.Source.OnBattery
-                ? $"Sur batterie{(s.Source.BatteryPercent is { } b ? $" ({b} %)" : "")}"
-                : $"Sur secteur{(s.Source.BatteryPercent is { } c ? $" · batterie {c} %" : "")}");
-        else parts.Add("Alimenté sur secteur");
-        if (s.Source.BatterySaver) parts.Add("économiseur de batterie actif");
+                ? (s.Source.BatteryPercent is { } b ? L("Sur batterie ({0} %)", b) : L("Sur batterie"))
+                : (s.Source.BatteryPercent is { } c ? L("Sur secteur · batterie {0} %", c) : L("Sur secteur")));
+        else parts.Add(L("Alimenté sur secteur"));
+        if (s.Source.BatterySaver) parts.Add(L("économiseur de batterie actif"));
         if (active?.IsBalanced == true && s.Effective is { } eff && PowerApi.ModeFromGuid(eff) is { } mode)
-            parts.Add($"mode appliqué : {mode.Label}");
+            parts.Add(L("mode appliqué : {0}", mode.Label));
         _powerStatus.Text = string.Join(" · ", parts);
 
         RenderModes(s);
@@ -256,20 +255,20 @@ public sealed partial class PerformancePage
         var active = s.Active;
         if (!s.ModeApi)
         {
-            var current = s.Effective is { } e && PowerApi.ModeFromGuid(e) is { } m ? $"Mode actuel : {m.Label}. " : "";
-            _modePanel.Children.Add(InfoWithLink(current + "Sur cette version de Windows, le mode se règle depuis l'icône de batterie " +
-                                                  "ou les Paramètres Windows.", "Ouvrir les paramètres", () => OpenUri("ms-settings:powersleep")));
+            var text = s.Effective is { } e && PowerApi.ModeFromGuid(e) is { } m
+                ? L("Mode actuel : {0}. Sur cette version de Windows, le mode se règle depuis l'icône de batterie ou les Paramètres Windows.", m.Label)
+                : L("Sur cette version de Windows, le mode se règle depuis l'icône de batterie ou les Paramètres Windows.");
+            _modePanel.Children.Add(InfoWithLink(text, L("Ouvrir les paramètres"), () => OpenUri("ms-settings:powersleep")));
             return;
         }
         if (active is null || !active.IsBalanced)
         {
-            _modePanel.Children.Add(InfoWithLink("Les modes d'alimentation ne s'appliquent qu'au plan « Utilisation normale ». " +
-                                                  "Activez-le ci-dessous pour les utiliser.", null, null));
+            _modePanel.Children.Add(InfoWithLink(L("Les modes d'alimentation ne s'appliquent qu'au plan « Utilisation normale ». Activez-le ci-dessous pour les utiliser."), null, null));
             return;
         }
-        _modePanel.Children.Add(ModeRow("", "Sur secteur", ac: true, s.UserAc));
+        _modePanel.Children.Add(ModeRow("", L("Sur secteur"), ac: true, s.UserAc));
         if (s.Source.HasBattery || AppHost.Profile.HasBattery)
-            _modePanel.Children.Add(ModeRow("", "Sur batterie", ac: false, s.UserDc));
+            _modePanel.Children.Add(ModeRow("", L("Sur batterie"), ac: false, s.UserDc));
     }
 
     private Grid ModeRow(string glyph, string label, bool ac, Guid? current)
@@ -291,7 +290,7 @@ public sealed partial class PerformancePage
             b.Margin = new Thickness(0, 2, 6, 2);
             b.ToolTip = mode.Label;
             b.IsEnabled = !_powerBusy;
-            System.Windows.Automation.AutomationProperties.SetName(b, $"{mode.Label} {label.ToLowerInvariant()}");
+            System.Windows.Automation.AutomationProperties.SetName(b, ac ? L("{0} sur secteur", mode.Label) : L("{0} sur batterie", mode.Label));
             b.Click += async (_, _) =>
             {
                 if (selected || _powerBusy) return;
@@ -313,7 +312,7 @@ public sealed partial class PerformancePage
         _plansPanel.Children.Clear();
         if (s.Schemes.Count == 0)
         {
-            _plansPanel.Children.Add(PerfUi.Text("Pp.Caption", "Aucun plan d'alimentation n'a pu être énuméré."));
+            _plansPanel.Children.Add(PerfUi.Text("Pp.Caption", L("Aucun plan d'alimentation n'a pu être énuméré.")));
         }
         foreach (var scheme in s.Schemes.OrderByDescending(x => x.IsActive).ThenBy(x => x.Name, StringComparer.CurrentCulture))
             _plansPanel.Children.Add(PlanRow(scheme));
@@ -324,13 +323,13 @@ public sealed partial class PerformancePage
         if (!s.Schemes.Any(x => string.Equals(x.Name, s.UltimateName, StringComparison.CurrentCultureIgnoreCase) || x.Id == PowerApi.UltimateTemplate))
             missing.Add(("ultimate", s.UltimateName));
         if (!s.Schemes.Any(x => x.IsHighPerformance && x.Id != PowerApi.UltimateTemplate && x.Name != s.UltimateName))
-            missing.Add(("high", PowerApi.ReadFriendlyName(PowerApi.HighPerformance) ?? "Performances élevées"));
+            missing.Add(("high", PowerApi.ReadFriendlyName(PowerApi.HighPerformance) ?? L("Performances élevées")));
         if (!s.Schemes.Any(x => x.IsPowerSaver))
-            missing.Add(("saver", PowerApi.ReadFriendlyName(PowerApi.PowerSaver) ?? "Économie d'énergie"));
+            missing.Add(("saver", PowerApi.ReadFriendlyName(PowerApi.PowerSaver) ?? L("Économie d'énergie")));
 
         _addWarning.Visibility = Visibility.Collapsed;
         if (missing.Count == 0) return;
-        _addPanel.Children.Add(PerfUi.Text("Pp.Caption", "Ajouter un plan :", new Thickness(0, 0, 10, 0)).Centered());
+        _addPanel.Children.Add(PerfUi.Text("Pp.Caption", L("Ajouter un plan :"), new Thickness(0, 0, 10, 0)).Centered());
         foreach (var (key, label) in missing)
         {
             var b = PerfUi.Button(label, "Pp.Button", "");
@@ -343,10 +342,8 @@ public sealed partial class PerformancePage
         {
             var laptop = s.Source.HasBattery || AppHost.Profile.IsLaptopLike;
             _addWarning.Text = laptop
-                ? "« Performances optimales » empêche le processeur et les périphériques de s'économiser : sur ce portable, l'autonomie " +
-                  "et la chaleur en pâtissent. Conçu pour les stations de travail sur secteur."
-                : "« Performances optimales » supprime les micro-latences d'économie d'énergie : utile pour les charges lourdes, au prix " +
-                  "d'une consommation plus élevée même au repos.";
+                ? L("« Performances optimales » empêche le processeur et les périphériques de s'économiser : sur ce portable, l'autonomie et la chaleur en pâtissent. Conçu pour les stations de travail sur secteur.")
+                : L("« Performances optimales » supprime les micro-latences d'économie d'énergie : utile pour les charges lourdes, au prix d'une consommation plus élevée même au repos.");
             _addWarning.Visibility = Visibility.Visible;
         }
     }
@@ -364,13 +361,13 @@ public sealed partial class PerformancePage
         var texts = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         var line = new StackPanel { Orientation = Orientation.Horizontal };
         line.Children.Add(PerfUi.Text("Pp.Body", scheme.Name));
-        if (scheme.IsActive) line.Children.Add(PerfUi.AccentBadge("Actif"));
+        if (scheme.IsActive) line.Children.Add(PerfUi.AccentBadge(L("Actif")));
         texts.Children.Add(line);
         var family = scheme.Personality switch
         {
-            SchemePersonality.Balanced => "Équilibré : performances à la demande, économie au repos (recommandé).",
-            SchemePersonality.HighPerformance => "Performances : le processeur reste à haute fréquence, consommation plus élevée.",
-            SchemePersonality.PowerSaver => "Économie : fréquences et luminosité réduites pour maximiser l'autonomie.",
+            SchemePersonality.Balanced => L("Équilibré : performances à la demande, économie au repos (recommandé)."),
+            SchemePersonality.HighPerformance => L("Performances : le processeur reste à haute fréquence, consommation plus élevée."),
+            SchemePersonality.PowerSaver => L("Économie : fréquences et luminosité réduites pour maximiser l'autonomie."),
             _ => null,
         };
         if (family is not null) texts.Children.Add(PerfUi.Text("Pp.Caption", family));
@@ -379,10 +376,10 @@ public sealed partial class PerformancePage
 
         if (!scheme.IsActive)
         {
-            var b = PerfUi.Button("Activer", "Pp.Button");
+            var b = PerfUi.Button(L("Activer"), "Pp.Button");
             b.VerticalAlignment = VerticalAlignment.Center;
             b.IsEnabled = !_powerBusy;
-            System.Windows.Automation.AutomationProperties.SetName(b, "Activer le plan " + scheme.Name);
+            System.Windows.Automation.AutomationProperties.SetName(b, L("Activer le plan {0}", scheme.Name));
             b.Click += async (_, _) => await RunPowerAsync(() => PowerUi.ActivateSchemeAsync(scheme.Id));
             Grid.SetColumn(b, 2);
             g.Children.Add(b);
@@ -406,8 +403,8 @@ public sealed partial class PerformancePage
         finally { _updatingTimeouts = false; }
 
         _sleepCaption.Text = s.Active is { } a
-            ? $"S'applique au plan actif (« {a.Name} »). « Jamais » garde l'écran allumé ou le PC éveillé tant qu'il est sous tension."
-            : "Aucun plan actif : délais indisponibles.";
+            ? L("S'applique au plan actif (« {0} »). « Jamais » garde l'écran allumé ou le PC éveillé tant qu'il est sous tension.", a.Name)
+            : L("Aucun plan actif : délais indisponibles.");
     }
 
     private static void Fill(ComboBox combo, int? seconds)
@@ -415,7 +412,7 @@ public sealed partial class PerformancePage
         combo.Items.Clear();
         if (seconds is null)
         {
-            combo.Items.Add(new ComboBoxItem { Content = "Indisponible", IsEnabled = false });
+            combo.Items.Add(new ComboBoxItem { Content = L("Indisponible"), IsEnabled = false });
             combo.SelectedIndex = 0;
             combo.IsEnabled = false;
             return;
@@ -426,7 +423,7 @@ public sealed partial class PerformancePage
         values.Sort();
         foreach (var v in values)
         {
-            var item = new ComboBoxItem { Content = v == 0 ? "Jamais" : PerfText.Minutes(v), Tag = v };
+            var item = new ComboBoxItem { Content = v == 0 ? L("Jamais") : PerfText.Minutes(v), Tag = v };
             combo.Items.Add(item);
             if (v == minutes) combo.SelectedItem = item;
         }
@@ -461,14 +458,15 @@ public sealed partial class PerformancePage
         var laptop = _power?.Source.HasBattery == true || AppHost.Profile.IsLaptopLike;
         var message = key switch
         {
-            "ultimate" => $"Le plan « {label} » sera ajouté à la liste des plans. Il maintient le processeur et les périphériques à pleine " +
-                          "puissance en permanence." + (laptop ? "\n\nSur un portable, l'autonomie sera nettement réduite." : ""),
-            "high" => $"Le plan « {label} » sera ajouté à la liste des plans.",
-            _ => $"Le plan « {label} » sera ajouté à la liste des plans.",
+            "ultimate" => laptop
+                ? L("Le plan « {0} » sera ajouté à la liste des plans. Il maintient le processeur et les périphériques à pleine puissance en permanence.\n\nSur un portable, l'autonomie sera nettement réduite.", label)
+                : L("Le plan « {0} » sera ajouté à la liste des plans. Il maintient le processeur et les périphériques à pleine puissance en permanence.", label),
+            "high" => L("Le plan « {0} » sera ajouté à la liste des plans.", label),
+            _ => L("Le plan « {0} » sera ajouté à la liste des plans.", label),
         };
-        if (!await AppHost.Dialogs.ConfirmAsync("Ajouter un plan d'alimentation",
-                message + "\n\nUne autorisation administrateur sera demandée. Le plan pourra être supprimé depuis les options d'alimentation de Windows.",
-                "Ajouter"))
+        if (!await AppHost.Dialogs.ConfirmAsync(L("Ajouter un plan d'alimentation"),
+                L("{0}\n\nUne autorisation administrateur sera demandée. Le plan pourra être supprimé depuis les options d'alimentation de Windows.", message),
+                L("Ajouter")))
             return;
 
         Core.Engine.ApplyOutcome? outcome = null;
@@ -479,7 +477,7 @@ public sealed partial class PerformancePage
         });
         if (outcome is { Success: true } && outcome.Data?.GetValueOrDefault("scheme") is { } id && Guid.TryParse(id, out var scheme)
             && _power?.Active?.Id != scheme
-            && await AppHost.Dialogs.ConfirmAsync("Plan ajouté", $"Activer « {label} » maintenant ?", "Activer", "Plus tard"))
+            && await AppHost.Dialogs.ConfirmAsync(L("Plan ajouté"), L("Activer « {0} » maintenant ?", label), L("Activer"), L("Plus tard")))
         {
             await RunPowerAsync(() => PowerUi.ActivateSchemeAsync(scheme));
         }

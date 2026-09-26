@@ -40,23 +40,23 @@ internal sealed class AppearancePanel : UserControl
         DockPanel.SetDock(_busy, Dock.Right);
         header.Children.Add(_busy);
         var titles = new StackPanel();
-        titles.Children.Add(UiKit.Text("Mode de couleur", "Pp.CardTitle"));
-        titles.Children.Add(UiKit.Text("Un clic applique le mode à Windows (barre des tâches, Démarrer) et aux applications. Annulable.", "Pp.Caption"));
+        titles.Children.Add(UiKit.Text(L("Mode de couleur"), "Pp.CardTitle"));
+        titles.Children.Add(UiKit.Text(L("Un clic applique le mode à Windows (barre des tâches, Démarrer) et aux applications. Annulable."), "Pp.Caption"));
         header.Children.Add(titles);
         root.Children.Add(header);
 
         var grid = new UniformGrid { Columns = 3, Margin = new Thickness(-6, 14, -6, 0) };
-        AddTile(grid, new ThemeTile("Clair", "Windows et applications en clair", "light", "light", light, light));
-        AddTile(grid, new ThemeTile("Sombre", "Windows et applications en sombre", "dark", "dark", dark, dark));
-        AddTile(grid, new ThemeTile("Mixte", "Windows sombre, applications claires", "light", "dark", light, dark));
+        AddTile(grid, new ThemeTile(L("Clair"), L("Windows et applications en clair"), "light", "light", light, light));
+        AddTile(grid, new ThemeTile(L("Sombre"), L("Windows et applications en sombre"), "dark", "dark", dark, dark));
+        AddTile(grid, new ThemeTile(L("Mixte"), L("Windows sombre, applications claires"), "light", "dark", light, dark));
         root.Children.Add(grid);
 
         root.Children.Add(UiKit.Divider(new Thickness(0, 16, 0, 14)));
 
         // Couleur d'accent actuelle.
         var accentRow = new DockPanel();
-        var pick = UiKit.Button("Choisir une couleur…", "", "Pp.Button", (_, _) => OpenSettings("ms-settings:colors"));
-        pick.ToolTip = "Ouvre Paramètres › Personnalisation › Couleurs pour choisir une couleur d'accent précise.";
+        var pick = UiKit.Button(L("Choisir une couleur…"), "", "Pp.Button", (_, _) => OpenSettings("ms-settings:colors"));
+        pick.ToolTip = L("Ouvre Paramètres › Personnalisation › Couleurs pour choisir une couleur d'accent précise.");
         pick.VerticalAlignment = VerticalAlignment.Center;
         DockPanel.SetDock(pick, Dock.Right);
         accentRow.Children.Add(pick);
@@ -66,7 +66,7 @@ internal sealed class AppearancePanel : UserControl
         DockPanel.SetDock(_accentSwatch, Dock.Left);
         accentRow.Children.Add(_accentSwatch);
         var accentTexts = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };
-        accentTexts.Children.Add(UiKit.Text("Couleur d'accent", "Pp.CardTitle"));
+        accentTexts.Children.Add(UiKit.Text(L("Couleur d'accent"), "Pp.CardTitle"));
         _accentCaption = UiKit.Text("", "Pp.Caption");
         accentTexts.Children.Add(_accentCaption);
         accentRow.Children.Add(accentTexts);
@@ -107,7 +107,7 @@ internal sealed class AppearancePanel : UserControl
         SetBusy(true);
         try
         {
-            await ThemeSwitcher.ApplyAsync(tile.AppsMode, tile.SystemMode, tile.Title.ToLowerInvariant());
+            await ThemeSwitcher.ApplyAsync(tile.AppsMode, tile.SystemMode);
         }
         finally
         {
@@ -139,8 +139,8 @@ internal sealed class AppearancePanel : UserControl
 
         var auto = RegistryAccess.ReadDword(RegHive.CurrentUser, CustomizationTweaks.DesktopKey, "AutoColorization") == 1;
         _accentCaption.Text = auto
-            ? "Choisie automatiquement d'après le fond d'écran."
-            : "Choisie manuellement dans les Paramètres de Windows.";
+            ? L("Choisie automatiquement d'après le fond d'écran.")
+            : L("Choisie manuellement dans les Paramètres de Windows.");
 
         // Couleur d'accent réelle du système (donnée, pas un choix de style) ; à défaut, celle de l'interface.
         try
@@ -160,7 +160,7 @@ internal sealed class AppearancePanel : UserControl
     internal static void OpenSettings(string uri)
     {
         try { ProcessRunner.OpenSettingsUri(uri); }
-        catch (Exception ex) { AppHost.Toasts.Show("Impossible d'ouvrir les Paramètres : " + ex.Message, ToastKind.Error); }
+        catch (Exception ex) { AppHost.Toasts.Show(L("Impossible d'ouvrir les Paramètres : {0}", ex.Message), ToastKind.Error); }
     }
 
     private static ResourceDictionary LoadPalette(string name) =>
@@ -189,7 +189,7 @@ internal sealed class ThemeTile : Button
         Padding = new Thickness(0);
         HorizontalContentAlignment = HorizontalAlignment.Stretch;
         VerticalContentAlignment = VerticalAlignment.Stretch;
-        System.Windows.Automation.AutomationProperties.SetName(this, $"Mode {title.ToLowerInvariant()} : {caption}");
+        System.Windows.Automation.AutomationProperties.SetName(this, L("{0} : {1}", ThemeSwitcher.ModeName(appsMode, systemMode), caption));
         ToolTip = caption;
 
         // ---- Aperçu

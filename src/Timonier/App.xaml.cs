@@ -74,7 +74,7 @@ public partial class App : Application
     public void OnMainWindowHidden()
     {
         _tray?.Show(AppHost.Background.Reasons);
-        _tray?.Notify("Timonier reste actif", string.Join(", ", AppHost.Background.Reasons));
+        _tray?.Notify(L("Timonier reste actif"), string.Join(", ", AppHost.Background.Reasons));
     }
 
     private void UpdateTray()
@@ -128,6 +128,6 @@ public partial class App : Application
     {
         Log.Error("App", "exception non gérée", e.Exception);
         e.Handled = true;
-        AppHost.Toasts?.Show("Erreur inattendue : " + e.Exception.Message, ToastKind.Error);
+        AppHost.Toasts?.Show(L("Erreur inattendue : {0}", e.Exception.Message), ToastKind.Error);
     }
 }

@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -18,7 +17,6 @@ public sealed class SettingsPage : UserControl, INavigationAware
 {
     private const int MinPinLength = 4;
     private const int MaxPinLength = 64;
-    private static readonly CultureInfo Fr = CultureInfo.GetCultureInfo("fr-FR");
 
     private readonly Dictionary<string, FrameworkElement> _anchors = [];
     private TextBlock? _brokerStatus;
@@ -48,14 +46,14 @@ public sealed class SettingsPage : UserControl, INavigationAware
     private void Build()
     {
         _anchors.Clear();
-        var stack = PageScaffold.Create(this, "Paramètres de Timonier",
-            "Apparence, sécurité et comportement de l'application. Ces options ne modifient pas Windows.", AppPagesModule.SettingsGlyph);
+        var stack = PageScaffold.Create(this, L("Paramètres de Timonier"),
+            L("Apparence, sécurité et comportement de l'application. Ces options ne modifient pas Windows."), AppPagesModule.SettingsGlyph);
 
-        AddSection(stack, "appearance", "Apparence", BuildAppearance());
-        AddSection(stack, "behavior", "Comportement", BuildBehavior());
-        AddSection(stack, "security", "Sécurité", BuildSecurity());
-        AddSection(stack, "data", "Données et réinitialisation", BuildData());
-        AddSection(stack, "about", "À propos", BuildAbout());
+        AddSection(stack, "appearance", L("Apparence"), BuildAppearance());
+        AddSection(stack, "behavior", L("Comportement"), BuildBehavior());
+        AddSection(stack, "security", L("Sécurité"), BuildSecurity());
+        AddSection(stack, "data", L("Données et réinitialisation"), BuildData());
+        AddSection(stack, "about", L("À propos"), BuildAbout());
     }
 
     private void AddSection(StackPanel stack, string key, string title, UIElement content)
@@ -96,9 +94,9 @@ public sealed class SettingsPage : UserControl, INavigationAware
     private UIElement BuildAppearance()
     {
         var theme = new SegmentedBar();
-        theme.Add("Système", "");
-        theme.Add("Clair", "");
-        theme.Add("Sombre", "");
+        theme.Add(LC("theme", "Système"), "");
+        theme.Add(LC("theme", "Clair"), "");
+        theme.Add(LC("theme", "Sombre"), "");
         theme.Select(S.Theme switch { ThemePreference.Light => 1, ThemePreference.Dark => 2, _ => 0 }, notify: false);
         theme.SelectionChanged += (_, i) =>
         {
@@ -106,29 +104,29 @@ public sealed class SettingsPage : UserControl, INavigationAware
             ThemeManager.Apply();
         };
 
-        var animations = BoundToggle("Réduire les animations", S.ReduceAnimations, (s, v) => s.ReduceAnimations = v);
+        var animations = BoundToggle(L("Réduire les animations"), S.ReduceAnimations, (s, v) => s.ReduceAnimations = v);
 
         return RowsCard(
-            AppUi.SettingRow("", "Thème de Timonier",
-                "« Système » suit le mode clair ou sombre choisi dans Paramètres Windows › Personnalisation › Couleurs. N'affecte que Timonier.", theme),
-            AppUi.SettingRow("", "Réduire les animations",
-                "Supprime les fondus lors des changements de page : interface plus sobre, un peu plus légère sur les PC modestes.", animations));
+            AppUi.SettingRow("", L("Thème de Timonier"),
+                L("« Système » suit le mode clair ou sombre choisi dans Paramètres Windows › Personnalisation › Couleurs. N'affecte que Timonier."), theme),
+            AppUi.SettingRow("", L("Réduire les animations"),
+                L("Supprime les fondus lors des changements de page : interface plus sobre, un peu plus légère sur les PC modestes."), animations));
     }
 
     // ------------------------------------------------------------------ Comportement
 
     private UIElement BuildBehavior()
     {
-        var advanced = BoundToggle("Mode avancé", S.AdvancedMode, (s, v) => s.AdvancedMode = v, on =>
+        var advanced = BoundToggle(L("Mode avancé"), S.AdvancedMode, (s, v) => s.AdvancedMode = v, on =>
             AppHost.Toasts.Show(on
-                ? "Mode avancé activé. Les pages déjà ouvertes l'afficheront au prochain lancement de Timonier."
-                : "Mode avancé désactivé. Les pages déjà ouvertes seront mises à jour au prochain lancement de Timonier.", ToastKind.Info));
+                ? L("Mode avancé activé. Les pages déjà ouvertes l'afficheront au prochain lancement de Timonier.")
+                : L("Mode avancé désactivé. Les pages déjà ouvertes seront mises à jour au prochain lancement de Timonier."), ToastKind.Info));
 
-        var confirm = BoundToggle("Confirmer avant les actions administrateur", S.ConfirmBeforeAdminActions, (s, v) => s.ConfirmBeforeAdminActions = v);
+        var confirm = BoundToggle(L("Confirmer avant les actions administrateur"), S.ConfirmBeforeAdminActions, (s, v) => s.ConfirmBeforeAdminActions = v);
 
-        var background = BoundToggle("Rester actif en arrière-plan si nécessaire", S.AllowBackground, (s, v) => s.AllowBackground = v);
+        var background = BoundToggle(L("Rester actif en arrière-plan si nécessaire"), S.AllowBackground, (s, v) => s.AllowBackground = v);
 
-        var startup = AppUi.Toggle("Démarrer avec Windows", StartupRegistration.IsEnabled());
+        var startup = AppUi.Toggle(L("Démarrer avec Windows"), StartupRegistration.IsEnabled());
         var suppress = false;
         async void StartupChanged(bool on)
         {
@@ -137,12 +135,12 @@ public sealed class SettingsPage : UserControl, INavigationAware
             {
                 await Task.Run(() => { if (on) StartupRegistration.Enable(); else StartupRegistration.Disable(); });
                 SettingsStore.Update(s => s.StartWithWindows = on);
-                AppHost.Toasts.Show(on ? "Timonier démarrera avec Windows, dans la zone de notification." : "Timonier ne démarrera plus avec Windows.", ToastKind.Success);
+                AppHost.Toasts.Show(on ? L("Timonier démarrera avec Windows, dans la zone de notification.") : L("Timonier ne démarrera plus avec Windows."), ToastKind.Success);
             }
             catch (Exception ex)
             {
                 Log.Error("AppPages", "démarrage avec Windows", ex);
-                AppHost.Toasts.Show("Impossible de modifier le démarrage automatique : " + ex.Message, ToastKind.Error);
+                AppHost.Toasts.Show(L("Impossible de modifier le démarrage automatique : {0}", ex.Message), ToastKind.Error);
                 suppress = true;
                 startup.IsChecked = !on;
                 suppress = false;
@@ -155,26 +153,24 @@ public sealed class SettingsPage : UserControl, INavigationAware
         _startupStatus.Margin = new Thickness(0, 4, 0, 0);
 
         return RowsCard(
-            AppUi.SettingRow("", "Mode avancé",
-                "Affiche aussi les réglages réservés aux utilisateurs avertis (risque plus élevé). Les pages déjà ouvertes en tiennent compte au prochain lancement.", advanced),
-            AppUi.SettingRow("", "Expliquer avant de demander les droits administrateur",
-                "Avant l'invite UAC, Timonier indique pourquoi les droits sont nécessaires et combien de temps la session reste ouverte. "
-                + "L'invite UAC et les confirmations des actions sensibles restent toujours affichées.", confirm),
-            AppUi.SettingRow("", "Rester actif en arrière-plan si nécessaire",
-                "Uniquement quand une fonction en cours l'exige (accès guidé, tâche en cours…). Sans raison, fermer la fenêtre quitte complètement Timonier.", background),
-            AppUi.SettingRow("", "Démarrer avec Windows",
-                "Lance Timonier discrètement dans la zone de notification à l'ouverture de votre session. Utile surtout si vous utilisez l'accès guidé ; "
-                + "sinon, il occupe un peu de mémoire sans bénéfice.", startup, _startupStatus));
+            AppUi.SettingRow("", L("Mode avancé"),
+                L("Affiche aussi les réglages réservés aux utilisateurs avertis (risque plus élevé). Les pages déjà ouvertes en tiennent compte au prochain lancement."), advanced),
+            AppUi.SettingRow("", L("Expliquer avant de demander les droits administrateur"),
+                L("Avant l'invite UAC, Timonier indique pourquoi les droits sont nécessaires et combien de temps la session reste ouverte. L'invite UAC et les confirmations des actions sensibles restent toujours affichées."), confirm),
+            AppUi.SettingRow("", L("Rester actif en arrière-plan si nécessaire"),
+                L("Uniquement quand une fonction en cours l'exige (accès guidé, tâche en cours…). Sans raison, fermer la fenêtre quitte complètement Timonier."), background),
+            AppUi.SettingRow("", L("Démarrer avec Windows"),
+                L("Lance Timonier discrètement dans la zone de notification à l'ouverture de votre session. Utile surtout si vous utilisez l'accès guidé ; sinon, il occupe un peu de mémoire sans bénéfice."), startup, _startupStatus));
     }
 
     private void UpdateStartupStatus()
     {
         if (_startupStatus is null) return;
         string text;
-        if (!StartupRegistration.IsEnabled()) text = "État actuel : désactivé (aucune entrée « Timonier » dans HKCU\\…\\CurrentVersion\\Run).";
-        else if (StartupRegistration.DisabledByTaskManager()) text = "État actuel : entrée présente mais désactivée depuis le Gestionnaire des tâches. Réactivez l'interrupteur pour la rétablir.";
-        else if (StartupRegistration.PointsElsewhere()) text = "État actuel : activé, mais l'entrée lance une autre copie de Timonier. Désactivez puis réactivez pour utiliser celle-ci.";
-        else text = "État actuel : activé (entrée « Timonier » dans HKCU\\…\\CurrentVersion\\Run).";
+        if (!StartupRegistration.IsEnabled()) text = L("État actuel : désactivé (aucune entrée « Timonier » dans HKCU\\…\\CurrentVersion\\Run).");
+        else if (StartupRegistration.DisabledByTaskManager()) text = L("État actuel : entrée présente mais désactivée depuis le Gestionnaire des tâches. Réactivez l'interrupteur pour la rétablir.");
+        else if (StartupRegistration.PointsElsewhere()) text = L("État actuel : activé, mais l'entrée lance une autre copie de Timonier. Désactivez puis réactivez pour utiliser celle-ci.");
+        else text = L("État actuel : activé (entrée « Timonier » dans HKCU\\…\\CurrentVersion\\Run).");
         _startupStatus.Text = text;
     }
 
@@ -187,15 +183,15 @@ public sealed class SettingsPage : UserControl, INavigationAware
         var pinButtons = new StackPanel { Orientation = Orientation.Horizontal };
         if (hasPin)
         {
-            pinButtons.Children.Add(AppUi.Button("Modifier", "", "Pp.Button", async (_, _) => await ChangePinAsync()));
-            var remove = AppUi.Button("Supprimer", "", "Pp.SubtleButton", async (_, _) => await RemovePinAsync());
+            pinButtons.Children.Add(AppUi.Button(L("Modifier"), "", "Pp.Button", async (_, _) => await ChangePinAsync()));
+            var remove = AppUi.Button(L("Supprimer"), "", "Pp.SubtleButton", async (_, _) => await RemovePinAsync());
             remove.Margin = new Thickness(8, 0, 0, 0);
             pinButtons.Children.Add(remove);
         }
-        else pinButtons.Children.Add(AppUi.Button("Définir un code", "", "Pp.AccentButton", async (_, _) => await SetPinAsync()));
+        else pinButtons.Children.Add(AppUi.Button(L("Définir un code"), "", "Pp.AccentButton", async (_, _) => await SetPinAsync()));
         var pinState = hasPin
-            ? AppUi.Badge("Code actif", "Success", "")
-            : AppUi.Badge("Aucun code", "Neutral");
+            ? AppUi.Badge(L("Code actif"), "Success", "")
+            : AppUi.Badge(L("Aucun code"), "Neutral");
         pinState.HorizontalAlignment = HorizontalAlignment.Left;
         pinState.Margin = new Thickness(0, 6, 0, 0);
 
@@ -206,7 +202,7 @@ public sealed class SettingsPage : UserControl, INavigationAware
         value.TextAlignment = TextAlignment.Right;
         value.Margin = new Thickness(0, 0, 10, 0);
         var slider = new Slider { Minimum = 1, Maximum = 30, Value = minutes, TickFrequency = 1, IsSnapToTickEnabled = true, Width = 220, SmallChange = 1, LargeChange = 5 };
-        System.Windows.Automation.AutomationProperties.SetName(slider, "Délai de fermeture automatique de la session administrateur, en minutes");
+        System.Windows.Automation.AutomationProperties.SetName(slider, L("Délai de fermeture automatique de la session administrateur, en minutes"));
         var save = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
         save.Tick += (_, _) =>
         {
@@ -227,28 +223,28 @@ public sealed class SettingsPage : UserControl, INavigationAware
 
         _brokerStatus = AppUi.Caption("", tertiary: true);
         _brokerStatus.Margin = new Thickness(0, 4, 0, 0);
-        _closeBroker = AppUi.Button("Fermer maintenant", "", "Pp.Button", async (_, _) => await CloseBrokerAsync());
+        _closeBroker = AppUi.Button(L("Fermer maintenant"), "", "Pp.Button", async (_, _) => await CloseBrokerAsync());
         UpdateBrokerStatus();
 
         return RowsCard(
-            AppUi.SettingRow("", "Code PIN de Timonier",
-                "Demandé à chaque ouverture de Timonier (au moins 4 caractères). Protection légère contre l'usage par une autre personne sur votre session : "
-                + "elle ne remplace pas le mot de passe de votre compte Windows. Le code est conservé uniquement sous forme de hachage.", pinButtons, pinState),
-            AppUi.SettingRow("", "Fermeture automatique de la session administrateur",
-                "Après ce délai sans activité, le processus administrateur se ferme et une nouvelle invite UAC sera nécessaire. "
-                + "S'applique à la prochaine ouverture de session administrateur.", sliderRow),
-            AppUi.SettingRow("", "Session administrateur", null, _closeBroker, _brokerStatus));
+            AppUi.SettingRow("", L("Code PIN de Timonier"),
+                L("Demandé à chaque ouverture de Timonier (au moins 4 caractères). Protection légère contre l'usage par une autre personne sur votre session : elle ne remplace pas le mot de passe de votre compte Windows. Le code est conservé uniquement sous forme de hachage."), pinButtons, pinState),
+            AppUi.SettingRow("", L("Fermeture automatique de la session administrateur"),
+                L("Après ce délai sans activité, le processus administrateur se ferme et une nouvelle invite UAC sera nécessaire. S'applique à la prochaine ouverture de session administrateur."), sliderRow),
+            AppUi.SettingRow("", L("Session administrateur"), null, _closeBroker, _brokerStatus));
     }
 
-    private static string MinutesLabel(int m) => m <= 1 ? "1 min" : $"{m} min";
+    private static string MinutesLabel(int m) => L("{0} min", m);
 
     private void UpdateBrokerStatus()
     {
         if (_brokerStatus is null || _closeBroker is null) return;
         var b = AppHost.Broker;
         _brokerStatus.Text = b.IsRunning
-            ? $"Active{(b.StartedAt is { } at ? " depuis " + at.ToString("HH:mm", Fr) : "")}. Fermez-la dès que vous avez terminé vos modifications."
-            : "Inactive : Timonier fonctionne actuellement avec vos droits d'utilisateur standard.";
+            ? b.StartedAt is { } at
+                ? L("Active depuis {0}. Fermez-la dès que vous avez terminé vos modifications.", at.ToString("t", Core.Localization.Loc.Culture))
+                : L("Active. Fermez-la dès que vous avez terminé vos modifications.")
+            : L("Inactive : Timonier fonctionne actuellement avec vos droits d'utilisateur standard.");
         _closeBroker.IsEnabled = b.IsRunning && !_busy;
     }
 
@@ -259,12 +255,12 @@ public sealed class SettingsPage : UserControl, INavigationAware
         try
         {
             await AppHost.Broker.StopAsync();
-            AppHost.Toasts.Show("Session administrateur fermée.", ToastKind.Success);
+            AppHost.Toasts.Show(L("Session administrateur fermée."), ToastKind.Success);
         }
         catch (Exception ex)
         {
             Log.Error("AppPages", "fermeture du broker", ex);
-            AppHost.Toasts.Show("Impossible de fermer la session administrateur : " + ex.Message, ToastKind.Error);
+            AppHost.Toasts.Show(L("Impossible de fermer la session administrateur : {0}", ex.Message), ToastKind.Error);
         }
         UpdateBrokerStatus();
     }
@@ -273,32 +269,32 @@ public sealed class SettingsPage : UserControl, INavigationAware
 
     private static string? ValidateNewPin(string pin)
     {
-        if (pin.Length < MinPinLength) return $"Le code doit contenir au moins {MinPinLength} caractères.";
-        if (pin.Length > MaxPinLength) return $"Le code ne peut pas dépasser {MaxPinLength} caractères.";
-        if (pin.Any(char.IsControl)) return "Le code contient des caractères non autorisés.";
+        if (pin.Length < MinPinLength) return L("Le code doit contenir au moins {0} caractères.", MinPinLength);
+        if (pin.Length > MaxPinLength) return L("Le code ne peut pas dépasser {0} caractères.", MaxPinLength);
+        if (pin.Any(char.IsControl)) return L("Le code contient des caractères non autorisés.");
         return null;
     }
 
     /// <summary>Demande le code actuel et le vérifie (PBKDF2, hors du thread UI). Faux si annulé ou incorrect.</summary>
     private async Task<bool> VerifyCurrentPinAsync(string title)
     {
-        var current = await AppHost.Dialogs.PromptAsync(title, "Saisissez le code actuel de Timonier.", null, password: true,
-            v => v.Length == 0 ? "Saisissez le code." : null);
+        var current = await AppHost.Dialogs.PromptAsync(title, L("Saisissez le code actuel de Timonier."), null, password: true,
+            v => v.Length == 0 ? L("Saisissez le code.") : null);
         if (current is null) return false;
         var stored = S.AppPinHash;
         var ok = await Task.Run(() => PinHasher.Verify(current, stored));
-        if (!ok) AppHost.Toasts.Show("Code actuel incorrect.", ToastKind.Error);
+        if (!ok) AppHost.Toasts.Show(L("Code actuel incorrect."), ToastKind.Error);
         return ok;
     }
 
     private async Task<string?> AskNewPinAsync(string title)
     {
         var pin = await AppHost.Dialogs.PromptAsync(title,
-            $"Choisissez un code d'au moins {MinPinLength} caractères (chiffres, lettres ou symboles). Il sera demandé à chaque ouverture de Timonier.",
+            L("Choisissez un code d'au moins {0} caractères (chiffres, lettres ou symboles). Il sera demandé à chaque ouverture de Timonier.", MinPinLength),
             null, password: true, ValidateNewPin);
         if (pin is null) return null;
-        var again = await AppHost.Dialogs.PromptAsync(title, "Saisissez le même code une seconde fois pour confirmer.", null, password: true,
-            v => v == pin ? null : "Les deux codes ne correspondent pas.");
+        var again = await AppHost.Dialogs.PromptAsync(title, L("Saisissez le même code une seconde fois pour confirmer."), null, password: true,
+            v => v == pin ? null : L("Les deux codes ne correspondent pas."));
         return again is null ? null : pin;
     }
 
@@ -316,8 +312,8 @@ public sealed class SettingsPage : UserControl, INavigationAware
         _busy = true;
         try
         {
-            if (await AskNewPinAsync("Définir un code PIN") is { } pin)
-                await SavePinAsync(pin, "Code PIN défini. Il sera demandé à la prochaine ouverture de Timonier.");
+            if (await AskNewPinAsync(L("Définir un code PIN")) is { } pin)
+                await SavePinAsync(pin, L("Code PIN défini. Il sera demandé à la prochaine ouverture de Timonier."));
         }
         finally { _busy = false; }
     }
@@ -328,9 +324,9 @@ public sealed class SettingsPage : UserControl, INavigationAware
         _busy = true;
         try
         {
-            if (!await VerifyCurrentPinAsync("Modifier le code PIN")) return;
-            if (await AskNewPinAsync("Nouveau code PIN") is { } pin)
-                await SavePinAsync(pin, "Code PIN modifié.");
+            if (!await VerifyCurrentPinAsync(L("Modifier le code PIN"))) return;
+            if (await AskNewPinAsync(L("Nouveau code PIN")) is { } pin)
+                await SavePinAsync(pin, L("Code PIN modifié."));
         }
         finally { _busy = false; }
     }
@@ -341,8 +337,8 @@ public sealed class SettingsPage : UserControl, INavigationAware
         _busy = true;
         try
         {
-            if (!await VerifyCurrentPinAsync("Supprimer le code PIN")) return;
-            await SavePinAsync(null, "Code PIN supprimé : Timonier s'ouvrira sans code.");
+            if (!await VerifyCurrentPinAsync(L("Supprimer le code PIN"))) return;
+            await SavePinAsync(null, L("Code PIN supprimé : Timonier s'ouvrira sans code."));
         }
         finally { _busy = false; }
     }
@@ -352,22 +348,21 @@ public sealed class SettingsPage : UserControl, INavigationAware
     private UIElement BuildData()
     {
         var folders = new StackPanel { Orientation = Orientation.Horizontal };
-        folders.Children.Add(AppUi.Button("Données", "", "Pp.Button", (_, _) => TransparencyPage.OpenFolder(AppPaths.LocalData)));
-        var logs = AppUi.Button("Journaux de diagnostic", "", "Pp.Button", (_, _) => TransparencyPage.OpenFolder(AppPaths.Logs));
+        folders.Children.Add(AppUi.Button(L("Données"), "", "Pp.Button", (_, _) => TransparencyPage.OpenFolder(AppPaths.LocalData)));
+        var logs = AppUi.Button(L("Journaux de diagnostic"), "", "Pp.Button", (_, _) => TransparencyPage.OpenFolder(AppPaths.Logs));
         logs.Margin = new Thickness(8, 0, 0, 0);
         folders.Children.Add(logs);
 
-        var reset = AppUi.Button("Réinitialiser…", "", "Pp.DangerButton", async (_, _) => await ResetAsync());
+        var reset = AppUi.Button(L("Réinitialiser…"), "", "Pp.DangerButton", async (_, _) => await ResetAsync());
 
-        var privacy = AppUi.Button("Voir le détail", "", "Pp.Button", (_, _) => AppHost.Navigator.Navigate(AppPagesModule.TransparencyPageId, "tab:security"));
+        var privacy = AppUi.Button(L("Voir le détail"), "", "Pp.Button", (_, _) => AppHost.Navigator.Navigate(AppPagesModule.TransparencyPageId, "tab:security"));
 
         return RowsCard(
-            AppUi.SettingRow("", "Dossiers de Timonier",
-                "Préférences, journal, cache et journaux de diagnostic sont rangés dans votre profil (AppData\\Local\\Timonier). Rien n'est envoyé hors de ce PC.", folders),
-            AppUi.SettingRow("", "Données conservées", "Liste des fichiers et clés de registre utilisés, avec leur taille.", privacy),
-            AppUi.SettingRow("", "Réinitialiser Timonier",
-                "Rétablit les préférences par défaut (thème, options, délai, code PIN, démarrage avec Windows) et vide le cache. "
-                + "Le journal des modifications est conservé : vous pourrez toujours annuler.", reset));
+            AppUi.SettingRow("", L("Dossiers de Timonier"),
+                L("Préférences, journal, cache et journaux de diagnostic sont rangés dans votre profil (AppData\\Local\\Timonier). Rien n'est envoyé hors de ce PC."), folders),
+            AppUi.SettingRow("", L("Données conservées"), L("Liste des fichiers et clés de registre utilisés, avec leur taille."), privacy),
+            AppUi.SettingRow("", L("Réinitialiser Timonier"),
+                L("Rétablit les préférences par défaut (thème, options, délai, code PIN, démarrage avec Windows) et vide le cache. Le journal des modifications est conservé : vous pourrez toujours annuler."), reset));
     }
 
     private async Task ResetAsync()
@@ -377,23 +372,23 @@ public sealed class SettingsPage : UserControl, INavigationAware
         try
         {
             var content = new StackPanel { MaxWidth = 520 };
-            content.Children.Add(AppUi.Text("Les éléments suivants reviendront à leur état par défaut :"));
+            content.Children.Add(AppUi.Text(L("Les éléments suivants reviendront à leur état par défaut :")));
             content.Children.Add(AppUi.Bullets(
-                "Thème, animations, mode avancé, confirmations et fonctionnement en arrière-plan",
-                "Délai de la session administrateur (5 min)",
-                "Code PIN de Timonier (supprimé)",
-                "Démarrage avec Windows (désactivé)",
-                "Cache : portrait matériel et données temporaires (recréés automatiquement)"));
-            var kept = AppUi.Text("Sont conservés :");
+                L("Thème, animations, mode avancé, confirmations et fonctionnement en arrière-plan"),
+                L("Délai de la session administrateur (5 min)"),
+                L("Code PIN de Timonier (supprimé)"),
+                L("Démarrage avec Windows (désactivé)"),
+                L("Cache : portrait matériel et données temporaires (recréés automatiquement)")));
+            var kept = AppUi.Text(L("Sont conservés :"));
             kept.Margin = new Thickness(0, 12, 0, 0);
             content.Children.Add(kept);
             content.Children.Add(AppUi.Bullets(
-                "Le journal des modifications (utilisateur et administrateur), pour pouvoir toujours annuler",
-                "Les informations nécessaires pour retirer une configuration en place (mode kiosque, accès guidé et son code, fond d'écran précédent…)",
-                "Toutes les modifications déjà appliquées à Windows : la réinitialisation ne touche qu'à Timonier"));
+                L("Le journal des modifications (utilisateur et administrateur), pour pouvoir toujours annuler"),
+                L("Les informations nécessaires pour retirer une configuration en place (mode kiosque, accès guidé et son code, fond d'écran précédent…)"),
+                L("Toutes les modifications déjà appliquées à Windows : la réinitialisation ne touche qu'à Timonier")));
 
-            if (!await AppHost.Dialogs.ShowAsync("Réinitialiser Timonier ?", content, "Réinitialiser", "Annuler", danger: true)) return;
-            if (!string.IsNullOrEmpty(S.AppPinHash) && !await VerifyCurrentPinAsync("Réinitialiser Timonier")) return;
+            if (!await AppHost.Dialogs.ShowAsync(L("Réinitialiser Timonier ?"), content, L("Réinitialiser"), L("Annuler"), danger: true)) return;
+            if (!string.IsNullOrEmpty(S.AppPinHash) && !await VerifyCurrentPinAsync(L("Réinitialiser Timonier"))) return;
 
             SettingsStore.Reset();
             AppHost.Broker.IdleMinutes = S.BrokerIdleMinutes;
@@ -403,9 +398,9 @@ public sealed class SettingsPage : UserControl, INavigationAware
             {
                 var list = new List<string>();
                 try { if (StartupRegistration.IsEnabled()) StartupRegistration.Disable(); }
-                catch (Exception ex) { list.Add("démarrage avec Windows : " + ex.Message); }
+                catch (Exception ex) { list.Add(L("démarrage avec Windows : {0}", ex.Message)); }
                 try { if (File.Exists(DataInventory.ProfileCacheFile)) File.Delete(DataInventory.ProfileCacheFile); }
-                catch (Exception ex) { list.Add("portrait matériel : " + ex.Message); }
+                catch (Exception ex) { list.Add(L("portrait matériel : {0}", ex.Message)); }
                 try
                 {
                     if (Directory.Exists(DataInventory.CacheDir))
@@ -416,12 +411,12 @@ public sealed class SettingsPage : UserControl, INavigationAware
                             try { Directory.Delete(d, true); } catch { /* ignoré */ }
                     }
                 }
-                catch (Exception ex) { list.Add("cache : " + ex.Message); }
+                catch (Exception ex) { list.Add(L("cache : {0}", ex.Message)); }
                 return list;
             });
             Log.Info("AppPages", "réinitialisation des préférences" + (errors.Count > 0 ? " (partielle) : " + string.Join(" ; ", errors) : ""));
-            if (errors.Count == 0) AppHost.Toasts.Show("Timonier a été réinitialisé. Le journal des modifications est conservé.", ToastKind.Success);
-            else AppHost.Toasts.Show("Réinitialisation partielle : " + string.Join(" ; ", errors), ToastKind.Warning);
+            if (errors.Count == 0) AppHost.Toasts.Show(L("Timonier a été réinitialisé. Le journal des modifications est conservé."), ToastKind.Success);
+            else AppHost.Toasts.Show(L("Réinitialisation partielle : {0}", string.Join(" ; ", errors)), ToastKind.Warning);
             Rebuild("data");
         }
         finally { _busy = false; }
@@ -441,7 +436,7 @@ public sealed class SettingsPage : UserControl, INavigationAware
     {
         var asm = typeof(AppHost).Assembly;
         var version = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion?.Split('+')[0]
-            ?? asm.GetName().Version?.ToString() ?? "inconnue";
+            ?? asm.GetName().Version?.ToString() ?? LC("version", "inconnue");
 
         var head = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 12) };
         var tile = AppUi.GlyphTile("", size: 48);
@@ -449,36 +444,36 @@ public sealed class SettingsPage : UserControl, INavigationAware
         head.Children.Add(tile);
         var names = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         names.Children.Add(AppUi.Text("Timonier", "Pp.CardTitle", wrap: false));
-        names.Children.Add(AppUi.Caption($"Version {version}"));
+        names.Children.Add(AppUi.Caption(L("Version {0}", version)));
         head.Children.Add(names);
         var badges = new WrapPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(20, 0, 0, 0) };
-        var local = AppUi.Badge("100 % local", "Success", "");
+        var local = AppUi.Badge(L("100 % local"), "Success", "");
         local.Margin = new Thickness(0, 0, 6, 0);
         badges.Children.Add(local);
-        badges.Children.Add(AppUi.Badge("Aucune télémétrie", "Success", ""));
+        badges.Children.Add(AppUi.Badge(L("Aucune télémétrie"), "Success", ""));
         head.Children.Add(badges);
 
         var s = new StackPanel();
         s.Children.Add(head);
         s.Children.Add(PageScaffold.KeyValue(".NET", RuntimeInformation.FrameworkDescription));
         s.Children.Add(PageScaffold.KeyValue("Windows", AppHost.Profile.WindowsLabel));
-        s.Children.Add(PageScaffold.KeyValue("Édition", AppHost.Profile.EditionLabel));
-        s.Children.Add(PageScaffold.KeyValue("Architecture", RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant()));
+        s.Children.Add(PageScaffold.KeyValue(L("Édition"), AppHost.Profile.EditionLabel));
+        s.Children.Add(PageScaffold.KeyValue(L("Architecture"), RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant()));
         string exe;
-        try { exe = AppPaths.ExecutablePath; } catch { exe = "inconnu"; }
-        s.Children.Add(PageScaffold.KeyValue("Emplacement", exe));
-        s.Children.Add(PageScaffold.KeyValue("Confidentialité", "Timonier ne collecte ni n'envoie aucune donnée. Il n'a ni compte, ni publicité, ni mise à jour automatique."));
+        try { exe = AppPaths.ExecutablePath; } catch { exe = LC("location", "inconnu"); }
+        s.Children.Add(PageScaffold.KeyValue(L("Emplacement"), exe));
+        s.Children.Add(PageScaffold.KeyValue(L("Confidentialité"), L("Timonier ne collecte ni n'envoie aucune donnée. Il n'a ni compte, ni publicité, ni mise à jour automatique.")));
 
-        var keysTitle = AppUi.Text("Raccourcis clavier", "Pp.Body");
+        var keysTitle = AppUi.Text(L("Raccourcis clavier"), "Pp.Body");
         keysTitle.FontWeight = FontWeights.SemiBold;
         keysTitle.Margin = new Thickness(0, 16, 0, 6);
         s.Children.Add(keysTitle);
         (string Keys, string Text)[] shortcuts =
         [
-            ("Ctrl+K · Ctrl+F · F3", "Rechercher un réglage, une page ou une fonction"),
-            ("↑ · ↓", "Parcourir les résultats de recherche"),
-            ("Entrée", "Ouvrir le résultat sélectionné"),
-            ("Échap", "Fermer la recherche ou la boîte de dialogue"),
+            ("Ctrl+K · Ctrl+F · F3", L("Rechercher un réglage, une page ou une fonction")),
+            ("↑ · ↓", L("Parcourir les résultats de recherche")),
+            (LC("key", "Entrée"), L("Ouvrir le résultat sélectionné")),
+            (LC("key", "Échap"), L("Fermer la recherche ou la boîte de dialogue")),
         ];
         foreach (var (keys, text) in shortcuts)
         {
@@ -498,10 +493,10 @@ public sealed class SettingsPage : UserControl, INavigationAware
         }
 
         var links = new WrapPanel { Margin = new Thickness(0, 14, 0, 0) };
-        var transparency = AppUi.Button("Transparence", AppPagesModule.TransparencyGlyph, "Pp.Button", (_, _) => AppHost.Navigator.Navigate(AppPagesModule.TransparencyPageId));
+        var transparency = AppUi.Button(L("Transparence"), AppPagesModule.TransparencyGlyph, "Pp.Button", (_, _) => AppHost.Navigator.Navigate(AppPagesModule.TransparencyPageId));
         transparency.Margin = new Thickness(0, 0, 8, 0);
         links.Children.Add(transparency);
-        links.Children.Add(AppUi.Button("Journal des modifications", AppPagesModule.JournalGlyph, "Pp.Button", (_, _) => AppHost.Navigator.Navigate(AppPagesModule.JournalPageId)));
+        links.Children.Add(AppUi.Button(L("Journal des modifications"), AppPagesModule.JournalGlyph, "Pp.Button", (_, _) => AppHost.Navigator.Navigate(AppPagesModule.JournalPageId)));
         s.Children.Add(links);
         return AppUi.Card(s);
     }

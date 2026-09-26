@@ -77,6 +77,4 @@ internal sealed class AppsContext(ActivityPanel activity)
             if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark) sb.Append(char.ToLowerInvariant(c));
         return sb.ToString();
     }
-
-    public static string Plural(int n, string one, string many) => n <= 1 ? $"{n} {one}" : $"{n} {many}";
 }

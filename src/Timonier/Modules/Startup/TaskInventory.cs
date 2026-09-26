@@ -52,11 +52,11 @@ public static class TaskInventory
     /// <summary>Validation d'un chemin reçu par l'action admin : format, existence, hors tâches système non autorisées.</summary>
     public static void EnsureToggleable(string path)
     {
-        if (!TaskSchedulerHelper.IsValidPath(path)) throw new Core.Security.ValidationException("Chemin de tâche invalide.");
+        if (!TaskSchedulerHelper.IsValidPath(path)) throw new Core.Security.ValidationException(L("Chemin de tâche invalide."));
         if (!CanToggle(path))
-            throw new Core.Security.ValidationException("Les tâches système de Windows ne sont pas modifiables ici (seules quelques tâches facultatives le sont).");
+            throw new Core.Security.ValidationException(L("Les tâches système de Windows ne sont pas modifiables ici (seules quelques tâches facultatives le sont)."));
         if (TaskSchedulerHelper.IsEnabled(path) is null)
-            throw new Core.Security.ValidationException("Cette tâche n'existe plus. Actualisez la liste.");
+            throw new Core.Security.ValidationException(L("Cette tâche n'existe plus. Actualisez la liste."));
     }
 
     /// <summary>
@@ -66,7 +66,7 @@ public static class TaskInventory
     public static List<TaskItem> Load(bool microsoft, int max = 3000)
     {
         var result = new List<TaskItem>();
-        var type = Type.GetTypeFromProgID("Schedule.Service") ?? throw new InvalidOperationException("Planificateur de tâches indisponible");
+        var type = Type.GetTypeFromProgID("Schedule.Service") ?? throw new InvalidOperationException(L("Planificateur de tâches indisponible"));
         dynamic service = Activator.CreateInstance(type)!;
         try
         {
@@ -124,9 +124,9 @@ public static class TaskInventory
                 {
                     int kind = a.Type;
                     if (kind == 0) parts.Add((((string?)a.Path ?? "") + " " + ((string?)a.Arguments ?? "")).Trim());
-                    else if (kind == 5) parts.Add("Gestionnaire COM personnalisé");
-                    else if (kind == 6) parts.Add("Envoi d'un courriel (obsolète)");
-                    else if (kind == 7) parts.Add("Affichage d'un message (obsolète)");
+                    else if (kind == 5) parts.Add(L("Gestionnaire COM personnalisé"));
+                    else if (kind == 6) parts.Add(L("Envoi d'un courriel (obsolète)"));
+                    else if (kind == 7) parts.Add(L("Affichage d'un message (obsolète)"));
                 }
                 actions = string.Join("  |  ", parts);
             }
@@ -141,10 +141,10 @@ public static class TaskInventory
                     try { enabled = trig.Enabled; } catch { }
                     if (kind is 8 or 9 && enabled) atStartup = true;
                     var label = TriggerLabel(kind);
-                    if (!enabled) label += " (inactif)";
+                    if (!enabled) label = L("{0} (inactif)", label);
                     if (!parts.Contains(label)) parts.Add(label);
                 }
-                triggers = parts.Count == 0 ? "Aucun déclencheur (lancement manuel)" : string.Join(", ", parts);
+                triggers = parts.Count == 0 ? L("Aucun déclencheur (lancement manuel)") : string.Join(", ", parts);
             }
             catch { }
         }
@@ -168,37 +168,37 @@ public static class TaskInventory
 
     public static string StateLabel(int state) => state switch
     {
-        1 => "Désactivée",
-        2 => "En file d'attente",
-        3 => "Prête",
-        4 => "En cours d'exécution",
-        _ => "Inconnu",
+        1 => L("Désactivée"),
+        2 => L("En file d'attente"),
+        3 => L("Prête"),
+        4 => L("En cours d'exécution"),
+        _ => L("Inconnu"),
     };
 
     private static string TriggerLabel(int kind) => kind switch
     {
-        0 => "Sur un événement",
-        1 => "À une date précise",
-        2 => "Tous les jours",
-        3 => "Chaque semaine",
-        4 or 5 => "Chaque mois",
-        6 => "Pendant l'inactivité",
-        7 => "À l'inscription de la tâche",
-        8 => "Au démarrage de Windows",
-        9 => "À l'ouverture de session",
-        11 => "Au verrouillage ou déverrouillage",
-        _ => "Déclencheur personnalisé",
+        0 => L("Sur un événement"),
+        1 => L("À une date précise"),
+        2 => L("Tous les jours"),
+        3 => L("Chaque semaine"),
+        4 or 5 => L("Chaque mois"),
+        6 => L("Pendant l'inactivité"),
+        7 => L("À l'inscription de la tâche"),
+        8 => L("Au démarrage de Windows"),
+        9 => L("À l'ouverture de session"),
+        11 => L("Au verrouillage ou déverrouillage"),
+        _ => L("Déclencheur personnalisé"),
     };
 
     /// <summary>Code de dernier résultat lisible (0 = réussite).</summary>
     public static string? ResultLabel(int? code) => code switch
     {
         null => null,
-        0 => "Réussite",
-        0x41301 => "En cours",
-        0x41303 => "Jamais exécutée",
-        0x41306 => "Arrêtée par l'utilisateur",
-        unchecked((int)0x8004131F) => "Déjà en cours",
-        _ => "Code 0x" + code.Value.ToString("X8"),
+        0 => L("Réussite"),
+        0x41301 => L("En cours"),
+        0x41303 => L("Jamais exécutée"),
+        0x41306 => L("Arrêtée par l'utilisateur"),
+        unchecked((int)0x8004131F) => L("Déjà en cours"),
+        _ => L("Code 0x{0:X8}", code.Value),
     };
 }

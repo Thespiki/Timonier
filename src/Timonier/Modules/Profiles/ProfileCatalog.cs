@@ -105,29 +105,28 @@ public static class ProfileCatalog
 
     private static List<ProfileDefinition> Build() =>
     [
-        new(Recommended, "Recommandé pour ce PC",
-            "Les réglages sans risque que Timonier recommande pour votre matériel et votre édition de Windows, et deux applications essentielles.",
+        new(Recommended, L("Recommandé pour ce PC"),
+            L("Les réglages sans risque que Timonier recommande pour votre matériel et votre édition de Windows, et deux applications essentielles."),
             "")
         {
             AllRecommended = true,
             // Recommandés « Bloqué » par la page Confidentialité, mais les couper empêche Courrier, Calendrier, Contacts ou
             // Lien avec Windows de fonctionner : proposés, jamais cochés d'office par ce profil généraliste.
             OptIn = PersonalDataPermissions,
-            Notes = "Le blocage de l'accès des applications à votre compte, vos contacts, votre calendrier, vos e-mails et vos SMS est " +
-                    "proposé sans être coché : il empêcherait Courrier, Calendrier, Outlook ou Lien avec Windows de fonctionner.",
+            Notes = L("Le blocage de l'accès des applications à votre compte, vos contacts, votre calendrier, vos e-mails et vos SMS est proposé sans être coché : il empêcherait Courrier, Calendrier, Outlook ou Lien avec Windows de fonctionner."),
             AppIds = ["7zip.7zip", "VideoLAN.VLC"],
             AppTags = ["essentials"],
             Changes =
             [
-                "Tous les réglages marqués « Recommandé » dans les pages, uniquement ceux sans risque",
-                "Recommandations adaptées au matériel (portable, disque, gamme de performance)",
-                "7-Zip et VLC proposés ; outils du constructeur de ce PC en option",
+                L("Tous les réglages marqués « Recommandé » dans les pages, uniquement ceux sans risque"),
+                L("Recommandations adaptées au matériel (portable, disque, gamme de performance)"),
+                L("7-Zip et VLC proposés ; outils du constructeur de ce PC en option"),
             ],
             Suggested = _ => true,
         },
 
-        new(Office, "Bureautique",
-            "Un poste de travail sobre : moins de distractions dans la barre des tâches, extensions de fichiers visibles, protocoles anciens coupés.",
+        new(Office, L("Bureautique"),
+            L("Un poste de travail sobre : moins de distractions dans la barre des tâches, extensions de fichiers visibles, protocoles anciens coupés."),
             "")
         {
             IncludeTags = ["office"],
@@ -150,14 +149,14 @@ public static class ProfileCatalog
             AppTags = ["office"],
             Changes =
             [
-                "Boutons Widgets et Conversation retirés de la barre des tâches",
-                "« Fin de tâche » au clic droit, extensions de fichiers visibles, Verr. num activé (PC de bureau)",
-                "SMBv1 et assistance à distance coupés ; LibreOffice et SumatraPDF proposés",
+                L("Boutons Widgets et Conversation retirés de la barre des tâches"),
+                L("« Fin de tâche » au clic droit, extensions de fichiers visibles, Verr. num activé (PC de bureau)"),
+                L("SMBv1 et assistance à distance coupés ; LibreOffice et SumatraPDF proposés"),
             ],
         },
 
-        new(Gaming, "Jeux",
-            "Priorité aux jeux : Mode Jeu, enregistrement en arrière-plan coupé, planification GPU matérielle si votre carte graphique s'y prête.",
+        new(Gaming, L("Jeux"),
+            L("Priorité aux jeux : Mode Jeu, enregistrement en arrière-plan coupé, planification GPU matérielle si votre carte graphique s'y prête."),
             "")
         {
             IncludeTags = ["gaming"],
@@ -168,14 +167,14 @@ public static class ProfileCatalog
             AppTags = ["gaming"],
             Changes =
             [
-                "Mode Jeu activé, enregistrement en arrière-plan désactivé",
-                "Précision du pointeur désactivée (visée plus régulière à la souris)",
-                "Services Xbox et Game Bar conservés ; Steam et Visual C++ proposés",
+                L("Mode Jeu activé, enregistrement en arrière-plan désactivé"),
+                L("Précision du pointeur désactivée (visée plus régulière à la souris)"),
+                L("Services Xbox et Game Bar conservés ; Steam et Visual C++ proposés"),
             ],
         },
 
-        new(Developer, "Développeur",
-            "L'Explorateur et la barre des tâches pensés pour le code : fichiers cachés et extensions visibles, télémétrie des outils coupée.",
+        new(Developer, L("Développeur"),
+            L("L'Explorateur et la barre des tâches pensés pour le code : fichiers cachés et extensions visibles, télémétrie des outils coupée."),
             "")
         {
             IncludeTags = ["dev"],
@@ -190,14 +189,14 @@ public static class ProfileCatalog
             AppTags = ["dev"],
             Changes =
             [
-                "Fichiers cachés, extensions et chemin complet visibles dans l'Explorateur",
-                "« Fin de tâche » au clic droit ; télémétrie de PowerShell 7 et du SDK .NET coupée",
-                "Visual Studio Code et Git proposés",
+                L("Fichiers cachés, extensions et chemin complet visibles dans l'Explorateur"),
+                L("« Fin de tâche » au clic droit ; télémétrie de PowerShell 7 et du SDK .NET coupée"),
+                L("Visual Studio Code et Git proposés"),
             ],
         },
 
-        new(Family, "Famille et enfants",
-            "Un PC partagé plus sûr et moins publicitaire : recherche sécurisée stricte, suggestions et contenus promotionnels coupés, SmartScreen imposé.",
+        new(Family, L("Famille et enfants"),
+            L("Un PC partagé plus sûr et moins publicitaire : recherche sécurisée stricte, suggestions et contenus promotionnels coupés, SmartScreen imposé."),
             "")
         {
             IncludeTags = ["family"],
@@ -219,19 +218,19 @@ public static class ProfileCatalog
             // Bloquer l'accès aux contacts, au calendrier ou aux e-mails casse Courrier, Calendrier et Lien avec Windows.
             OptIn = PersonalDataPermissions,
             AppTags = ["family"],
-            Notes = "Les comptes enfants et le contrôle parental (temps d'écran, filtrage) se gèrent avec Microsoft Family Safety : ce profil ne les configure pas.",
+            Notes = L("Les comptes enfants et le contrôle parental (temps d'écran, filtrage) se gèrent avec Microsoft Family Safety : ce profil ne les configure pas."),
             LinkPageId = "users",
-            LinkLabel = "Gérer les comptes",
+            LinkLabel = L("Gérer les comptes"),
             Changes =
             [
-                "Recherche sécurisée stricte, résultats web et suggestions retirés",
-                "Publicités, astuces et installations automatiques d'applications coupées",
-                "SmartScreen imposé, Bureau à distance et Assistance à distance coupés",
+                L("Recherche sécurisée stricte, résultats web et suggestions retirés"),
+                L("Publicités, astuces et installations automatiques d'applications coupées"),
+                L("SmartScreen imposé, Bureau à distance et Assistance à distance coupés"),
             ],
         },
 
-        new(PrivacyMax, "Vie privée maximale",
-            "Réduit au minimum ce que Windows envoie et affiche : données de diagnostic, publicités, recherche web, Copilot et Recall.",
+        new(PrivacyMax, L("Vie privée maximale"),
+            L("Réduit au minimum ce que Windows envoie et affiche : données de diagnostic, publicités, recherche web, Copilot et Recall."),
             "")
         {
             IncludeTags = ["privacy-max"],
@@ -261,19 +260,17 @@ public static class ProfileCatalog
                 "privacy.ads.content-delivery", "privacy.ads.spotlight",
             ],
             OptIn = ["privacy.telemetry.wer"],
-            Notes = "Windows Update et Microsoft Defender continuent de communiquer avec Microsoft : c'est indispensable à la sécurité du PC. " +
-                    "L'accès des applications à vos contacts, calendrier et e-mails est bloqué : décochez ces lignes si vous utilisez " +
-                    "Courrier, Calendrier, Outlook ou Lien avec Windows.",
+            Notes = L("Windows Update et Microsoft Defender continuent de communiquer avec Microsoft : c'est indispensable à la sécurité du PC. L'accès des applications à vos contacts, calendrier et e-mails est bloqué : décochez ces lignes si vous utilisez Courrier, Calendrier, Outlook ou Lien avec Windows."),
             Changes =
             [
-                "Données de diagnostic au minimum autorisé par votre édition",
-                "Identifiant de publicité, suggestions, recherche web et historique coupés",
-                "Copilot, Recall et Click to Do désactivés",
+                L("Données de diagnostic au minimum autorisé par votre édition"),
+                L("Identifiant de publicité, suggestions, recherche web et historique coupés"),
+                L("Copilot, Recall et Click to Do désactivés"),
             ],
         },
 
-        new(LowEnd, "PC modeste",
-            "Allège Windows sur un PC peu puissant : effets visuels, animations, applications relancées à l'ouverture de session.",
+        new(LowEnd, L("PC modeste"),
+            L("Allège Windows sur un PC peu puissant : effets visuels, animations, applications relancées à l'ouverture de session."),
             "")
         {
             IncludeTags = ["lowend"],
@@ -286,18 +283,18 @@ public static class ProfileCatalog
                 ("startup.restartapps", Off)),
             OptIn = ["perf.bg.apps", "perf.bg.apps.policy", "perf.svc.wsearch"],
             AppTags = ["lowend"],
-            Notes = "Les réglages plus profonds (effets visuels « Performances », indexation) ne sont proposés que si ce PC est détecté comme modeste.",
+            Notes = L("Les réglages plus profonds (effets visuels « Performances », indexation) ne sont proposés que si ce PC est détecté comme modeste."),
             Suggested = p => p.HardwareLoaded && p.Tier == PerformanceTier.Low,
             Changes =
             [
-                "Transparence et animations des fenêtres désactivées",
-                "Captures de jeu et mise à jour automatique des cartes coupées",
-                "Applications non relancées à l'ouverture de session",
+                L("Transparence et animations des fenêtres désactivées"),
+                L("Captures de jeu et mise à jour automatique des cartes coupées"),
+                L("Applications non relancées à l'ouverture de session"),
             ],
         },
 
-        new(Battery, "Portable et autonomie",
-            "Économise la batterie : veille prolongée disponible, limitation d'énergie des tâches en arrière-plan, enregistrement de jeu coupé.",
+        new(Battery, L("Portable et autonomie"),
+            L("Économise la batterie : veille prolongée disponible, limitation d'énergie des tâches en arrière-plan, enregistrement de jeu coupé."),
             "")
         {
             IncludeTags = ["battery"],
@@ -305,14 +302,14 @@ public static class ProfileCatalog
             Hidden = p => p.HardwareLoaded && !p.HasBattery,
             Changes =
             [
-                "Veille prolongée activée (reprise sans perte après une longue pause)",
-                "Tâches en arrière-plan sur les cœurs les plus économes",
-                "Enregistrement de jeu en arrière-plan désactivé",
+                L("Veille prolongée activée (reprise sans perte après une longue pause)"),
+                L("Tâches en arrière-plan sur les cœurs les plus économes"),
+                L("Enregistrement de jeu en arrière-plan désactivé"),
             ],
         },
 
-        new(Security, "Sécurité renforcée",
-            "Durcit Windows sans le rendre pénible : SmartScreen et protections de Defender imposés, accès à distance et protocoles anciens coupés.",
+        new(Security, L("Sécurité renforcée"),
+            L("Durcit Windows sans le rendre pénible : SmartScreen et protections de Defender imposés, accès à distance et protocoles anciens coupés."),
             "")
         {
             IncludeTags = ["security"],
@@ -334,14 +331,14 @@ public static class ProfileCatalog
             AppTags = ["security"],
             Changes =
             [
-                "SmartScreen, blocage des applications indésirables et protection réseau imposés",
-                "Bureau à distance, Registre à distance, LLMNR et SMBv1 coupés",
-                "Protection LSA et intégrité de la mémoire si le PC s'y prête",
+                L("SmartScreen, blocage des applications indésirables et protection réseau imposés"),
+                L("Bureau à distance, Registre à distance, LLMNR et SMBv1 coupés"),
+                L("Protection LSA et intégrité de la mémoire si le PC s'y prête"),
             ],
         },
 
-        new(Kiosk, "Borne / kiosque",
-            "Prépare un PC en libre-service : supports amovibles bloqués, exécution automatique et scripts coupés. Le compte et l'application se configurent ensuite dans la page Kiosque.",
+        new(Kiosk, L("Borne / kiosque"),
+            L("Prépare un PC en libre-service : supports amovibles bloqués, exécution automatique et scripts coupés. Le compte et l'application se configurent ensuite dans la page Kiosque."),
             "")
         {
             IncludeTags = ["kiosk"],
@@ -359,14 +356,14 @@ public static class ProfileCatalog
                 ("security.wsh", Off)),
             Excluded = ["security.logon.cad", "security.adminshares", "security.uac.always", "security.uac.recommended"],
             OptIn = ["devices.block.allremovable", "devices.block.camera", "devices.block.microphone", "devices.block.location"],
-            Notes = "Ce profil ne crée pas de compte kiosque et ne verrouille pas la session : il prépare seulement le PC.",
+            Notes = L("Ce profil ne crée pas de compte kiosque et ne verrouille pas la session : il prépare seulement le PC."),
             LinkPageId = "kiosk",
-            LinkLabel = "Configurer le kiosque",
+            LinkLabel = L("Configurer le kiosque"),
             Changes =
             [
-                "Clés USB, CD/DVD et téléphones bloqués pour tous les comptes",
-                "SmartScreen imposé, Windows Script Host coupé",
-                "Suite dans la page Kiosque : compte dédié et application affichée",
+                L("Clés USB, CD/DVD et téléphones bloqués pour tous les comptes"),
+                L("SmartScreen imposé, Windows Script Host coupé"),
+                L("Suite dans la page Kiosque : compte dédié et application affichée"),
             ],
         },
     ];

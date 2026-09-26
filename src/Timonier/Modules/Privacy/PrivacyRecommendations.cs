@@ -24,7 +24,7 @@ public static class PrivacyRecommendations
     {
         if (_running)
         {
-            AppHost.Toasts.Show("L'application du niveau recommandé est déjà en cours.", ToastKind.Info);
+            AppHost.Toasts.Show(L("L'application du niveau recommandé est déjà en cours."), ToastKind.Info);
             return [];
         }
         _running = true;
@@ -40,19 +40,19 @@ public static class PrivacyRecommendations
             catch (Exception ex)
             {
                 Log.Error("Privacy", "analyse avant application", ex);
-                AppHost.Toasts.Show("Impossible d'analyser les réglages de confidentialité : " + ex.Message, ToastKind.Error);
+                AppHost.Toasts.Show(L("Impossible d'analyser les réglages de confidentialité : {0}", ex.Message), ToastKind.Error);
                 return [];
             }
 
             var pending = result.Pending;
             if (pending.Count == 0)
             {
-                AppHost.Toasts.Show("Tous les réglages de confidentialité suivent déjà la recommandation pour ce PC.", ToastKind.Success);
+                AppHost.Toasts.Show(L("Tous les réglages de confidentialité suivent déjà la recommandation pour ce PC."), ToastKind.Success);
                 return [];
             }
 
-            var confirmed = await AppHost.Dialogs.ShowAsync("Appliquer le niveau recommandé", BuildConfirmation(pending),
-                $"Appliquer ({pending.Count})", "Annuler");
+            var confirmed = await AppHost.Dialogs.ShowAsync(L("Appliquer le niveau recommandé"), BuildConfirmation(pending),
+                L("Appliquer ({0})", pending.Count), L("Annuler"));
             if (!confirmed) return [];
 
             var targets = pending.Select(p => p.Tweak).ToList();
@@ -76,20 +76,23 @@ public static class PrivacyRecommendations
         if (cancelled.Tweak is not null)
         {
             AppHost.Toasts.Show(ok == 0
-                    ? "Application annulée : aucun réglage n'a été modifié."
-                    : $"Application interrompue : {ok} réglage(s) modifié(s) avant l'interruption.",
+                    ? L("Application annulée : aucun réglage n'a été modifié.")
+                    : LP(ok, "Application interrompue : {0} réglage modifié avant l'interruption.",
+                        "Application interrompue : {0} réglages modifiés avant l'interruption."),
                 ToastKind.Info);
         }
         else if (failed.Count == 0)
         {
-            AppHost.Toasts.Show($"{ok} réglage(s) de confidentialité appliqué(s). Chaque changement reste annulable depuis le Journal.",
+            AppHost.Toasts.Show(LP(ok, "{0} réglage de confidentialité appliqué. Chaque changement reste annulable depuis le Journal.",
+                    "{0} réglages de confidentialité appliqués. Chaque changement reste annulable depuis le Journal."),
                 ToastKind.Success);
         }
         else
         {
             var details = string.Join(" ; ", failed.Take(3).Select(f => $"{f.Tweak.Title} ({f.Outcome.Message})"));
-            if (failed.Count > 3) details += $" ; et {failed.Count - 3} autre(s)";
-            AppHost.Toasts.Show($"{ok} réglage(s) appliqué(s), {failed.Count} en échec : {details}", ToastKind.Warning,
+            if (failed.Count > 3) details = LP(failed.Count - 3, "{1} ; et {0} autre", "{1} ; et {0} autres", details);
+            AppHost.Toasts.Show(LP(ok, "{0} réglage appliqué, {1} en échec : {2}", "{0} réglages appliqués, {1} en échec : {2}",
+                failed.Count, details), ToastKind.Warning,
                 duration: TimeSpan.FromSeconds(12));
         }
 
@@ -101,9 +104,9 @@ public static class PrivacyRecommendations
     private static FrameworkElement BuildConfirmation(IReadOnlyList<PrivacyScoreItem> pending)
     {
         var panel = new StackPanel();
-        panel.Children.Add(Text(pending.Count == 1
-            ? "1 réglage va être modifié pour suivre la recommandation de Timonier pour ce PC :"
-            : $"{pending.Count} réglages vont être modifiés pour suivre la recommandation de Timonier pour ce PC :", "Pp.Body"));
+        panel.Children.Add(Text(LP(pending.Count,
+            "{0} réglage va être modifié pour suivre la recommandation de Timonier pour ce PC :",
+            "{0} réglages vont être modifiés pour suivre la recommandation de Timonier pour ce PC :"), "Pp.Body"));
 
         foreach (var section in PrivacyGroups.All)
         {
@@ -130,12 +133,12 @@ public static class PrivacyRecommendations
 
         var notes = new List<string>();
         if (pending.Any(p => p.Tweak.RequiresAdmin))
-            notes.Add("Certains réglages protègent tout le PC : Windows demandera une seule fois l'autorisation administrateur (UAC).");
+            notes.Add(L("Certains réglages protègent tout le PC : Windows demandera une seule fois l'autorisation administrateur (UAC)."));
         var effects = pending.Aggregate(ApplyEffect.None, (acc, p) => acc | p.Tweak.Effect);
-        if (effects.HasFlag(ApplyEffect.Reboot)) notes.Add("Certains changements ne seront effectifs qu'après un redémarrage du PC.");
-        else if (effects.HasFlag(ApplyEffect.SignOut)) notes.Add("Certains changements ne seront effectifs qu'à la prochaine ouverture de session.");
-        else if (effects.HasFlag(ApplyEffect.RestartExplorer)) notes.Add("L'Explorateur Windows devra être relancé pour certains changements (proposé ensuite).");
-        notes.Add("Chaque modification reste annulable depuis le Journal de Timonier.");
+        if (effects.HasFlag(ApplyEffect.Reboot)) notes.Add(L("Certains changements ne seront effectifs qu'après un redémarrage du PC."));
+        else if (effects.HasFlag(ApplyEffect.SignOut)) notes.Add(L("Certains changements ne seront effectifs qu'à la prochaine ouverture de session."));
+        else if (effects.HasFlag(ApplyEffect.RestartExplorer)) notes.Add(L("L'Explorateur Windows devra être relancé pour certains changements (proposé ensuite)."));
+        notes.Add(L("Chaque modification reste annulable depuis le Journal de Timonier."));
 
         var footer = Text(string.Join("\n", notes), "Pp.Caption");
         footer.Margin = new Thickness(0, 14, 0, 0);

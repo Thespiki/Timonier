@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Timonier.Core.Catalog;
@@ -14,12 +14,12 @@ internal sealed record WallpaperPosition(string Key, string Label, string Wallpa
 {
     public static readonly WallpaperPosition[] All =
     [
-        new("fill", "Remplir", "10", "0"),
-        new("fit", "Ajuster", "6", "0"),
-        new("stretch", "Étirer", "2", "0"),
-        new("center", "Centrer", "0", "0"),
-        new("tile", "Mosaïque", "0", "1"),
-        new("span", "Étendre (plusieurs écrans)", "22", "0"),
+        new("fill", L("Remplir"), "10", "0"),
+        new("fit", L("Ajuster"), "6", "0"),
+        new("stretch", L("Étirer"), "2", "0"),
+        new("center", L("Centrer"), "0", "0"),
+        new("tile", L("Mosaïque"), "0", "1"),
+        new("span", L("Étendre (plusieurs écrans)"), "22", "0"),
     ];
 
     public static WallpaperPosition? Get(string key) => All.FirstOrDefault(p => p.Key == key);
@@ -64,7 +64,7 @@ internal static partial class CustomizationValidate
     public static void OnlyKeys(IReadOnlyDictionary<string, string> p, params string[] allowed)
     {
         foreach (var key in p.Keys)
-            if (!allowed.Contains(key, StringComparer.Ordinal)) throw new ValidationException($"Paramètre inattendu : {key}");
+            if (!allowed.Contains(key, StringComparer.Ordinal)) throw new ValidationException(L("Paramètre inattendu : {0}", key));
     }
 
     /// <summary>Image locale existante, d'un format autorisé et de taille raisonnable.</summary>
@@ -72,15 +72,15 @@ internal static partial class CustomizationValidate
     {
         var path = Validate.ExistingLocalFile(Validate.Required(p, key, 1024), extensions);
         var info = new FileInfo(path);
-        if (info.Length == 0) throw new ValidationException("Le fichier image est vide.");
-        if (info.Length > MaxImageBytes) throw new ValidationException("Image trop volumineuse (100 Mo au maximum).");
+        if (info.Length == 0) throw new ValidationException(L("Le fichier image est vide."));
+        if (info.Length > MaxImageBytes) throw new ValidationException(L("Image trop volumineuse (100 Mo au maximum)."));
         return path;
     }
 
     public static (byte R, byte G, byte B) HexColor(IReadOnlyDictionary<string, string> p, string key)
     {
         var v = Validate.Required(p, key, 6);
-        if (!HexColorRx().IsMatch(v)) throw new ValidationException("Couleur invalide : format attendu RRVVBB (ex. 1E3A5F).");
+        if (!HexColorRx().IsMatch(v)) throw new ValidationException(L("Couleur invalide : format attendu RRVVBB (ex. 1E3A5F)."));
         var rgb = int.Parse(v, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
         return ((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb);
     }
@@ -95,7 +95,7 @@ public sealed class SetWallpaperAction : IActionHandler
 {
     public const string ActionId = "custom.wallpaper.set";
     public string Id => ActionId;
-    public string Title => "Changer le fond d'écran";
+    public string Title => L("Changer le fond d'écran");
     public bool RequiresAdmin => false;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
@@ -111,10 +111,10 @@ public sealed class SetWallpaperAction : IActionHandler
         if (ctx.Elevated) return Task.FromResult(SessionOnly());
         var path = CustomizationValidate.ImageFile(p, "path", CustomizationValidate.WallpaperExtensions);
         var position = WallpaperPosition.Get(Validate.OneOf(p, "position", [.. WallpaperPosition.All.Select(x => x.Key)]))!;
-        ctx.Progress?.Report("Application du fond d'écran…");
+        ctx.Progress?.Report(L("Application du fond d'écran…"));
 
         var previous = WallpaperState.Read(ctx.UserSid);
-        var entry = ctx.ApplyJournaled(ActionId, "Fond d'écran", $"{Path.GetFileName(path)} ({position.Label.ToLowerInvariant()})",
+        var entry = ctx.ApplyJournaled(ActionId, L("Fond d'écran"), $"{Path.GetFileName(path)} ({position.Label.ToLowerInvariant()})",
         [
             Reg.CuString(CustomizationTweaks.DesktopKey, "WallpaperStyle", position.WallpaperStyle),
             Reg.CuString(CustomizationTweaks.DesktopKey, "TileWallpaper", position.TileWallpaper),
@@ -128,12 +128,12 @@ public sealed class SetWallpaperAction : IActionHandler
         catch
         {
             OperationExecutor.Undo(entry.Undo, ctx.Exec);
-            MarkUndone(entry, ctx, "Échec de l'application : valeurs précédentes restaurées.");
+            MarkUndone(entry, ctx, L("Échec de l'application : valeurs précédentes restaurées."));
             throw;
         }
 
         AddNote(entry, ctx);
-        return Task.FromResult(new ActionResult(true, $"Fond d'écran appliqué : {Path.GetFileName(path)}.")
+        return Task.FromResult(new ActionResult(true, L("Fond d'écran appliqué : {0}.", Path.GetFileName(path)))
         {
             JournalId = entry.Id,
             Data = previous.ToData(),
@@ -142,13 +142,12 @@ public sealed class SetWallpaperAction : IActionHandler
 
     /// <summary>Le fond d'écran appartient à la session interactive : jamais exécuté par le processus élevé.</summary>
     internal static ActionResult SessionOnly() =>
-        ActionResult.Fail("Cette action s'applique à la session de l'utilisateur et ne doit pas être exécutée avec élévation.");
+        ActionResult.Fail(L("Cette action s'applique à la session de l'utilisateur et ne doit pas être exécutée avec élévation."));
 
     internal static void AddNote(JournalEntry entry, ActionContext ctx)
     {
         if (ctx.Elevated) return; // action sans élévation : toujours dans le journal utilisateur
-        entry.Note = "Annuler depuis le journal restaure les valeurs du registre : l'ancien fond d'écran réapparaît à la " +
-                     "prochaine ouverture de session. Pour un retour immédiat, utilisez « Restaurer le fond précédent » dans Personnalisation.";
+        entry.Note = L("Annuler depuis le journal restaure les valeurs du registre : l'ancien fond d'écran réapparaît à la prochaine ouverture de session. Pour un retour immédiat, utilisez « Restaurer le fond précédent » dans Personnalisation.");
         JournalWriter.UserStore.Update(entry);
     }
 
@@ -167,7 +166,7 @@ public sealed class SetSolidColorAction : IActionHandler
 {
     public const string ActionId = "custom.wallpaper.color";
     public string Id => ActionId;
-    public string Title => "Fond d'écran de couleur unie";
+    public string Title => L("Fond d'écran de couleur unie");
     public bool RequiresAdmin => false;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
@@ -182,10 +181,10 @@ public sealed class SetSolidColorAction : IActionHandler
         if (ctx.Elevated) return Task.FromResult(SetWallpaperAction.SessionOnly());
         var (r, g, b) = CustomizationValidate.HexColor(p, "color");
         var hex = $"{r:X2}{g:X2}{b:X2}";
-        ctx.Progress?.Report("Application de la couleur…");
+        ctx.Progress?.Report(L("Application de la couleur…"));
 
         var previous = WallpaperState.Read(ctx.UserSid);
-        var entry = ctx.ApplyJournaled(ActionId, "Fond d'écran", "Couleur unie #" + hex,
+        var entry = ctx.ApplyJournaled(ActionId, L("Fond d'écran"), L("Couleur unie #{0}", hex),
         [
             Reg.CuString(@"Control Panel\Colors", "Background", $"{r} {g} {b}"),
             Reg.CuString(CustomizationTweaks.DesktopKey, "WallPaper", ""),
@@ -201,12 +200,12 @@ public sealed class SetSolidColorAction : IActionHandler
         catch
         {
             OperationExecutor.Undo(entry.Undo, ctx.Exec);
-            SetWallpaperAction.MarkUndone(entry, ctx, "Échec de l'application : valeurs précédentes restaurées.");
+            SetWallpaperAction.MarkUndone(entry, ctx, L("Échec de l'application : valeurs précédentes restaurées."));
             throw;
         }
 
         SetWallpaperAction.AddNote(entry, ctx);
-        return Task.FromResult(new ActionResult(true, $"Fond d'écran : couleur unie #{hex}.")
+        return Task.FromResult(new ActionResult(true, L("Fond d'écran : couleur unie #{0}.", hex))
         {
             JournalId = entry.Id,
             Data = previous.ToData(),
@@ -222,7 +221,7 @@ public sealed class SetLockScreenImageAction : IActionHandler
 {
     public const string ActionId = "custom.lockscreen.set";
     public string Id => ActionId;
-    public string Title => "Changer l'image de l'écran de verrouillage";
+    public string Title => L("Changer l'image de l'écran de verrouillage");
     public bool RequiresAdmin => false;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
@@ -236,7 +235,7 @@ public sealed class SetLockScreenImageAction : IActionHandler
         ValidateParameters(p);
         if (ctx.Elevated) return SetWallpaperAction.SessionOnly();
         var path = CustomizationValidate.ImageFile(p, "path", CustomizationValidate.LockScreenExtensions);
-        ctx.Progress?.Report("Application de l'image…");
+        ctx.Progress?.Report(L("Application de l'image…"));
         try
         {
             var file = await Windows.Storage.StorageFile.GetFileFromPathAsync(path);
@@ -245,10 +244,9 @@ public sealed class SetLockScreenImageAction : IActionHandler
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             Log.Warn("Customization", "écran de verrouillage : " + ex.Message);
-            return ActionResult.Fail("Windows a refusé de changer l'image de l'écran de verrouillage (stratégie de l'organisation ou " +
-                                     "format non pris en charge). Utilisez Paramètres › Personnalisation › Écran de verrouillage.");
+            return ActionResult.Fail(L("Windows a refusé de changer l'image de l'écran de verrouillage (stratégie de l'organisation ou format non pris en charge). Utilisez Paramètres › Personnalisation › Écran de verrouillage."));
         }
-        return ActionResult.Ok($"Écran de verrouillage : {Path.GetFileName(path)}.");
+        return ActionResult.Ok(L("Écran de verrouillage : {0}.", Path.GetFileName(path)));
     }
 }
 

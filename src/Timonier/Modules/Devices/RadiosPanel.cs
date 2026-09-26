@@ -23,12 +23,12 @@ internal sealed class RadiosPanel : UserControl
     {
         Focusable = false;
         var footer = new DockPanel { Margin = new Thickness(0, 10, 0, 0) };
-        var airplane = DevUi.Button("Mode Avion…", "", "Pp.SubtleButton", (_, _) => Open("ms-settings:network-airplanemode"));
+        var airplane = DevUi.Button(L("Mode Avion…"), "", "Pp.SubtleButton", (_, _) => Open("ms-settings:network-airplanemode"));
         DockPanel.SetDock(airplane, Dock.Right);
         footer.Children.Add(airplane);
         footer.Children.Add(new TextBlock
         {
-            Text = "Même effet que les boutons du centre de notifications : réglage immédiat, pour votre session.",
+            Text = L("Même effet que les boutons du centre de notifications : réglage immédiat, pour votre session."),
             VerticalAlignment = VerticalAlignment.Center,
         }.Styled("Pp.Caption"));
 
@@ -45,7 +45,7 @@ internal sealed class RadiosPanel : UserControl
     {
         var p = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 6) };
         p.Children.Add(new ProgressBar { IsIndeterminate = true, Width = 80, Height = 3, VerticalAlignment = VerticalAlignment.Center });
-        p.Children.Add(new TextBlock { Text = "Lecture des radios…", Margin = new Thickness(12, 0, 0, 0) }.Styled("Pp.Caption"));
+        p.Children.Add(new TextBlock { Text = L("Lecture des radios…"), Margin = new Thickness(12, 0, 0, 0) }.Styled("Pp.Caption"));
         return p;
     }
 
@@ -59,15 +59,15 @@ internal sealed class RadiosPanel : UserControl
         if (snap.Error is not null || snap.Radios.Count == 0)
         {
             var message = snap.Error is not null
-                ? "Timonier ne peut pas lire l'état des radios sur ce PC. Utilisez les Paramètres Windows."
-                : "Aucune radio Wi-Fi, Bluetooth ou réseau mobile n'a été détectée (ou elles sont désactivées dans le Gestionnaire de périphériques).";
+                ? L("Timonier ne peut pas lire l'état des radios sur ce PC. Utilisez les Paramètres Windows.")
+                : L("Aucune radio Wi-Fi, Bluetooth ou réseau mobile n'a été détectée (ou elles sont désactivées dans le Gestionnaire de périphériques).");
             var dock = new DockPanel { Margin = new Thickness(0, 4, 0, 4) };
-            var open = DevUi.Button("Ouvrir les Paramètres", "", "Pp.Button", (_, _) => Open("ms-settings:network-airplanemode"));
+            var open = DevUi.Button(L("Ouvrir les Paramètres"), "", "Pp.Button", (_, _) => Open("ms-settings:network-airplanemode"));
             DockPanel.SetDock(open, Dock.Right);
             dock.Children.Add(open);
             dock.Children.Add(new TextBlock { Text = message, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) }.Styled("Pp.Body"));
             _rows.Children.Add(dock);
-            SummaryChanged?.Invoke(snap.Error is not null ? "État indisponible" : "Aucune radio", null);
+            SummaryChanged?.Invoke(snap.Error is not null ? L("État indisponible") : L("Aucune radio"), null);
             return;
         }
 
@@ -75,8 +75,7 @@ internal sealed class RadiosPanel : UserControl
         {
             _rows.Children.Add(new TextBlock
             {
-                Text = "Windows n'autorise pas Timonier à changer l'état des radios (réglage « Contrôle des radios » de la page Confidentialité) : " +
-                       "les interrupteurs affichent l'état, mais le changement passera par les Paramètres.",
+                Text = L("Windows n'autorise pas Timonier à changer l'état des radios (réglage « Contrôle des radios » de la page Confidentialité) : les interrupteurs affichent l'état, mais le changement passera par les Paramètres."),
                 Margin = new Thickness(0, 2, 0, 8),
             }.Styled("Pp.Caption"));
         }
@@ -140,7 +139,7 @@ internal sealed class RadiosPanel : UserControl
         sw.IsEnabled = true;
         if (!ok)
         {
-            AppHost.Toasts.Show(message, ToastKind.Warning, "Paramètres", () => Open(RadioService.SettingsUri(radio.Kind)));
+            AppHost.Toasts.Show(message, ToastKind.Warning, L("Paramètres"), () => Open(RadioService.SettingsUri(radio.Kind)));
         }
         Refresh();
     }
@@ -153,10 +152,10 @@ internal sealed class RadiosPanel : UserControl
         _updating = false;
         state.Text = radio.State switch
         {
-            RadioState.On => "Activé",
-            RadioState.Off => "Désactivé",
-            RadioState.Disabled => "Adaptateur désactivé (mode Avion matériel ou Gestionnaire de périphériques)",
-            _ => "État inconnu",
+            RadioState.On => L("Activé"),
+            RadioState.Off => L("Désactivé"),
+            RadioState.Disabled => L("Adaptateur désactivé (mode Avion matériel ou Gestionnaire de périphériques)"),
+            _ => L("État inconnu"),
         };
     }
 
@@ -168,8 +167,8 @@ internal sealed class RadiosPanel : UserControl
 
     private void UpdateSummary()
     {
-        var parts = _items.Select(i => $"{RadioService.KindLabel(i.Radio.Kind)} {(i.Radio.State == RadioState.On ? "activé" : "coupé")}").ToList();
-        SummaryChanged?.Invoke(parts.FirstOrDefault() ?? "Aucune radio", parts.Count > 1 ? string.Join(" · ", parts.Skip(1)) : null);
+        var parts = _items.Select(i => i.Radio.State == RadioState.On ? L("{0} activé", RadioService.KindLabel(i.Radio.Kind)) : L("{0} coupé", RadioService.KindLabel(i.Radio.Kind))).ToList();
+        SummaryChanged?.Invoke(parts.FirstOrDefault() ?? L("Aucune radio"), parts.Count > 1 ? string.Join(" · ", parts.Skip(1)) : null);
     }
 
     // ------------------------------------------------------------------ Abonnements (page visible uniquement)

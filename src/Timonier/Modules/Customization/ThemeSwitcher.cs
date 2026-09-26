@@ -23,15 +23,21 @@ internal static class ThemeSwitcher
     public static bool SystemLight() =>
         RegistryAccess.ReadDword(RegHive.CurrentUser, CustomizationTweaks.Personalize, "SystemUsesLightTheme") is { } v ? v != 0 : OsInfo.Build >= 22000;
 
-    /// <summary>Applique un couple (applications, Windows). <paramref name="label"/> : « clair », « sombre », « mixte ».</summary>
-    public static async Task<bool> ApplyAsync(string apps, string system, string label)
+    /// <summary>Applique un couple (applications, Windows), "light" ou "dark" pour chacun (mode affiché, voir <see cref="ModeName"/> :« clair », « sombre », « mixte »).</summary>
+    public static async Task<bool> ApplyAsync(string apps, string system)
     {
+        var mode = ModeKey(apps, system);
         var items = new List<(TweakDefinition Tweak, string Option)>();
         if (AppHost.Registry.GetTweak(SystemId) is { } s && AppHost.Engine.Detect(s).OptionKey != system) items.Add((s, system));
         if (AppHost.Registry.GetTweak(AppsId) is { } a && AppHost.Engine.Detect(a).OptionKey != apps) items.Add((a, apps));
         if (items.Count == 0)
         {
-            AppHost.Toasts.Show($"Le mode {label} est déjà actif.", ToastKind.Info);
+            AppHost.Toasts.Show(mode switch
+            {
+                "light" => L("Le mode clair est déjà actif."),
+                "dark" => L("Le mode sombre est déjà actif."),
+                _ => L("Le mode mixte est déjà actif."),
+            }, ToastKind.Info);
             return true;
         }
 
@@ -45,10 +51,16 @@ internal static class ThemeSwitcher
             return false;
         }
 
+        var applied = mode switch
+        {
+            "light" => L("Mode clair appliqué."),
+            "dark" => L("Mode sombre appliqué."),
+            _ => L("Mode mixte appliqué."),
+        };
         if (ids.Count > 0)
-            AppHost.Toasts.Show($"Mode {label} appliqué.", ToastKind.Success, "Annuler", () => _ = UndoAsync(ids, silent: false));
+            AppHost.Toasts.Show(applied, ToastKind.Success, L("Annuler"), () => _ = UndoAsync(ids, silent: false));
         else
-            AppHost.Toasts.Show($"Mode {label} appliqué.", ToastKind.Success);
+            AppHost.Toasts.Show(applied, ToastKind.Success);
         return true;
     }
 
@@ -66,20 +78,31 @@ internal static class ThemeSwitcher
                 AppHost.Toasts.ShowOutcome(outcome);
             }
         }
-        if (ok && !silent) AppHost.Toasts.Show("Mode précédent rétabli.", ToastKind.Success);
+        if (ok && !silent) AppHost.Toasts.Show(L("Mode précédent rétabli."), ToastKind.Success);
     }
+
+    /// <summary>Mode résultant d'un couple (applications, Windows) : "light", "dark" ou "mixed" (identifiant stable).</summary>
+    private static string ModeKey(string apps, string system) => apps == system ? apps : "mixed";
+
+    /// <summary>Nom affiché du mode (Mode clair, Mode sombre, Mode mixte).</summary>
+    public static string ModeName(string apps, string system) => ModeKey(apps, system) switch
+    {
+        "light" => L("Mode clair"),
+        "dark" => L("Mode sombre"),
+        _ => L("Mode mixte"),
+    };
 
     /// <summary>Action rapide du tableau de bord : sombre si l'on est en clair, clair sinon.</summary>
     public static QuickAction CreateQuickAction() =>
-        new("custom.toggle-theme", "Basculer clair / sombre", "",
-            "Passe Windows et les applications en mode sombre, ou revient au mode clair.",
+        new("custom.toggle-theme", L("Basculer clair / sombre"), "",
+            L("Passe Windows et les applications en mode sombre, ou revient au mode clair."),
             async () =>
             {
-                if (AppsLight()) await ApplyAsync("dark", "dark", "sombre");
-                else await ApplyAsync("light", "light", "clair");
+                if (AppsLight()) await ApplyAsync("dark", "dark");
+                else await ApplyAsync("light", "light");
             })
         {
-            Keywords = ["mode sombre", "mode clair", "dark mode", "light mode", "theme", "basculer", "nuit"],
+            Keywords = [L("mode sombre, mode clair, dark mode, light mode, theme, basculer, nuit")],
             Order = 40,
         };
 }

@@ -42,14 +42,13 @@ internal sealed class UserHive : IDisposable
                 profile = KioskNative.CreateUserProfile(account.Sid, account.Name, out var hr);
                 if (profile is null && hr == KioskNative.HRESULT_ALREADY_EXISTS) profile = KioskAccounts.ProfilePath(account.Sid);
                 if (profile is null)
-                    throw new InvalidOperationException($"Impossible de créer le profil du compte « {account.Name} » (0x{hr:X8}). "
-                        + "Ouvrez une session une première fois avec ce compte, puis recommencez.");
+                    throw new InvalidOperationException(L("Impossible de créer le profil du compte « {0} » (0x{1:X8}). Ouvrez une session une première fois avec ce compte, puis recommencez.", account.Name, hr));
                 Log.Info("Kiosk", "profil créé pour le compte kiosque");
                 profile = KioskAccounts.ProfilePath(account.Sid) ?? profile;
             }
 
             var file = Path.Combine(profile, "NTUSER.DAT");
-            if (!File.Exists(file)) throw new FileNotFoundException("Ruche du compte introuvable.", file);
+            if (!File.Exists(file)) throw new FileNotFoundException(L("Ruche du compte introuvable."), file);
 
             try
             {
@@ -66,14 +65,14 @@ internal sealed class UserHive : IDisposable
             if (rc != 0)
             {
                 DropPrivileges();
-                throw new Win32Exception(rc, "Chargement de la ruche du compte kiosque impossible : " + new Win32Exception(rc).Message);
+                throw new Win32Exception(rc, L("Chargement de la ruche du compte kiosque impossible : {0}", new Win32Exception(rc).Message));
             }
             var root = users.OpenSubKey(mount, writable: true);
             if (root is null)
             {
                 KioskNative.RegUnLoadKey(KioskNative.HKEY_USERS, mount);
                 DropPrivileges();
-                throw new InvalidOperationException("Ruche chargée mais inaccessible.");
+                throw new InvalidOperationException(L("Ruche chargée mais inaccessible."));
             }
             return new UserHive(users, root, mount);
         }

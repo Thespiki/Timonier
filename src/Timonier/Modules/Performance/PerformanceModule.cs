@@ -16,8 +16,8 @@ public sealed class PerformanceModule : IModule
 
     public void Register(ModuleRegistry r)
     {
-        r.AddCategory(new CategoryInfo(Category, "Performances", Glyph,
-            "Alimentation, veille, effets visuels, jeux, applications en arrière-plan, services et stockage."));
+        r.AddCategory(new CategoryInfo(Category, L("Performances"), Glyph,
+            L("Alimentation, veille, effets visuels, jeux, applications en arrière-plan, services et stockage.")));
 
         r.AddTweaks(PerformanceTweaks.All());
 
@@ -28,29 +28,28 @@ public sealed class PerformanceModule : IModule
         r.AddAction(new SetPowerModeAction());
         r.AddAction(new DirectXSettingAction());
 
-        r.AddPage(new PageInfo(PageId, "Performances", Glyph, NavSection.Settings, 30, () => new PerformancePage())
+        r.AddPage(new PageInfo(PageId, L("Performances"), Glyph, NavSection.Settings, 30, () => new PerformancePage())
         {
             CategoryId = Category,
-            Description = "Profil matériel, plans d'alimentation, mode d'alimentation, veille, effets visuels, jeux et services.",
-            Keywords = ["performances", "vitesse", "lent", "accélérer", "alimentation", "énergie", "batterie", "veille",
-                        "jeux", "gaming", "effets visuels", "services", "optimiser"],
+            Description = L("Profil matériel, plans d'alimentation, mode d'alimentation, veille, effets visuels, jeux et services."),
+            Keywords = [L("performances, vitesse, lent, accélérer, alimentation, énergie, batterie, veille, jeux, gaming, effets visuels, services, optimiser")],
         });
 
         // Lecture seule, exécuté hors du thread UI par le tableau de bord.
-        r.AddHealthCheck(HealthCheck.Sync("perf.power", "Alimentation", "", PageId, PowerHealth.Check));
+        r.AddHealthCheck(HealthCheck.Sync("perf.power", L("Alimentation"), "", PageId, PowerHealth.Check));
 
-        r.AddQuickAction(new QuickAction("perf.mode-game", "Mode jeu", "",
-            "Active le Mode Jeu, coupe l'enregistrement en arrière-plan et applique la recommandation de planification GPU, après confirmation.",
+        r.AddQuickAction(new QuickAction("perf.mode-game", L("Mode jeu"), "",
+            L("Active le Mode Jeu, coupe l'enregistrement en arrière-plan et applique la recommandation de planification GPU, après confirmation."),
             PerfQuickActions.GameModeAsync)
         {
-            Keywords = ["mode jeu", "gaming", "jouer", "fps", "game mode", "performances jeux"],
+            Keywords = [L("mode jeu, gaming, jouer, fps, game mode, performances jeux")],
             Order = 40,
         });
-        r.AddQuickAction(new QuickAction("perf.mode-eco", "Économie d'énergie", "",
-            "Passe le PC en mode « Meilleure efficacité énergétique » (ou sur le plan Économie d'énergie) pour préserver la batterie.",
+        r.AddQuickAction(new QuickAction("perf.mode-eco", L("Économie d'énergie"), "",
+            L("Passe le PC en mode « Meilleure efficacité énergétique » (ou sur le plan Économie d'énergie) pour préserver la batterie."),
             PerfQuickActions.EcoModeAsync)
         {
-            Keywords = ["économie d'énergie", "batterie", "autonomie", "efficacité énergétique", "power saver", "eco"],
+            Keywords = [L("économie d'énergie, batterie, autonomie, efficacité énergétique, power saver, eco")],
             Order = 45,
         });
 
@@ -68,30 +67,30 @@ public sealed class PerformanceModule : IModule
 
     private static void RegisterSearchEntries(ModuleRegistry r)
     {
-        AddSection(r, "perf.section.hardware", "Profil matériel de ce PC", "Niveau de performance, processeur, mémoire, disque, carte graphique",
-            "", "hardware", ["profil materiel", "configuration", "processeur", "memoire", "ram", "disque", "carte graphique", "niveau performance"]);
-        AddSection(r, "perf.section.plans", "Plans d'alimentation", "Activer un plan, ajouter « Performances optimales »",
-            "", "power", ["plan alimentation", "power plan", "performances optimales", "performances elevees", "ultimate"]);
-        AddSection(r, "perf.section.mode", "Mode d'alimentation", "Économie, Équilibré ou Performances, sur secteur et sur batterie",
-            "", "power", ["mode alimentation", "power mode", "curseur alimentation", "efficacite energetique", "meilleures performances"]);
-        AddSection(r, "perf.section.sleep", "Veille et extinction de l'écran", "Délais sur secteur et sur batterie",
-            "", "sleep", ["veille", "ecran", "delai", "eteindre ecran", "mise en veille", "timeout", "sleep"]);
-        AddSection(r, "perf.section.graphics", "Options graphiques des jeux", "Optimisations des jeux fenêtrés, fréquence d'actualisation variable",
-            "", "graphics", ["jeux fenetres", "windowed games", "vrr", "frequence actualisation variable", "directx", "flip model"]);
+        AddSection(r, "perf.section.hardware", L("Profil matériel de ce PC"), L("Niveau de performance, processeur, mémoire, disque, carte graphique"),
+            "", "hardware", [L("profil materiel, configuration, processeur, memoire, ram, disque, carte graphique, niveau performance")]);
+        AddSection(r, "perf.section.plans", L("Plans d'alimentation"), L("Activer un plan, ajouter « Performances optimales »"),
+            "", "power", [L("plan alimentation, power plan, performances optimales, performances elevees, ultimate")]);
+        AddSection(r, "perf.section.mode", L("Mode d'alimentation"), L("Économie, Équilibré ou Performances, sur secteur et sur batterie"),
+            "", "power", [L("mode alimentation, power mode, curseur alimentation, efficacite energetique, meilleures performances")]);
+        AddSection(r, "perf.section.sleep", L("Veille et extinction de l'écran"), L("Délais sur secteur et sur batterie"),
+            "", "sleep", [L("veille, ecran, delai, eteindre ecran, mise en veille, timeout, sleep")]);
+        AddSection(r, "perf.section.graphics", L("Options graphiques des jeux"), L("Optimisations des jeux fenêtrés, fréquence d'actualisation variable"),
+            "", "graphics", [L("jeux fenetres, windowed games, vrr, frequence actualisation variable, directx, flip model")]);
 
-        AddWindows(r, "perf.win.power", "Alimentation et batterie (Paramètres Windows)", "Mode d'alimentation, veille, économiseur de batterie",
-            "ms-settings:powersleep", ["parametres alimentation", "power settings", "alimentation batterie"]);
-        AddWindows(r, "perf.win.batterysaver", "Économiseur de batterie (Paramètres Windows)", "Seuil d'activation et utilisation de la batterie",
-            "ms-settings:batterysaver", ["economiseur batterie", "battery saver", "economie energie", "utilisation batterie"]);
-        AddWindows(r, "perf.win.gamemode", "Mode Jeu (Paramètres Windows)", "Paramètres de jeu de Windows",
-            "ms-settings:gaming-gamemode", ["mode jeu", "game mode", "parametres jeux"]);
-        AddWindows(r, "perf.win.graphics", "Graphiques (Paramètres Windows)", "Préférence de carte graphique par application",
-            "ms-settings:display-advancedgraphics", ["preference gpu", "carte graphique application", "gpu preference", "graphiques"]);
+        AddWindows(r, "perf.win.power", L("Alimentation et batterie (Paramètres Windows)"), L("Mode d'alimentation, veille, économiseur de batterie"),
+            "ms-settings:powersleep", [L("parametres alimentation, power settings, alimentation batterie")]);
+        AddWindows(r, "perf.win.batterysaver", L("Économiseur de batterie (Paramètres Windows)"), L("Seuil d'activation et utilisation de la batterie"),
+            "ms-settings:batterysaver", [L("economiseur batterie, battery saver, economie energie, utilisation batterie")]);
+        AddWindows(r, "perf.win.gamemode", L("Mode Jeu (Paramètres Windows)"), L("Paramètres de jeu de Windows"),
+            "ms-settings:gaming-gamemode", [L("mode jeu, game mode, parametres jeux")]);
+        AddWindows(r, "perf.win.graphics", L("Graphiques (Paramètres Windows)"), L("Préférence de carte graphique par application"),
+            "ms-settings:display-advancedgraphics", [L("preference gpu, carte graphique application, gpu preference, graphiques")]);
 
-        AddTool(r, "perf.tool.fxdialog", "Options de performances (Windows)", "Boîte classique des effets visuels et de la mémoire virtuelle",
-            SystemTool.SystemPropertiesPerformance, [], ["options de performances", "memoire virtuelle", "fichier d echange", "pagefile", "effets visuels"]);
-        AddTool(r, "perf.tool.powercpl", "Options d'alimentation (Panneau de configuration)", "Paramètres avancés des plans d'alimentation",
-            SystemTool.Control, ["powercfg.cpl"], ["options alimentation", "parametres avances alimentation", "powercfg.cpl"]);
+        AddTool(r, "perf.tool.fxdialog", L("Options de performances (Windows)"), L("Boîte classique des effets visuels et de la mémoire virtuelle"),
+            SystemTool.SystemPropertiesPerformance, [], [L("options de performances, memoire virtuelle, fichier d echange, pagefile, effets visuels")]);
+        AddTool(r, "perf.tool.powercpl", L("Options d'alimentation (Panneau de configuration)"), L("Paramètres avancés des plans d'alimentation"),
+            SystemTool.Control, ["powercfg.cpl"], [L("options alimentation, parametres avances alimentation, powercfg.cpl")]);
     }
 
     private static void AddSection(ModuleRegistry r, string id, string title, string subtitle, string glyph, string section, string[] keywords) =>

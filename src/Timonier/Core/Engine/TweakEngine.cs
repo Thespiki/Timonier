@@ -49,7 +49,7 @@ public sealed class TweakEngine(ModuleRegistry registry, BrokerClient broker, Sy
     public async Task<ApplyOutcome> ApplyAsync(TweakDefinition tweak, string optionKey, CancellationToken ct = default)
     {
         if (tweak.GetOption(optionKey) is not { } option)
-            return new ApplyOutcome(false, $"Option inconnue « {optionKey} ».");
+            return new ApplyOutcome(false, L("Option inconnue « {0} ».", optionKey));
         if (Unavailability(tweak) is { } reason)
             return new ApplyOutcome(false, reason);
 
@@ -64,7 +64,7 @@ public sealed class TweakEngine(ModuleRegistry registry, BrokerClient broker, Sy
             {
                 var from = StateDetector.Detect(tweak).OptionKey;
                 var entry = await Task.Run(() => ApplyCore(tweak, option, from, new ExecContext { Elevated = false, Cancellation = ct }), ct).ConfigureAwait(false);
-                outcome = new ApplyOutcome(true, $"{tweak.Title} : {option.Label}", tweak.Effect, entry.Id);
+                outcome = new ApplyOutcome(true, L("{0} : {1}", tweak.Title, option.Label), tweak.Effect, entry.Id);
             }
             if (outcome.Success) Changed?.Invoke(this, new TweakChangedEventArgs(tweak.Id));
             return outcome;
@@ -102,7 +102,7 @@ public sealed class TweakEngine(ModuleRegistry registry, BrokerClient broker, Sy
         IProgress<string>? progress = null, CancellationToken ct = default)
     {
         var handler = registry.GetAction(actionId);
-        if (handler is null) return new ApplyOutcome(false, $"Action inconnue : {actionId}");
+        if (handler is null) return new ApplyOutcome(false, L("Action inconnue : {0}", actionId));
         var p = parameters ?? new Dictionary<string, string>();
         try
         {
@@ -133,7 +133,7 @@ public sealed class TweakEngine(ModuleRegistry registry, BrokerClient broker, Sy
 
     public async Task<ApplyOutcome> UndoAsync(JournalEntry entry, CancellationToken ct = default)
     {
-        if (!entry.CanUndo) return new ApplyOutcome(false, "Cette modification ne peut pas être annulée automatiquement.");
+        if (!entry.CanUndo) return new ApplyOutcome(false, L("Cette modification ne peut pas être annulée automatiquement."));
         try
         {
             ApplyOutcome outcome;
@@ -149,8 +149,8 @@ public sealed class TweakEngine(ModuleRegistry registry, BrokerClient broker, Sy
                 if (errors.Count > 0) entry.Note = string.Join(" ; ", errors);
                 JournalWriter.UserStore.Update(entry);
                 outcome = errors.Count == 0
-                    ? new ApplyOutcome(true, $"Annulé : {entry.Title}", EffectOf(entry.SourceId))
-                    : new ApplyOutcome(false, "Annulation partielle : " + string.Join(" ; ", errors));
+                    ? new ApplyOutcome(true, L("Annulé : {0}", entry.Title), EffectOf(entry.SourceId))
+                    : new ApplyOutcome(false, L("Annulation partielle : {0}", string.Join(" ; ", errors)));
             }
             if (outcome.Success) Changed?.Invoke(this, new TweakChangedEventArgs(entry.SourceId));
             return outcome;
@@ -202,9 +202,9 @@ public sealed class TweakEngine(ModuleRegistry registry, BrokerClient broker, Sy
 
     public static string Friendly(Exception ex) => ex switch
     {
-        UnauthorizedAccessException => "Accès refusé. " + ex.Message,
-        Win32Exception { NativeErrorCode: 5 } => "Accès refusé par Windows (élément protégé).",
-        System.Security.SecurityException => "Accès refusé par Windows (élément protégé).",
+        UnauthorizedAccessException => L("Accès refusé. {0}", ex.Message),
+        Win32Exception { NativeErrorCode: 5 } => L("Accès refusé par Windows (élément protégé)."),
+        System.Security.SecurityException => L("Accès refusé par Windows (élément protégé)."),
         _ => ex.Message,
     };
 }

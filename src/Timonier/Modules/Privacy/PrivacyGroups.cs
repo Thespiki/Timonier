@@ -10,23 +10,24 @@ public sealed record PrivacySection(string Key, string Title, string ShortTitle,
 /// <summary>Groupes de réglages de confidentialité, dans l'ordre d'affichage.</summary>
 public static class PrivacyGroups
 {
-    public const string Telemetry = "Télémétrie et diagnostics";
-    public const string Ads = "Publicité et suggestions";
-    public const string Search = "Recherche et IA";
-    public const string Activity = "Activité et historique";
-    public const string Input = "Saisie, voix et langue";
-    public const string Location = "Localisation";
-    public const string Permissions = "Autorisations des applications";
+    // Titres traduits : même valeur pour TweakDefinition.Group et PrivacySection.Title (ByGroup compare les deux).
+    public static readonly string Telemetry = L("Télémétrie et diagnostics");
+    public static readonly string Ads = L("Publicité et suggestions");
+    public static readonly string Search = L("Recherche et IA");
+    public static readonly string Activity = L("Activité et historique");
+    public static readonly string Input = L("Saisie, voix et langue");
+    public static readonly string Location = L("Localisation");
+    public static readonly string Permissions = L("Autorisations des applications");
 
     public static readonly IReadOnlyList<PrivacySection> All =
     [
-        new("telemetry", Telemetry, "Télémétrie", ""),
-        new("ads", Ads, "Publicité", ""),
-        new("search", Search, "Recherche et IA", ""),
-        new("activity", Activity, "Activité", ""),
-        new("input", Input, "Saisie et voix", ""),
-        new("location", Location, "Localisation", ""),
-        new("permissions", Permissions, "Autorisations", ""),
+        new("telemetry", Telemetry, L("Télémétrie"), ""),
+        new("ads", Ads, L("Publicité"), ""),
+        new("search", Search, L("Recherche et IA"), ""),
+        new("activity", Activity, L("Activité"), ""),
+        new("input", Input, L("Saisie et voix"), ""),
+        new("location", Location, L("Localisation"), ""),
+        new("permissions", Permissions, L("Autorisations"), ""),
     ];
 
     public static PrivacySection? ByKey(string key) => All.FirstOrDefault(s => s.Key == key);

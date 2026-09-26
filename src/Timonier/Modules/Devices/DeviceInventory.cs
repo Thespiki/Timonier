@@ -90,7 +90,7 @@ public static class DeviceInventory
         if (r.GetValueOrDefault("PNPDeviceID") is not string id || id.Length == 0) return null;
         var name = r.GetValueOrDefault("Name") as string;
         if (string.IsNullOrWhiteSpace(name)) name = r.GetValueOrDefault("Description") as string;
-        if (string.IsNullOrWhiteSpace(name)) name = "Périphérique inconnu";
+        if (string.IsNullOrWhiteSpace(name)) name = L("Périphérique inconnu");
         return new DeviceEntry
         {
             InstanceId = id,

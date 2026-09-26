@@ -35,18 +35,18 @@ public static class RadioService
         {
             var result = await radio.SetStateAsync(on ? RadioState.On : RadioState.Off);
             return result == RadioAccessStatus.Allowed
-                ? (true, $"{KindLabel(radio.Kind)} {(on ? "activé" : "désactivé")}.")
+                ? (true, on ? L("{0} activé.", KindLabel(radio.Kind)) : L("{0} désactivé.", KindLabel(radio.Kind)))
                 : (false, result switch
                 {
-                    RadioAccessStatus.DeniedByUser => "Windows refuse que les applications contrôlent les radios (réglage « Contrôle des radios » de la page Confidentialité).",
-                    RadioAccessStatus.DeniedBySystem => "Windows refuse ce changement (mode Avion géré par le système ou stratégie).",
-                    _ => "Windows n'a pas pu changer l'état de cette radio.",
+                    RadioAccessStatus.DeniedByUser => L("Windows refuse que les applications contrôlent les radios (réglage « Contrôle des radios » de la page Confidentialité)."),
+                    RadioAccessStatus.DeniedBySystem => L("Windows refuse ce changement (mode Avion géré par le système ou stratégie)."),
+                    _ => L("Windows n'a pas pu changer l'état de cette radio."),
                 });
         }
         catch (Exception ex)
         {
             Log.Warn("Devices", "changement d'état radio : " + ex.Message);
-            return (false, "Windows n'a pas pu changer l'état de cette radio.");
+            return (false, L("Windows n'a pas pu changer l'état de cette radio."));
         }
     }
 
@@ -54,9 +54,9 @@ public static class RadioService
     {
         RadioKind.WiFi => "Wi-Fi",
         RadioKind.Bluetooth => "Bluetooth",
-        RadioKind.MobileBroadband => "Réseau mobile",
-        RadioKind.FM => "Radio FM",
-        _ => "Radio",
+        RadioKind.MobileBroadband => L("Réseau mobile"),
+        RadioKind.FM => L("Radio FM"),
+        _ => L("Radio"),
     };
 
     public static string KindGlyph(RadioKind kind) => kind switch

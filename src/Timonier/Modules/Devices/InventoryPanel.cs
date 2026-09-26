@@ -23,12 +23,12 @@ internal sealed class InventoryPanel : UserControl
 
     private static readonly CompareInfo Compare = CultureInfo.InvariantCulture.CompareInfo;
 
-    private readonly TextBox _search = new TextBox { Tag = "Rechercher un nom, un fabricant, un identifiant…", MinWidth = 220 }.Styled("Pp.SearchBox");
+    private readonly TextBox _search = new TextBox { Tag = L("Rechercher un nom, un fabricant, un identifiant…"), MinWidth = 220 }.Styled("Pp.SearchBox");
     private readonly ComboBox _filter = new() { MinWidth = 190, Height = 34, Margin = new Thickness(8, 0, 0, 0), VerticalContentAlignment = VerticalAlignment.Center };
-    private readonly CheckBox _showTechnical = new CheckBox { Content = "Composants techniques", Margin = new Thickness(16, 0, 0, 0) }.Styled("Pp.ToggleSwitch");
+    private readonly CheckBox _showTechnical = new CheckBox { Content = L("Composants techniques"), Margin = new Thickness(16, 0, 0, 0) }.Styled("Pp.ToggleSwitch");
     private readonly Button _refresh;
     private readonly ProgressBar _busy = DevUi.BusyBar(80);
-    private readonly TextBlock _status = DevUi.Caption("Analyse du matériel…");
+    private readonly TextBlock _status = DevUi.Caption(L("Analyse du matériel…"));
     private readonly StackPanel _messages = new();
     private readonly StackPanel _disabledHost = new();
     private readonly StackPanel _problemsHost = new();
@@ -44,14 +44,14 @@ internal sealed class InventoryPanel : UserControl
     public InventoryPanel()
     {
         Focusable = false;
-        foreach (var label in new[] { "Tous les périphériques", "Avec un problème", "Désactivés" }) _filter.Items.Add(label);
+        foreach (var label in new[] { L("Tous les périphériques"), L("Avec un problème"), L("Désactivés") }) _filter.Items.Add(label);
         _filter.SelectedIndex = 0;
-        System.Windows.Automation.AutomationProperties.SetName(_filter, "Filtre");
-        System.Windows.Automation.AutomationProperties.SetName(_search, "Rechercher un périphérique");
-        _showTechnical.ToolTip = "Afficher aussi les composants système, logiciels et de stockage interne (masqués par défaut, sauf en cas de problème).";
+        System.Windows.Automation.AutomationProperties.SetName(_filter, L("Filtre"));
+        System.Windows.Automation.AutomationProperties.SetName(_search, L("Rechercher un périphérique"));
+        _showTechnical.ToolTip = L("Afficher aussi les composants système, logiciels et de stockage interne (masqués par défaut, sauf en cas de problème).");
 
-        _refresh = DevUi.Button("Actualiser", "", "Pp.SubtleButton", async (_, _) => await LoadAsync());
-        var devmgmt = DevUi.Button("Gestionnaire de périphériques", "", "Pp.SubtleButton", (_, _) => OpenDeviceManager());
+        _refresh = DevUi.Button(L("Actualiser"), "", "Pp.SubtleButton", async (_, _) => await LoadAsync());
+        var devmgmt = DevUi.Button(L("Gestionnaire de périphériques"), "", "Pp.SubtleButton", (_, _) => OpenDeviceManager());
 
         var toolbar = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
         var right = new StackPanel { Orientation = Orientation.Horizontal };
@@ -104,7 +104,7 @@ internal sealed class InventoryPanel : UserControl
         _loading = true;
         _refresh.IsEnabled = false;
         _busy.Visibility = Visibility.Visible;
-        if (_all.Count == 0) _status.Text = "Analyse du matériel…";
+        if (_all.Count == 0) _status.Text = L("Analyse du matériel…");
         try
         {
             _all = await Task.Run(DeviceInventory.Load);
@@ -117,10 +117,9 @@ internal sealed class InventoryPanel : UserControl
             Log.Error("Devices", "énumération des périphériques", ex);
             _messages.Children.Clear();
             var bar = Timonier.UI.Controls.PageScaffold.InfoBar(
-                "Impossible de lire la liste des périphériques (service WMI indisponible ou trop lent). Réessayez dans un instant, " +
-                "ou ouvrez le Gestionnaire de périphériques.", "", "Pp.InfoBar.Danger");
+                L("Impossible de lire la liste des périphériques (service WMI indisponible ou trop lent). Réessayez dans un instant, ou ouvrez le Gestionnaire de périphériques."), "", "Pp.InfoBar.Danger");
             _messages.Children.Add(bar);
-            _status.Text = "Liste indisponible";
+            _status.Text = L("Liste indisponible");
             SummaryChanged?.Invoke(-1, 0, 0);
         }
         finally
@@ -158,10 +157,13 @@ internal sealed class InventoryPanel : UserControl
 
         var problems = _all.Count(d => d.HasProblem);
         var disabled = _all.Count(d => d.IsDisabled);
-        _status.Text = $"{_all.Count} périphériques"
-                       + (problems > 0 ? $" · {problems} en erreur" : " · aucun en erreur")
-                       + (disabled > 0 ? $" · {disabled} désactivé{(disabled > 1 ? "s" : "")}" : "")
-                       + (visible.Count != _all.Count ? $" · {visible.Count} affichés" : "");
+        _status.Text = string.Join(" · ", new[]
+        {
+            LP(_all.Count, "{0} périphérique", "{0} périphériques"),
+            problems > 0 ? LP(problems, "{0} en erreur", "{0} en erreur") : L("aucun en erreur"),
+            disabled > 0 ? LP(disabled, "{0} désactivé", "{0} désactivés") : null,
+            visible.Count != _all.Count ? LP(visible.Count, "{0} affiché", "{0} affichés") : null,
+        }.Where(x => x is not null));
         SummaryChanged?.Invoke(_all.Count, problems, disabled);
 
         RenderDisabledStore();
@@ -176,7 +178,7 @@ internal sealed class InventoryPanel : UserControl
             var icon = DevUi.Icon("", 16, "Pp.Warning");
             icon.Margin = new Thickness(0, 0, 10, 0);
             head.Children.Add(icon);
-            head.Children.Add(DevUi.Text(problemDevices.Count == 1 ? "1 périphérique à vérifier" : $"{problemDevices.Count} périphériques à vérifier", "Pp.CardTitle"));
+            head.Children.Add(DevUi.Text(LP(problemDevices.Count, "{0} périphérique à vérifier", "{0} périphériques à vérifier"), "Pp.CardTitle"));
             body.Children.Add(head);
             var first = true;
             foreach (var d in problemDevices)
@@ -201,10 +203,10 @@ internal sealed class InventoryPanel : UserControl
         if (visible.Count == 0 && _all.Count > 0)
         {
             _groupsHost.Children.Add(DevUi.Card(DevUi.Text(searching
-                ? "Aucun périphérique ne correspond à cette recherche."
-                : mode == 1 ? "Aucun périphérique en erreur : tout fonctionne correctement."
-                : mode == 2 ? "Aucun périphérique désactivé."
-                : "Aucun périphérique à afficher.")));
+                ? L("Aucun périphérique ne correspond à cette recherche.")
+                : mode == 1 ? L("Aucun périphérique en erreur : tout fonctionne correctement.")
+                : mode == 2 ? L("Aucun périphérique désactivé.")
+                : L("Aucun périphérique à afficher."))));
         }
     }
 
@@ -239,8 +241,8 @@ internal sealed class InventoryPanel : UserControl
         header.Children.Add(title);
         var badges = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         var disabled = devices.Count(d => d.IsDisabled);
-        if (disabled > 0) badges.Children.Add(DevUi.Badge(disabled == 1 ? "1 désactivé" : $"{disabled} désactivés"));
-        badges.Children.Add(DevUi.Badge(devices.Count.ToString(CultureInfo.CurrentCulture)));
+        if (disabled > 0) badges.Children.Add(DevUi.Badge(LP(disabled, "{0} désactivé", "{0} désactivés")));
+        badges.Children.Add(DevUi.Badge(devices.Count.ToString(Culture)));
         Grid.SetColumn(badges, 2);
         header.Children.Add(badges);
         chevron.Margin = new Thickness(8, 0, 4, 0);
@@ -301,21 +303,21 @@ internal sealed class InventoryPanel : UserControl
         var parts = new List<string>();
         if (showClass) parts.Add(d.Class.Title);
         if (d.Manufacturer is { } m) parts.Add(m);
-        parts.Add(d.HasProblem && problem is { } p ? p.Summary : d.IsDisabled ? "Désactivé" : !d.Present ? "Non connecté" : "Fonctionne correctement");
+        parts.Add(d.HasProblem && problem is { } p ? p.Summary : d.IsDisabled ? L("Désactivé") : !d.Present ? L("Non connecté") : L("Fonctionne correctement"));
         var caption = DevUi.Caption(string.Join(" · ", parts));
         if (d.HasProblem) caption.SetResourceReference(TextBlock.ForegroundProperty, "Pp.Warning");
         text.Children.Add(caption);
         grid.Children.Add(text);
 
         var badgeHost = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-        if (d.IsDisabled) badgeHost.Children.Add(DevUi.Badge("Désactivé"));
-        else if (d.HasProblem) badgeHost.Children.Add(DevUi.Badge($"Code {d.ErrorCode}", "Pp.Warning"));
+        if (d.IsDisabled) badgeHost.Children.Add(DevUi.Badge(L("Désactivé")));
+        else if (d.HasProblem) badgeHost.Children.Add(DevUi.Badge(L("Code {0}", d.ErrorCode), "Pp.Warning"));
         var (level, reason) = d.Protection;
         if (level == DeviceProtection.Protected)
         {
             var lockIcon = DevUi.Icon("", 14, "Pp.TextTertiary");
             lockIcon.Margin = new Thickness(4, 0, 8, 0);
-            lockIcon.ToolTip = "Composant protégé : " + reason;
+            lockIcon.ToolTip = L("Composant protégé : {0}", reason);
             badgeHost.Children.Add(lockIcon);
         }
         Grid.SetColumn(badgeHost, 1);
@@ -324,7 +326,7 @@ internal sealed class InventoryPanel : UserControl
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         var details = new Border { Visibility = Visibility.Collapsed, CornerRadius = new CornerRadius(6), Padding = new Thickness(12, 8, 12, 8), Margin = new Thickness(0, 8, 0, 2) }
             .Themed(Border.BackgroundProperty, "Pp.CardSecondary");
-        var detailsButton = DevUi.Button("Détails", "", "Pp.SubtleButton");
+        var detailsButton = DevUi.Button(L("Détails"), "", "Pp.SubtleButton");
         detailsButton.Click += (_, _) =>
         {
             if (details.Child is null) details.Child = BuildDetails(d, problem, reason);
@@ -335,7 +337,7 @@ internal sealed class InventoryPanel : UserControl
         if (d.IdIsActionable && (d.IsDisabled || level != DeviceProtection.Protected))
         {
             var enable = d.IsDisabled;
-            var action = DevUi.Button(enable ? "Activer" : "Désactiver", enable ? "" : "", enable ? "Pp.AccentButton" : "Pp.Button");
+            var action = DevUi.Button(enable ? L("Activer") : L("Désactiver"), enable ? "" : "", enable ? "Pp.AccentButton" : "Pp.Button");
             action.Margin = new Thickness(6, 0, 0, 0);
             action.MinWidth = 118;
             if (level == DeviceProtection.Sensitive && !enable) action.ToolTip = reason;
@@ -355,27 +357,27 @@ internal sealed class InventoryPanel : UserControl
         var s = new StackPanel();
         if (problem is { } p && d.HasProblem)
         {
-            s.Children.Add(DevUi.KeyValue("Problème", p.Summary));
-            s.Children.Add(DevUi.KeyValue("Que faire ?", p.Advice));
+            s.Children.Add(DevUi.KeyValue(L("Problème"), p.Summary));
+            s.Children.Add(DevUi.KeyValue(L("Que faire ?"), p.Advice));
         }
-        s.Children.Add(DevUi.KeyValue("Catégorie", d.Class.Title + (d.PnpClass is { Length: > 0 } c && c != d.Class.Title ? $" ({c})" : "")));
-        s.Children.Add(DevUi.KeyValue("Identifiant", d.InstanceId, selectable: true));
-        if (d.Service is { Length: > 0 } svc) s.Children.Add(DevUi.KeyValue("Service du pilote", svc));
-        var driver = DevUi.KeyValue("Pilote", "Lecture…");
+        s.Children.Add(DevUi.KeyValue(L("Catégorie"), d.Class.Title + (d.PnpClass is { Length: > 0 } c && c != d.Class.Title ? $" ({c})" : "")));
+        s.Children.Add(DevUi.KeyValue(L("Identifiant"), d.InstanceId, selectable: true));
+        if (d.Service is { Length: > 0 } svc) s.Children.Add(DevUi.KeyValue(L("Service du pilote"), svc));
+        var driver = DevUi.KeyValue(L("Pilote"), L("Lecture…"));
         s.Children.Add(driver);
         if (protectionReason is not null)
-            s.Children.Add(DevUi.KeyValue(d.Protection.Level == DeviceProtection.Protected ? "Protégé" : "Prudence", protectionReason));
+            s.Children.Add(DevUi.KeyValue(d.Protection.Level == DeviceProtection.Protected ? L("Protégé") : L("Prudence"), protectionReason));
 
-        var copy = DevUi.Button("Copier l'identifiant", "", "Pp.LinkButton", (_, _) =>
+        var copy = DevUi.Button(L("Copier l'identifiant"), "", "Pp.LinkButton", (_, _) =>
         {
             try
             {
                 Clipboard.SetText(d.InstanceId);
-                AppHost.Toasts.Show("Identifiant copié.", ToastKind.Success);
+                AppHost.Toasts.Show(L("Identifiant copié."), ToastKind.Success);
             }
             catch (System.Runtime.InteropServices.ExternalException)
             {
-                AppHost.Toasts.Show("Le presse-papiers est occupé, réessayez.", ToastKind.Warning);
+                AppHost.Toasts.Show(L("Le presse-papiers est occupé, réessayez."), ToastKind.Warning);
             }
         });
         copy.HorizontalAlignment = HorizontalAlignment.Left;
@@ -393,20 +395,20 @@ internal sealed class InventoryPanel : UserControl
         {
             var info = await Task.Run(() => d.IdIsActionable ? DeviceInventory.LoadDriver(d.InstanceId) : null);
             text = info is null
-                ? "Aucune information de pilote (périphérique sans pilote ou pilote intégré au système)."
+                ? L("Aucune information de pilote (périphérique sans pilote ou pilote intégré au système).")
                 : string.Join(" · ", new[]
                 {
-                    info.Version is { } v ? "version " + v : null,
-                    info.Date is { } dt ? "du " + dt.ToString("d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")) : null,
-                    info.Provider is { } pr ? "fournisseur : " + pr : null,
+                    info.Version is { } v ? L("version {0}", v) : null,
+                    info.Date is { } dt ? L("du {0}", Format.Day(dt)) : null,
+                    info.Provider is { } pr ? L("fournisseur : {0}", pr) : null,
                     info.Inf,
-                    info.Signed == true ? "signé" + (info.Signer is { Length: > 0 } sg ? " par " + sg : "") : info.Signed == false ? "non signé" : null,
+                    info.Signed == true ? (info.Signer is { Length: > 0 } sg ? L("signé par {0}", sg) : L("signé")) : info.Signed == false ? L("non signé") : null,
                 }.Where(x => !string.IsNullOrEmpty(x)));
         }
         catch (Exception ex)
         {
             Log.Warn("Devices", "lecture du pilote : " + ex.Message);
-            text = "Informations du pilote indisponibles.";
+            text = L("Informations du pilote indisponibles.");
         }
         if (row.Children.Count > 1 && row.Children[1] is TextBlock t) t.Text = text;
     }
@@ -425,10 +427,10 @@ internal sealed class InventoryPanel : UserControl
         else
         {
             var sensitive = level == DeviceProtection.Sensitive;
-            var message = $"« {d.Name} » ne fonctionnera plus jusqu'à sa réactivation." +
-                          (sensitive ? $"\n\n{reason}\nWindows affichera une seconde confirmation depuis le processus administrateur." : "") +
-                          "\n\nVous pourrez le réactiver ici, même s'il n'apparaît plus dans la liste (section « Désactivés par Timonier »).";
-            if (!await AppHost.Dialogs.ConfirmAsync("Désactiver ce périphérique ?", message, "Désactiver", "Annuler", danger: sensitive))
+            var message = sensitive
+                ? L("« {0} » ne fonctionnera plus jusqu'à sa réactivation.\n\n{1}\nWindows affichera une seconde confirmation depuis le processus administrateur.\n\nVous pourrez le réactiver ici, même s'il n'apparaît plus dans la liste (section « Désactivés par Timonier »).", d.Name, reason)
+                : L("« {0} » ne fonctionnera plus jusqu'à sa réactivation.\n\nVous pourrez le réactiver ici, même s'il n'apparaît plus dans la liste (section « Désactivés par Timonier »).", d.Name);
+            if (!await AppHost.Dialogs.ConfirmAsync(L("Désactiver ce périphérique ?"), message, L("Désactiver"), L("Annuler"), danger: sensitive))
                 return;
             actionId = sensitive ? DisableSensitiveDeviceAction.ActionId : DisableDeviceAction.ActionId;
         }
@@ -458,13 +460,13 @@ internal sealed class InventoryPanel : UserControl
         var body = new StackPanel();
         var head = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 4) };
         head.Children.Add(DevUi.Icon("", 16, "Pp.AccentText"));
-        head.Children.Add(new TextBlock { Text = "Désactivés par Timonier", Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center }.Styled("Pp.CardTitle"));
+        head.Children.Add(new TextBlock { Text = L("Désactivés par Timonier"), Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center }.Styled("Pp.CardTitle"));
         body.Children.Add(head);
         foreach (var (id, name) in store.OrderBy(k => k.Value, StringComparer.CurrentCulture))
         {
             var present = _all.FirstOrDefault(x => string.Equals(x.InstanceId, id, StringComparison.OrdinalIgnoreCase));
             var row = new DockPanel { Margin = new Thickness(0, 6, 0, 2) };
-            var button = DevUi.Button("Réactiver", "", "Pp.AccentButton");
+            var button = DevUi.Button(L("Réactiver"), "", "Pp.AccentButton");
             button.MinWidth = 118;
             var entry = present ?? new DeviceEntry { InstanceId = id, Name = name, ErrorCode = 22, Present = false };
             button.Click += async (_, _) => await RunActionAsync(entry, enable: true, button);
@@ -472,7 +474,7 @@ internal sealed class InventoryPanel : UserControl
             row.Children.Add(button);
             var t = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
             t.Children.Add(DevUi.Text(name));
-            t.Children.Add(DevUi.Caption(present is null ? "Non détecté actuellement (débranché ?) : rebranchez-le si la réactivation échoue." : "Désactivé"));
+            t.Children.Add(DevUi.Caption(present is null ? L("Non détecté actuellement (débranché ?) : rebranchez-le si la réactivation échoue.") : L("Désactivé")));
             row.Children.Add(t);
             body.Children.Add(row);
         }
@@ -486,7 +488,7 @@ internal sealed class InventoryPanel : UserControl
         catch (Exception ex)
         {
             Log.Warn("Devices", "Gestionnaire de périphériques : " + ex.Message);
-            AppHost.Toasts.Show("Impossible d'ouvrir le Gestionnaire de périphériques.", ToastKind.Warning);
+            AppHost.Toasts.Show(L("Impossible d'ouvrir le Gestionnaire de périphériques."), ToastKind.Warning);
         }
     }
 }

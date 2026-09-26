@@ -57,13 +57,10 @@ public sealed class BrokerClient : IAsyncDisposable
             {
                 Log.Warn("Broker", "élévation refusée, variables d'environnement : " + string.Join(", ", injected));
                 throw new InvalidOperationException(
-                    "Session administrateur refusée par sécurité : ces variables d'environnement permettraient à un autre programme " +
-                    "d'exécuter son code avec les droits administrateur de Timonier : " + string.Join(", ", injected) + ". " +
-                    "Si vous ne les avez pas créées vous-même (outil de profilage .NET), supprimez-les dans « Modifier les variables " +
-                    "d'environnement » et faites analyser le PC par votre antivirus.");
+                    L("Session administrateur refusée par sécurité : ces variables d'environnement permettraient à un autre programme d'exécuter son code avec les droits administrateur de Timonier : {0}. Si vous ne les avez pas créées vous-même (outil de profilage .NET), supprimez-les dans « Modifier les variables d'environnement » et faites analyser le PC par votre antivirus.", string.Join(", ", injected)));
             }
             if (BeforeElevation is not null && !await BeforeElevation().ConfigureAwait(false))
-                throw new OperationCanceledException("Opération annulée.");
+                throw new OperationCanceledException(L("Opération annulée."));
 
             var pipeName = "Timonier.Broker." + Guid.NewGuid().ToString("N");
             Process process;
@@ -79,11 +76,11 @@ public sealed class BrokerClient : IAsyncDisposable
                     WindowStyle = ProcessWindowStyle.Hidden,
                 };
                 if (SelfTestWithoutElevation) psi = BrokerSelfTest.UnelevatedStartInfo(arguments);
-                process = Process.Start(psi) ?? throw new InvalidOperationException("Impossible de démarrer la session administrateur.");
+                process = Process.Start(psi) ?? throw new InvalidOperationException(L("Impossible de démarrer la session administrateur."));
             }
             catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
             {
-                throw new OperationCanceledException("Autorisation administrateur refusée (UAC).");
+                throw new OperationCanceledException(L("Autorisation administrateur refusée (UAC)."));
             }
 
             var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
@@ -92,7 +89,7 @@ public sealed class BrokerClient : IAsyncDisposable
                 await pipe.ConnectAsync(30_000, ct).ConfigureAwait(false);
                 // Le serveur doit être le processus que nous venons de lancer (anti-usurpation du canal).
                 if (!Native.GetNamedPipeServerProcessId(pipe.SafePipeHandle, out var serverPid) || serverPid != process.Id)
-                    throw new InvalidOperationException("Le canal administrateur n'appartient pas au processus attendu : connexion refusée.");
+                    throw new InvalidOperationException(L("Le canal administrateur n'appartient pas au processus attendu : connexion refusée."));
             }
             catch
             {
@@ -110,7 +107,7 @@ public sealed class BrokerClient : IAsyncDisposable
             {
                 var hello = await SendCoreAsync(new BrokerRequest { Op = "hello" }, null, ct).ConfigureAwait(false);
                 if (hello.ServerVersion != BrokerFraming.ProtocolVersion)
-                    throw new InvalidOperationException("Version du broker incompatible.");
+                    throw new InvalidOperationException(L("Version du broker incompatible."));
             }
             catch
             {
@@ -159,7 +156,7 @@ public sealed class BrokerClient : IAsyncDisposable
     }
 
     private static ApplyOutcome ToOutcome(BrokerResponse r) =>
-        new(r.Ok, r.Message ?? (r.Ok ? "Terminé." : "Échec."), (ApplyEffect)r.Effect, r.JournalId) { Data = r.Data, Cancelled = r.Cancelled };
+        new(r.Ok, r.Message ?? (r.Ok ? L("Terminé.") : L("Échec.")), (ApplyEffect)r.Effect, r.JournalId) { Data = r.Data, Cancelled = r.Cancelled };
 
     private async Task<BrokerResponse> SendAsync(BrokerRequest request, IProgress<string>? progress, CancellationToken ct)
     {
@@ -169,7 +166,7 @@ public sealed class BrokerClient : IAsyncDisposable
 
     private async Task<BrokerResponse> SendCoreAsync(BrokerRequest request, IProgress<string>? progress, CancellationToken ct)
     {
-        var pipe = _pipe ?? throw new IOException("Session administrateur fermée.");
+        var pipe = _pipe ?? throw new IOException(L("Session administrateur fermée."));
         request.Id = Interlocked.Increment(ref _nextId);
         var pending = new Pending(new TaskCompletionSource<BrokerResponse>(TaskCreationOptions.RunContinuationsAsynchronously), progress);
         _pending[request.Id] = pending;
@@ -220,7 +217,7 @@ public sealed class BrokerClient : IAsyncDisposable
         finally
         {
             foreach (var p in _pending.Values)
-                p.Completion.TrySetException(new IOException("La session administrateur s'est fermée."));
+                p.Completion.TrySetException(new IOException(L("La session administrateur s'est fermée.")));
             if (ReferenceEquals(_pipe, pipe)) await DisconnectAsync().ConfigureAwait(false);
         }
     }

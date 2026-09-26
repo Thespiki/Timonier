@@ -1,4 +1,4 @@
-﻿using System.Net.NetworkInformation;
+using System.Net.NetworkInformation;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -81,7 +81,7 @@ public sealed class NetworkPage : UserControl, INavigationAware
     // Carte d'état
     private readonly Border _statusTile;
     private readonly TextBlock _statusGlyph;
-    private readonly TextBlock _statusTitle = NetUi.Text("Lecture de l'état du réseau…", "Pp.Body");
+    private readonly TextBlock _statusTitle = NetUi.Text(L("Lecture de l'état du réseau…"), "Pp.Body");
     private readonly TextBlock _statusLine1 = NetUi.Text("", "Pp.Caption");
     private readonly TextBlock _statusLine2 = NetUi.Text("", "Pp.Caption");
     private readonly WrapPanel _statusBadges = new() { Margin = new Thickness(0, 8, 0, 0) };
@@ -104,8 +104,8 @@ public sealed class NetworkPage : UserControl, INavigationAware
 
         stack.Children.Add(new PageHeader
         {
-            Title = "Réseau",
-            Subtitle = "Connexions, DNS familial ou chiffré, blocage de sites, dépannage et réseaux Wi-Fi enregistrés. Timonier ne contacte aucun serveur.",
+            Title = L("Réseau"),
+            Subtitle = L("Connexions, DNS familial ou chiffré, blocage de sites, dépannage et réseaux Wi-Fi enregistrés. Timonier ne contacte aucun serveur."),
             Glyph = "",
         });
 
@@ -118,7 +118,7 @@ public sealed class NetworkPage : UserControl, INavigationAware
         _statusTitle.FontWeight = FontWeights.SemiBold;
         _statusLine1.Margin = new Thickness(0, 4, 0, 0);
         _statusLine2.Margin = new Thickness(0, 2, 0, 0);
-        _refreshButton = NetUi.Button("Actualiser", "", "Pp.Button", async (_, _) => await RefreshAsync());
+        _refreshButton = NetUi.Button(L("Actualiser"), "", "Pp.Button", async (_, _) => await RefreshAsync());
         var right = NetUi.Row(_refreshBusy, _refreshButton);
         right.VerticalAlignment = VerticalAlignment.Top;
         _refreshButton.Margin = new Thickness(12, 0, 0, 0);
@@ -140,12 +140,12 @@ public sealed class NetworkPage : UserControl, INavigationAware
 
         // --- Onglets
         var tabBar = new WrapPanel();
-        AddTab(tabBar, TabConnections, "Connexions", "");
-        AddTab(tabBar, TabDns, "DNS", "");
-        AddTab(tabBar, TabHosts, "Fichier hosts", "");
-        AddTab(tabBar, TabTools, "Outils", "");
-        AddTab(tabBar, TabWifi, "Wi-Fi enregistrés", "");
-        AddTab(tabBar, TabSettings, "Réglages", "");
+        AddTab(tabBar, TabConnections, L("Connexions"), "");
+        AddTab(tabBar, TabDns, L("DNS"), "");
+        AddTab(tabBar, TabHosts, L("Fichier hosts"), "");
+        AddTab(tabBar, TabTools, L("Outils"), "");
+        AddTab(tabBar, TabWifi, L("Wi-Fi enregistrés"), "");
+        AddTab(tabBar, TabSettings, L("Réglages"), "");
         stack.Children.Add(tabBar);
         stack.Children.Add(NetUi.Divider(new Thickness(0, 0, 0, 16)));
         stack.Children.Add(_host);
@@ -205,7 +205,7 @@ public sealed class NetworkPage : UserControl, INavigationAware
         catch (Exception ex)
         {
             Log.Error("Network", "lecture de l'état réseau", ex);
-            _statusTitle.Text = "État du réseau illisible";
+            _statusTitle.Text = L("État du réseau illisible");
             _statusLine1.Text = ex.Message;
         }
         finally
@@ -236,7 +236,7 @@ public sealed class NetworkPage : UserControl, INavigationAware
 
         if (primary is null)
         {
-            _statusLine1.Text = "Aucune carte réseau active. Vérifiez le câble, le Wi-Fi ou le mode Avion.";
+            _statusLine1.Text = L("Aucune carte réseau active. Vérifiez le câble, le Wi-Fi ou le mode Avion.");
             _statusLine2.Text = "";
         }
         else
@@ -245,27 +245,27 @@ public sealed class NetworkPage : UserControl, INavigationAware
             if (primary.Kind == AdapterKind.Wifi)
             {
                 var name = s.WifiName;
-                parts.Add(name is not null ? $"Wi-Fi « {name} »" : "Wi-Fi (nom du réseau masqué par Windows)");
-                if (s.Wifi?.Connection is { } c && c.SignalQuality > 0) parts.Add($"signal {c.SignalQuality} %");
+                parts.Add(name is not null ? L("Wi-Fi « {0} »", name) : L("Wi-Fi (nom du réseau masqué par Windows)"));
+                if (s.Wifi?.Connection is { } c && c.SignalQuality > 0) parts.Add(L("signal {0} %", c.SignalQuality));
             }
-            else parts.Add($"{primary.KindLabel} « {primary.Name} »");
+            else parts.Add(L("{0} « {1} »", primary.KindLabel, primary.Name));
             if (primary.SpeedBps > 0) parts.Add(primary.SpeedLabel);
             _statusLine1.Text = string.Join(" · ", parts);
 
             var line2 = new List<string>();
-            if (primary.IPv4.Count > 0) line2.Add("IP " + primary.IPv4[0].Split('/')[0]);
-            if (primary.HasGateway) line2.Add("passerelle " + primary.Gateways[0]);
-            line2.Add("DNS : " + (primary.DnsIsManual ? primary.DnsSummary + " (manuel)" : "automatiques (" + primary.DnsSummary + ")"));
+            if (primary.IPv4.Count > 0) line2.Add(L("IP {0}", primary.IPv4[0].Split('/')[0]));
+            if (primary.HasGateway) line2.Add(L("passerelle {0}", primary.Gateways[0]));
+            line2.Add(primary.DnsIsManual ? L("DNS : {0} (manuel)", primary.DnsSummary) : L("DNS : automatiques ({0})", primary.DnsSummary));
             _statusLine2.Text = string.Join(" · ", line2);
         }
 
         _statusBadges.Children.Clear();
-        if (s.Connectivity.IsMetered) _statusBadges.Children.Add(NetUi.Badge("Connexion limitée (facturée à l'usage)", "Warning"));
+        if (s.Connectivity.IsMetered) _statusBadges.Children.Add(NetUi.Badge(L("Connexion limitée (facturée à l'usage)"), "Warning"));
         if (primary is not null && DnsProviders.Identify(primary.DnsServers) is { IsFamily: true } fam)
-            _statusBadges.Children.Add(NetUi.Badge("Filtre familial actif : " + fam.Name, "Success"));
+            _statusBadges.Children.Add(NetUi.Badge(L("Filtre familial actif : {0}", fam.Name), "Success"));
         var vpn = s.Adapters.FirstOrDefault(a => a.IsUp && a.Kind == AdapterKind.Vpn);
-        if (vpn is not null) _statusBadges.Children.Add(NetUi.Badge("VPN actif : " + vpn.Name, "Info"));
-        if (s.Wifi?.NeedsLocation == true && s.WifiName is null) _statusBadges.Children.Add(NetUi.Badge("Nom du Wi-Fi masqué (localisation désactivée)", "Neutral"));
+        if (vpn is not null) _statusBadges.Children.Add(NetUi.Badge(L("VPN actif : {0}", vpn.Name), "Info"));
+        if (s.Wifi?.NeedsLocation == true && s.WifiName is null) _statusBadges.Children.Add(NetUi.Badge(L("Nom du Wi-Fi masqué (localisation désactivée)"), "Neutral"));
         _statusBadges.Visibility = _statusBadges.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -310,7 +310,7 @@ public sealed class NetworkPage : UserControl, INavigationAware
             catch (Exception ex)
             {
                 Log.Error("Network", "onglet " + tab.Key, ex);
-                panel = NetUi.EmptyState("", "Impossible d'afficher cet onglet", ex.Message);
+                panel = NetUi.EmptyState("", L("Impossible d'afficher cet onglet"), ex.Message);
             }
             _panels[tab.Key] = panel;
         }

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using Timonier.Core.Localization;
 using Timonier.Core.Platform;
 using Timonier.UI.Services;
 
@@ -43,11 +44,11 @@ internal sealed class CleanupPanel
         }
 
         // Pied de carte : sélection + boutons.
-        _analyze = MaintUi.Button("Analyser", "", "Pp.Button", async (_, _) => await AnalyzeAsync());
-        _clean = MaintUi.Button("Nettoyer la sélection", "", "Pp.AccentButton", async (_, _) => await CleanAsync());
+        _analyze = MaintUi.Button(L("Analyser"), "", "Pp.Button", async (_, _) => await AnalyzeAsync());
+        _clean = MaintUi.Button(L("Nettoyer la sélection"), "", "Pp.AccentButton", async (_, _) => await CleanAsync());
         _clean.Margin = new Thickness(8, 0, 0, 0);
-        _measureAdmin = MaintUi.Button("Mesurer les éléments système", "", "Pp.LinkButton", async (_, _) => await MeasureAdminAsync());
-        _measureAdmin.ToolTip = "Mesure les dossiers de Windows illisibles sans droits administrateur (une autorisation sera demandée).";
+        _measureAdmin = MaintUi.Button(L("Mesurer les éléments système"), "", "Pp.LinkButton", async (_, _) => await MeasureAdminAsync());
+        _measureAdmin.ToolTip = L("Mesure les dossiers de Windows illisibles sans droits administrateur (une autorisation sera demandée).");
 
         var footer = new DockPanel { Margin = new Thickness(0, 16, 0, 0), LastChildFill = true };
         var buttons = new StackPanel { Orientation = Orientation.Horizontal };
@@ -76,8 +77,8 @@ internal sealed class CleanupPanel
         root.Children.Add(MaintUi.Card(card));
 
         var links = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
-        links.Children.Add(MaintUi.Button("Stockage dans les Paramètres", "", "Pp.LinkButton", (_, _) => MaintUi.OpenSettings("ms-settings:storagesense")));
-        links.Children.Add(MaintUi.Button("Nettoyage de disque de Windows", "", "Pp.LinkButton", (_, _) => MaintUi.OpenTool(SystemTool.CleanMgr)));
+        links.Children.Add(MaintUi.Button(L("Stockage dans les Paramètres"), "", "Pp.LinkButton", (_, _) => MaintUi.OpenSettings("ms-settings:storagesense")));
+        links.Children.Add(MaintUi.Button(L("Nettoyage de disque de Windows"), "", "Pp.LinkButton", (_, _) => MaintUi.OpenTool(SystemTool.CleanMgr)));
         foreach (FrameworkElement link in links.Children) link.Margin = new Thickness(0, 0, 20, 0);
         root.Children.Add(links);
 
@@ -92,7 +93,7 @@ internal sealed class CleanupPanel
         var title = MaintUi.Text(c.Title, "Pp.CardTitle", wrap: false);
         title.Margin = new Thickness(0, 0, 8, 0);
         titleRow.Children.Add(title);
-        if (c.Admin) titleRow.Children.Add(MaintUi.Badge("Administrateur", "Pp.TextSecondary", "Pp.CardSecondary", ""));
+        if (c.Admin) titleRow.Children.Add(MaintUi.Badge(L("Administrateur"), "Pp.TextSecondary", "Pp.CardSecondary", ""));
         texts.Children.Add(titleRow);
         var desc = MaintUi.Text(c.Description, "Pp.Caption");
         desc.Margin = new Thickness(0, 3, 0, 0);
@@ -155,8 +156,8 @@ internal sealed class CleanupPanel
         var known = selected.Where(r => r.Stats is { AccessDenied: false }).Sum(r => r.Stats!.Bytes);
         var unknown = selected.Any(r => r.Stats is null || r.Stats.AccessDenied);
         _selection.Text = selected.Count == 0
-            ? "Aucune catégorie sélectionnée"
-            : $"{selected.Count} catégorie(s) · {(unknown ? "au moins " : "")}{Format.Bytes(known)}";
+            ? L("Aucune catégorie sélectionnée")
+            : LP(selected.Count, "{0} catégorie · {1}", "{0} catégories · {1}", unknown ? L("au moins {0}", Format.Bytes(known)) : Format.Bytes(known));
         _clean.IsEnabled = !_busy && selected.Count > 0;
     }
 
@@ -167,13 +168,13 @@ internal sealed class CleanupPanel
         if (s.AccessDenied && s.Bytes == 0)
         {
             row.Size.Text = "—";
-            row.Count.Text = row.Category.Admin ? "taille visible en admin" : "illisible";
+            row.Count.Text = row.Category.Admin ? L("taille visible en admin") : L("illisible");
             return;
         }
         row.Size.Text = (s.Partial || s.AccessDenied ? "≥ " : "") + Format.Bytes(s.Bytes);
         row.Count.Text = row.Category.Kind == CleanupKind.RecycleBin
-            ? $"{s.Files.ToString("N0", CultureInfo.GetCultureInfo("fr-FR"))} élément(s)"
-            : $"{s.Files.ToString("N0", CultureInfo.GetCultureInfo("fr-FR"))} fichier(s)";
+            ? LP(s.Files, "{0:N0} élément", "{0:N0} éléments")
+            : LP(s.Files, "{0:N0} fichier", "{0:N0} fichiers");
     }
 
     // ================================================================== Analyse
@@ -181,12 +182,12 @@ internal sealed class CleanupPanel
     public async Task AnalyzeAsync()
     {
         if (_busy) return;
-        SetBusy(true, "Analyse en cours…");
+        SetBusy(true, L("Analyse en cours…"));
         try
         {
             foreach (var row in _rows)
             {
-                _status.Text = "Analyse : " + row.Category.Title + "…";
+                _status.Text = L("Analyse : {0}…", row.Category.Title);
                 var budget = TimeSpan.FromSeconds(row.Category.Key == "usertemp" ? 10 : 5);
                 try
                 {
@@ -203,7 +204,7 @@ internal sealed class CleanupPanel
         }
         finally
         {
-            SetBusy(false, $"Analyse effectuée à {DateTime.Now:HH:mm}.");
+            SetBusy(false, L("Analyse effectuée à {0}.", DateTime.Now.ToString("t", Loc.Culture)));
         }
     }
 
@@ -218,7 +219,7 @@ internal sealed class CleanupPanel
     private async Task MeasureAdminAsync()
     {
         if (_busy) return;
-        SetBusy(true, "Mesure des dossiers système (autorisation administrateur)…");
+        SetBusy(true, L("Mesure des dossiers système (autorisation administrateur)…"));
         try
         {
             var p = new Dictionary<string, string> { ["categories"] = string.Join(",", CleanupCatalog.AdminKeys), ["mode"] = "analyze" };
@@ -261,41 +262,40 @@ internal sealed class CleanupPanel
         var lines = string.Join("\n", selected.Select(r => "• " + r.Category.Title +
             (r.Stats is { AccessDenied: false } s ? $" ({Format.Bytes(s.Bytes)})" : "")));
         var warnings = new List<string>();
-        if (selected.Any(r => r.Category.Kind == CleanupKind.RecycleBin)) warnings.Add("Le contenu de la corbeille sera supprimé définitivement.");
-        if (selected.Any(r => r.Category.Key == "sysdumps")) warnings.Add("Les vidages mémoire ne pourront plus servir à diagnostiquer un écran bleu.");
-        if (selected.Any(r => r.Category.Admin)) warnings.Add("Une autorisation administrateur sera demandée pour les éléments système.");
-        var ok = await AppHost.Dialogs.ConfirmAsync("Nettoyer la sélection",
-            "Éléments à nettoyer :\n" + lines + (warnings.Count > 0 ? "\n\n" + string.Join("\n", warnings) : "") +
-            "\n\nLes fichiers en cours d'utilisation sont ignorés.", "Nettoyer", "Annuler", danger: selected.Any(r => r.Category.Kind == CleanupKind.RecycleBin));
+        if (selected.Any(r => r.Category.Kind == CleanupKind.RecycleBin)) warnings.Add(L("Le contenu de la corbeille sera supprimé définitivement."));
+        if (selected.Any(r => r.Category.Key == "sysdumps")) warnings.Add(L("Les vidages mémoire ne pourront plus servir à diagnostiquer un écran bleu."));
+        if (selected.Any(r => r.Category.Admin)) warnings.Add(L("Une autorisation administrateur sera demandée pour les éléments système."));
+        var ok = await AppHost.Dialogs.ConfirmAsync(L("Nettoyer la sélection"),
+            L("Éléments à nettoyer :\n{0}{1}\n\nLes fichiers en cours d'utilisation sont ignorés.", lines, (warnings.Count > 0 ? "\n\n" + string.Join("\n", warnings) : "")), L("Nettoyer"), L("Annuler"), danger: selected.Any(r => r.Category.Kind == CleanupKind.RecycleBin));
         if (!ok) return;
 
-        SetBusy(true, "Nettoyage en cours…");
+        SetBusy(true, L("Nettoyage en cours…"));
         _resultBar.Visibility = Visibility.Collapsed;
-        using var keepAlive = AppHost.Background.Acquire("Nettoyage en cours");
+        using var keepAlive = AppHost.Background.Acquire(L("Nettoyage en cours"));
         long freed = 0, files = 0, skipped = 0;
         var errors = new List<string>();
         try
         {
             foreach (var row in selected.Where(r => !r.Category.Admin))
             {
-                _status.Text = "Nettoyage : " + row.Category.Title + "…";
+                _status.Text = L("Nettoyage : {0}…", row.Category.Title);
                 try
                 {
                     var s = await Task.Run(() => CleanupEngine.Clean(row.Category, TimeSpan.FromMinutes(3), CancellationToken.None));
                     freed += s.Bytes; files += s.Files; skipped += s.Skipped;
-                    if (s.Note is { } note) errors.Add(row.Category.Title + " : " + note);
+                    if (s.Note is { } note) errors.Add(L("{0} : {1}", row.Category.Title, note));
                 }
                 catch (Exception ex)
                 {
                     Log.Warn("Maintenance", $"nettoyage {row.Category.Key} : {ex.Message}");
-                    errors.Add(row.Category.Title + " : " + ex.Message);
+                    errors.Add(L("{0} : {1}", row.Category.Title, ex.Message));
                 }
             }
 
             var adminKeys = selected.Where(r => r.Category.Admin).Select(r => r.Category.Key).ToList();
             if (adminKeys.Count > 0)
             {
-                _status.Text = "Nettoyage des éléments système…";
+                _status.Text = L("Nettoyage des éléments système…");
                 var outcome = await AppHost.Engine.RunActionAsync(CleanupRunAction.ActionId,
                     new Dictionary<string, string> { ["categories"] = string.Join(",", adminKeys) }, new Progress<string>(s => _status.Text = s));
                 if (outcome.Success && outcome.Data is { } d)
@@ -303,15 +303,15 @@ internal sealed class CleanupPanel
                     freed += Long(d, "total.bytes"); files += Long(d, "total.files"); skipped += Long(d, "total.skipped");
                     foreach (var key in adminKeys)
                         if (d.TryGetValue(key + ".note", out var note))
-                            errors.Add(CleanupCatalog.Get(key)!.Title + " : " + note);
+                            errors.Add(L("{0} : {1}", CleanupCatalog.Get(key)!.Title, note));
                 }
                 else if (outcome.Cancelled)
                 {
-                    errors.Add("Éléments système non nettoyés (autorisation refusée).");
+                    errors.Add(L("Éléments système non nettoyés (autorisation refusée)."));
                 }
                 else
                 {
-                    errors.Add("Éléments système : " + outcome.Message);
+                    errors.Add(L("Éléments système : {0}", outcome.Message));
                 }
             }
         }
@@ -320,13 +320,13 @@ internal sealed class CleanupPanel
             SetBusy(false, "");
         }
 
-        var fr = CultureInfo.GetCultureInfo("fr-FR");
-        var summary = $"{Format.Bytes(freed)} libérés · {files.ToString("N0", fr)} élément(s) supprimé(s)" +
-                      (skipped > 0 ? $" · {skipped.ToString("N0", fr)} ignoré(s) car en cours d'utilisation" : "") + ".";
+        var parts = new List<string> { L("{0} libérés", Format.Bytes(freed)), LP(files, "{0:N0} élément supprimé", "{0:N0} éléments supprimés") };
+        if (skipped > 0) parts.Add(LP(skipped, "{0:N0} ignoré car en cours d'utilisation", "{0:N0} ignorés car en cours d'utilisation"));
+        var summary = string.Join(" · ", parts) + ".";
         if (errors.Count > 0) summary += "\n" + string.Join("\n", errors);
         MaintUi.SetInfo(_resultBar, _resultText, _resultIcon, summary,
             errors.Count > 0 ? "Pp.InfoBar.Warning" : "Pp.InfoBar.Success", errors.Count > 0 ? "" : "");
-        AppHost.Toasts.Show($"Nettoyage terminé : {Format.Bytes(freed)} libérés.", errors.Count > 0 ? ToastKind.Warning : ToastKind.Success);
+        AppHost.Toasts.Show(L("Nettoyage terminé : {0} libérés.", Format.Bytes(freed)), errors.Count > 0 ? ToastKind.Warning : ToastKind.Success);
         await AnalyzeAsync();
     }
 }

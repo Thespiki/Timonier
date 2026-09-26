@@ -20,11 +20,11 @@ internal static class GuidedPin
     /// <summary>Message d'erreur de format, ou null si le code est acceptable.</summary>
     public static string? FormatError(string pin)
     {
-        if (pin.Length < MinLength) return $"Le code doit comporter au moins {MinLength} chiffres.";
-        if (pin.Length > MaxLength) return $"Le code ne peut pas dépasser {MaxLength} chiffres.";
+        if (pin.Length < MinLength) return LP(MinLength, "Le code doit comporter au moins {0} chiffre.", "Le code doit comporter au moins {0} chiffres.");
+        if (pin.Length > MaxLength) return LP(MaxLength, "Le code ne peut pas dépasser {0} chiffre.", "Le code ne peut pas dépasser {0} chiffres.");
         foreach (var c in pin)
-            if (c is < '0' or > '9') return "Utilisez uniquement des chiffres.";
-        if (pin.Distinct().Count() == 1) return "Évitez un code composé d'un seul chiffre répété.";
+            if (c is < '0' or > '9') return L("Utilisez uniquement des chiffres.");
+        if (pin.Distinct().Count() == 1) return L("Évitez un code composé d'un seul chiffre répété.");
         return null;
     }
 

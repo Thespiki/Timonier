@@ -1,4 +1,3 @@
-using System.Globalization;
 using Microsoft.Win32;
 using Timonier.Core.Engine;
 using Timonier.Core.Platform;
@@ -83,24 +82,22 @@ internal static class DataInventory
     {
         var list = new List<Item>
         {
-            new("Préférences", "Thème, options, code PIN haché, préférences des modules.", SettingsFile, FileSize(SettingsFile)),
-            new("Journal utilisateur", $"{Count(JournalWriter.UserStore.All().Count)} — modifications faites sans droits d'administrateur (1 000 au maximum).",
+            new(L("Préférences"), L("Thème, options, code PIN haché, préférences des modules."), SettingsFile, FileSize(SettingsFile)),
+            new(L("Journal utilisateur"), L("{0} — modifications faites sans droits d'administrateur (1 000 au maximum).", Count(JournalWriter.UserStore.All().Count)),
                 UserJournalFile, FileSize(UserJournalFile)),
-            new("Journal administrateur", $"{Count(MachineJournalCount())} — modifications faites par la session administrateur (500 au maximum). "
-                + "Lisible par tous, modifiable uniquement par les administrateurs.", @"HKEY_LOCAL_MACHINE\SOFTWARE\Timonier\Journal", "Registre"),
-            new("Cache", "Portrait matériel du PC (accélère le démarrage) et données temporaires des modules. Recréé automatiquement.",
+            new(L("Journal administrateur"), L("{0} — modifications faites par la session administrateur (500 au maximum). Lisible par tous, modifiable uniquement par les administrateurs.", Count(MachineJournalCount())), @"HKEY_LOCAL_MACHINE\SOFTWARE\Timonier\Journal", L("Registre")),
+            new(L("Cache"), L("Portrait matériel du PC (accélère le démarrage) et données temporaires des modules. Recréé automatiquement."),
                 $"{ProfileCacheFile}\n{CacheDir}", Format.Bytes(Size(ProfileCacheFile) + DirSize(CacheDir))),
-            new("Journaux de diagnostic", "Messages techniques en cas d'erreur (1 Mo par fichier, 2 fichiers au maximum). Aucun secret, aucune donnée envoyée. "
-                + "Ceux de la session administrateur sont dans un dossier réservé aux administrateurs (lisible par tous).",
+            new(L("Journaux de diagnostic"), L("Messages techniques en cas d'erreur (1 Mo par fichier, 2 fichiers au maximum). Aucun secret, aucune donnée envoyée. Ceux de la session administrateur sont dans un dossier réservé aux administrateurs (lisible par tous)."),
                 $"{AppPaths.Logs}\n{BrokerLogs}", Format.Bytes(DirSize(AppPaths.Logs) + DirSize(BrokerLogs))),
         };
         if (StartupRegistration.IsEnabled())
-            list.Add(new("Démarrage avec Windows", "Lance Timonier dans la zone de notification à l'ouverture de session.",
-                @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run → Timonier", "Registre"));
+            list.Add(new(L("Démarrage avec Windows"), L("Lance Timonier dans la zone de notification à l'ouverture de session."),
+                @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run → Timonier", L("Registre")));
         return list;
     }
 
-    private static string Count(int n) => n <= 1 ? $"{n} entrée" : $"{n.ToString("N0", CultureInfo.GetCultureInfo("fr-FR"))} entrées";
+    private static string Count(int n) => LP(n, "{0:N0} entrée", "{0:N0} entrées");
 
     private static int MachineJournalCount()
     {
@@ -118,7 +115,7 @@ internal static class DataInventory
         catch { return 0; }
     }
 
-    private static string FileSize(string file) => File.Exists(file) ? Format.Bytes(Size(file)) : "Absent";
+    private static string FileSize(string file) => File.Exists(file) ? Format.Bytes(Size(file)) : LC("file", "Absent");
 
     public static long DirSize(string dir)
     {

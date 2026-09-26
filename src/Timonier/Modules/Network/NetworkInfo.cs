@@ -1,7 +1,8 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using Microsoft.Win32;
+using Timonier.Core.Localization;
 using Timonier.Core.Platform;
 using WinConnectivity = Windows.Networking.Connectivity;
 
@@ -12,8 +13,6 @@ internal enum AdapterKind { Ethernet, Wifi, Mobile, Vpn, Virtual, Other }
 /// <summary>Instantané d'une carte réseau (lecture seule, aucune requête sur le réseau).</summary>
 internal sealed class AdapterInfo
 {
-    private static readonly System.Globalization.CultureInfo Fr = System.Globalization.CultureInfo.GetCultureInfo("fr-FR");
-
     public required string Id { get; init; }
     public Guid Guid { get; init; }
     public required string Name { get; init; }
@@ -45,10 +44,10 @@ internal sealed class AdapterInfo
     {
         AdapterKind.Wifi => "Wi-Fi",
         AdapterKind.Ethernet => "Ethernet",
-        AdapterKind.Mobile => "Réseau mobile",
-        AdapterKind.Vpn => "VPN / tunnel",
-        AdapterKind.Virtual => "Carte virtuelle",
-        _ => "Autre",
+        AdapterKind.Mobile => L("Réseau mobile"),
+        AdapterKind.Vpn => L("VPN / tunnel"),
+        AdapterKind.Virtual => L("Carte virtuelle"),
+        _ => L("Autre"),
     };
 
     public string Glyph => Kind switch
@@ -63,9 +62,9 @@ internal sealed class AdapterInfo
     public string SpeedLabel => SpeedBps switch
     {
         <= 0 => "—",
-        >= 1_000_000_000 => (SpeedBps / 1_000_000_000d).ToString("0.#", Fr) + " Gbit/s",
-        >= 1_000_000 => (SpeedBps / 1_000_000d).ToString("0.#", Fr) + " Mbit/s",
-        _ => (SpeedBps / 1000d).ToString("0", Fr) + " kbit/s",
+        >= 1_000_000_000 => (SpeedBps / 1_000_000_000d).ToString("0.#", Loc.Culture) + " Gbit/s",
+        >= 1_000_000 => (SpeedBps / 1_000_000d).ToString("0.#", Loc.Culture) + " Mbit/s",
+        _ => (SpeedBps / 1000d).ToString("0", Loc.Culture) + " kbit/s",
     };
 
     /// <summary>MAC au format AA:BB:CC:DD:EE:FF, masquée (les 3 derniers octets identifient la carte).</summary>
@@ -80,7 +79,7 @@ internal sealed class AdapterInfo
     {
         get
         {
-            if (DnsServers.Count == 0) return "Aucun serveur DNS";
+            if (DnsServers.Count == 0) return L("Aucun serveur DNS");
             var provider = DnsProviders.Identify(DnsServers);
             return provider is not null ? provider.Name : string.Join(", ", DnsServers.Take(2));
         }
@@ -271,10 +270,10 @@ internal static class NetworkInfo
 
     public static string ConnectivityLabel(ConnectivityLevel level) => level switch
     {
-        ConnectivityLevel.Internet => "Connecté à Internet",
-        ConnectivityLevel.ConstrainedInternet => "Accès limité (portail de connexion ?)",
-        ConnectivityLevel.LocalAccess => "Réseau local uniquement",
-        ConnectivityLevel.None => "Aucune connexion",
-        _ => "État inconnu",
+        ConnectivityLevel.Internet => L("Connecté à Internet"),
+        ConnectivityLevel.ConstrainedInternet => L("Accès limité (portail de connexion ?)"),
+        ConnectivityLevel.LocalAccess => L("Réseau local uniquement"),
+        ConnectivityLevel.None => L("Aucune connexion"),
+        _ => L("État inconnu"),
     };
 }

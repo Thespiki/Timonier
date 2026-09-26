@@ -42,42 +42,42 @@ public sealed class DevicesPage : UserControl, INavigationAware
 
         stack.Children.Add(new PageHeader
         {
-            Title = "Périphériques",
-            Subtitle = "Radios, matériel en erreur, batterie, écrans, et blocages des clés USB, de la caméra ou du micro pour tout le PC.",
+            Title = L("Périphériques"),
+            Subtitle = L("Radios, matériel en erreur, batterie, écrans, et blocages des clés USB, de la caméra ou du micro pour tout le PC."),
             Glyph = DevicesModule.Glyph,
         });
 
         var hasBattery = AppHost.Profile.HasBattery || BatteryService.Now().HasBattery;
 
         // Aperçu : tuiles cliquables qui mènent aux sections.
-        _devicesTile = new Tile(DevicesModule.Glyph, "Périphériques", "Analyse…", () => ScrollTo("inventory"));
-        _radiosTile = new Tile("", "Sans fil", "Lecture…", () => ScrollTo("radios"));
+        _devicesTile = new Tile(DevicesModule.Glyph, L("Périphériques"), L("Analyse…"), () => ScrollTo("inventory"));
+        _radiosTile = new Tile("", L("Sans fil"), L("Lecture…"), () => ScrollTo("radios"));
         _batteryTile = hasBattery
-            ? new Tile("", "Batterie", "Calcul…", () => ScrollTo("battery"))
-            : new Tile("", "Écrans", "Lecture…", () => ScrollTo("displays"));
-        _blocksTile = new Tile("", "Blocages", "Lecture…", () => ScrollTo("blocks"));
+            ? new Tile("", L("Batterie"), L("Calcul…"), () => ScrollTo("battery"))
+            : new Tile("", L("Écrans"), L("Lecture…"), () => ScrollTo("displays"));
+        _blocksTile = new Tile("", L("Blocages"), L("Lecture…"), () => ScrollTo("blocks"));
         var tiles = new UniformGrid { Columns = 4, Margin = new Thickness(-4, 0, -4, 4) };
         foreach (var t in new[] { _devicesTile, _radiosTile, _batteryTile, _blocksTile }) tiles.Children.Add(t);
         stack.Children.Add(tiles);
 
-        AddSection(stack, "radios", "Wi-Fi, Bluetooth et réseau mobile", _radios);
-        AddSection(stack, "inventory", "Inventaire des périphériques", _inventory);
-        AddSection(stack, "protected", "Composants protégés", BuildProtectedCard());
+        AddSection(stack, "radios", L("Wi-Fi, Bluetooth et réseau mobile"), _radios);
+        AddSection(stack, "inventory", L("Inventaire des périphériques"), _inventory);
+        AddSection(stack, "protected", L("Composants protégés"), BuildProtectedCard());
         if (hasBattery)
         {
             _battery = new BatteryPanel();
-            AddSection(stack, "battery", "Batterie", _battery);
+            AddSection(stack, "battery", L("Batterie"), _battery);
             _battery.SummaryChanged += (text, tone) => _batteryTile.Set(text, tone);
         }
-        AddSection(stack, "displays", "Écrans", _displays);
-        AddSection(stack, "blocks", "Blocages matériels", BuildBlocksSection());
+        AddSection(stack, "displays", L("Écrans"), _displays);
+        AddSection(stack, "blocks", L("Blocages matériels"), BuildBlocksSection());
 
         _radios.SummaryChanged += (value, detail) => _radiosTile.Set(value, null, detail);
         _inventory.SummaryChanged += (total, problems, disabled) =>
         {
-            if (total < 0) { _devicesTile.Set("Liste indisponible", "Pp.Danger"); return; }
-            _devicesTile.Set(problems > 0 ? $"{problems} en erreur" : "Aucune erreur", problems > 0 ? "Pp.Warning" : "Pp.Success",
-                $"{total} détectés" + (disabled > 0 ? $" · {disabled} désactivé{(disabled > 1 ? "s" : "")}" : ""));
+            if (total < 0) { _devicesTile.Set(L("Liste indisponible"), "Pp.Danger"); return; }
+            _devicesTile.Set(problems > 0 ? LP(problems, "{0} en erreur", "{0} en erreur") : L("Aucune erreur"), problems > 0 ? "Pp.Warning" : "Pp.Success",
+                LP(total, "{0} détecté", "{0} détectés") + (disabled > 0 ? " · " + LP(disabled, "{0} désactivé", "{0} désactivés") : ""));
         };
         if (!hasBattery) _displays.SummaryChanged += s => _batteryTile.Set(s, null);
 
@@ -186,7 +186,7 @@ public sealed class DevicesPage : UserControl, INavigationAware
     {
         var s = new StackPanel();
         var intro = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
-        var privacy = DevUi.Button("Autorisations de votre compte", "", "Pp.SubtleButton", (_, _) => AppHost.Navigator.Navigate("privacy", "section:permissions"));
+        var privacy = DevUi.Button(L("Autorisations de votre compte"), "", "Pp.SubtleButton", (_, _) => AppHost.Navigator.Navigate("privacy", "section:permissions"));
         privacy.VerticalAlignment = VerticalAlignment.Center;
         DockPanel.SetDock(privacy, Dock.Right);
         intro.Children.Add(privacy);
@@ -194,10 +194,9 @@ public sealed class DevicesPage : UserControl, INavigationAware
         icon.Margin = new Thickness(0, 1, 10, 0);
         icon.VerticalAlignment = VerticalAlignment.Top;
         intro.Children.Add(icon);
-        intro.Children.Add(DevUi.Text("Ces blocages s'appliquent à tous les comptes du PC, y compris les administrateurs, et demandent une autorisation " +
-                                      "administrateur. Chaque changement reste annulable depuis le Journal.", "Pp.Caption"));
+        intro.Children.Add(DevUi.Text(L("Ces blocages s'appliquent à tous les comptes du PC, y compris les administrateurs, et demandent une autorisation administrateur. Chaque changement reste annulable depuis le Journal."), "Pp.Caption"));
         s.Children.Add(new Border { Child = intro }.Styled("Pp.InfoBar"));
-        _tweaksHost.Content = new TextBlock { Text = "Chargement des réglages…", Margin = new Thickness(2, 4, 0, 0) }.Styled("Pp.Caption");
+        _tweaksHost.Content = new TextBlock { Text = L("Chargement des réglages…"), Margin = new Thickness(2, 4, 0, 0) }.Styled("Pp.Caption");
         s.Children.Add(_tweaksHost);
         return s;
     }
@@ -214,7 +213,7 @@ public sealed class DevicesPage : UserControl, INavigationAware
         catch (Exception ex)
         {
             Log.Error("Devices", "création des réglages", ex);
-            _tweaksHost.Content = PageScaffold.InfoBar("Les réglages de blocage n'ont pas pu être affichés.", "", "Pp.InfoBar.Danger");
+            _tweaksHost.Content = PageScaffold.InfoBar(L("Les réglages de blocage n'ont pas pu être affichés."), "", "Pp.InfoBar.Danger");
         }
         if (_pendingNavigation is not null) Dispatcher.InvokeAsync(HandleNavigation, DispatcherPriority.Loaded);
     }
@@ -226,9 +225,9 @@ public sealed class DevicesPage : UserControl, INavigationAware
             .Select(t => (Tweak: t, State: SafeDetect(t)))
             .ToList());
         var active = states.Where(x => x.State.OptionKey is { } k && x.Tweak.WindowsDefault is { } d && k != d).Select(x => x.Tweak.Title).ToList();
-        _blocksTile.Set(active.Count == 0 ? "Aucun actif" : active.Count == 1 ? "1 blocage actif" : $"{active.Count} blocages actifs",
+        _blocksTile.Set(active.Count == 0 ? L("Aucun actif") : LP(active.Count, "{0} blocage actif", "{0} blocages actifs"),
             null,
-            active.Count == 0 ? "USB, caméra, micro, CD/DVD…" : string.Join(", ", active.Take(2)) + (active.Count > 2 ? "…" : ""));
+            active.Count == 0 ? L("USB, caméra, micro, CD/DVD…") : string.Join(", ", active.Take(2)) + (active.Count > 2 ? "…" : ""));
     }
 
     private static TweakState SafeDetect(TweakDefinition t)
@@ -244,16 +243,15 @@ public sealed class DevicesPage : UserControl, INavigationAware
     private static FrameworkElement BuildProtectedCard()
     {
         var s = new StackPanel();
-        s.Children.Add(DevUi.Text("Pour éviter de rendre le PC inutilisable, Timonier refuse de désactiver les composants suivants, " +
-                                  "même avec les droits administrateur. Ces contrôles sont refaits par le processus administrateur au moment d'agir.", "Pp.Caption"));
+        s.Children.Add(DevUi.Text(L("Pour éviter de rendre le PC inutilisable, Timonier refuse de désactiver les composants suivants, même avec les droits administrateur. Ces contrôles sont refaits par le processus administrateur au moment d'agir."), "Pp.Caption"));
         s.Children.Add(DevUi.Divider(new Thickness(0, 10, 0, 6)));
         foreach (var (_, title, reason) in DeviceCatalog.ProtectedClasses)
             s.Children.Add(Row("", "Pp.TextSecondary", title, reason));
         s.Children.Add(DevUi.Divider(new Thickness(0, 8, 0, 6)));
-        s.Children.Add(new TextBlock { Text = "Désactivation possible, avec une seconde confirmation affichée par le processus administrateur :", Margin = new Thickness(0, 0, 0, 4) }
+        s.Children.Add(new TextBlock { Text = L("Désactivation possible, avec une seconde confirmation affichée par le processus administrateur :"), Margin = new Thickness(0, 0, 0, 4) }
             .Styled("Pp.Caption"));
         foreach (var (cls, why) in DeviceCatalog.SensitiveClasses)
-            s.Children.Add(Row("", "Pp.Warning", DeviceCatalog.ClassInfo(cls).Title, char.ToUpperInvariant(why[0]) + why[1..] + "."));
+            s.Children.Add(Row("", "Pp.Warning", DeviceCatalog.ClassInfo(cls).Title, char.ToUpper(why[0], Culture) + why[1..] + "."));
         return DevUi.Card(s, new Thickness(18, 14, 18, 12));
 
         static FrameworkElement Row(string glyph, string brush, string title, string reason)

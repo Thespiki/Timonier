@@ -48,6 +48,8 @@ public sealed class SystemProfile
     public bool HardwareLoaded { get; set; }
     public string Manufacturer { get; set; } = "";
     public string ManufacturerRaw { get; set; } = "";
+    /// <summary>Fabricant réellement renseigné par le micrologiciel (indépendant de la langue de l'interface).</summary>
+    [JsonIgnore] public bool ManufacturerKnown => !SystemProfileService.IsUnknownManufacturer(ManufacturerRaw);
     public string Model { get; set; } = "";
     public FormFactor FormFactor { get; set; }
     public bool HasBattery { get; set; }
@@ -99,13 +101,13 @@ public sealed class SystemProfile
     [JsonIgnore]
     public string EditionLabel => Edition switch
     {
-        EditionFamily.Home => "Famille",
-        EditionFamily.Pro => "Professionnel",
-        EditionFamily.ProEducation => "Professionnel Éducation",
-        EditionFamily.ProWorkstation => "Professionnel pour stations de travail",
-        EditionFamily.Education => "Éducation",
-        EditionFamily.Enterprise => "Entreprise",
-        EditionFamily.IoTEnterprise => "IoT Entreprise",
+        EditionFamily.Home => LC("Windows edition", "Famille"),
+        EditionFamily.Pro => LC("Windows edition", "Professionnel"),
+        EditionFamily.ProEducation => LC("Windows edition", "Professionnel Éducation"),
+        EditionFamily.ProWorkstation => LC("Windows edition", "Professionnel pour stations de travail"),
+        EditionFamily.Education => LC("Windows edition", "Éducation"),
+        EditionFamily.Enterprise => LC("Windows edition", "Entreprise"),
+        EditionFamily.IoTEnterprise => LC("Windows edition", "IoT Entreprise"),
         EditionFamily.SE => "SE",
         EditionFamily.Server => "Server",
         _ => EditionId,
@@ -114,23 +116,23 @@ public sealed class SystemProfile
     [JsonIgnore]
     public string FormFactorLabel => FormFactor switch
     {
-        FormFactor.Desktop => "Ordinateur de bureau",
-        FormFactor.Laptop => "Ordinateur portable",
-        FormFactor.Convertible => "PC convertible",
-        FormFactor.Tablet => "Tablette",
-        FormFactor.AllInOne => "Tout-en-un",
-        FormFactor.MiniPc => "Mini PC",
-        FormFactor.Server => "Serveur",
-        FormFactor.VirtualMachine => "Machine virtuelle",
-        _ => HasBattery ? "Ordinateur portable" : "PC",
+        FormFactor.Desktop => L("Ordinateur de bureau"),
+        FormFactor.Laptop => L("Ordinateur portable"),
+        FormFactor.Convertible => L("PC convertible"),
+        FormFactor.Tablet => L("Tablette"),
+        FormFactor.AllInOne => L("Tout-en-un"),
+        FormFactor.MiniPc => L("Mini PC"),
+        FormFactor.Server => L("Serveur"),
+        FormFactor.VirtualMachine => L("Machine virtuelle"),
+        _ => HasBattery ? L("Ordinateur portable") : L("PC"),
     };
 
     [JsonIgnore]
     public string TierLabel => Tier switch
     {
-        PerformanceTier.Low => "Modeste",
-        PerformanceTier.Medium => "Intermédiaire",
-        PerformanceTier.High => "Performant",
-        _ => "Inconnu",
+        PerformanceTier.Low => LC("performance tier", "Modeste"),
+        PerformanceTier.Medium => LC("performance tier", "Intermédiaire"),
+        PerformanceTier.High => LC("performance tier", "Performant"),
+        _ => L("Inconnu"),
     };
 }

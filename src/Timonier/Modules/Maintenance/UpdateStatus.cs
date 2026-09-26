@@ -79,17 +79,21 @@ internal sealed class UpdateStatus
     public HealthResult ToHealth()
     {
         if (ComFailed || LastInstall is null)
-            return new HealthResult(HealthStatus.Unknown, "Date de la dernière mise à jour inconnue",
-                "L'agent Windows Update n'a pas indiqué de dernière installation réussie.");
+            return new HealthResult(HealthStatus.Unknown, L("Date de la dernière mise à jour inconnue"),
+                L("L'agent Windows Update n'a pas indiqué de dernière installation réussie."));
         var days = (int)(DateTime.Now - LastInstall.Value).TotalDays;
-        var ago = days <= 0 ? "aujourd'hui" : days == 1 ? "hier" : $"il y a {days} jours";
-        var detail = IsPaused ? $"Mises à jour suspendues jusqu'au {PausedUntil!.Value.ToString("d MMMM", CultureInfo.GetCultureInfo("fr-FR"))}." : null;
-        if (RebootPending) detail = "Un redémarrage est nécessaire pour terminer l'installation." + (detail is null ? "" : " " + detail);
+        var last = days <= 0 ? L("Dernière mise à jour installée aujourd'hui")
+            : days == 1 ? L("Dernière mise à jour installée hier")
+            : LP(days, "Dernière mise à jour installée il y a {0} jour", "Dernière mise à jour installée il y a {0} jours");
+        var detail = IsPaused ? L("Mises à jour suspendues jusqu'au {0}.", Format.Day(PausedUntil!.Value)) : null;
+        if (RebootPending)
+            detail = detail is null ? L("Un redémarrage est nécessaire pour terminer l'installation.")
+                : L("Un redémarrage est nécessaire pour terminer l'installation. {0}", detail);
         return days switch
         {
-            > 60 => new HealthResult(HealthStatus.Critical, $"Aucune mise à jour installée depuis {days} jours", detail ?? "Ce PC ne reçoit plus les correctifs de sécurité : lancez une recherche de mises à jour."),
-            > 30 => new HealthResult(HealthStatus.Warning, $"Dernière mise à jour installée {ago}", detail ?? "Pensez à rechercher les mises à jour."),
-            _ => new HealthResult(RebootPending ? HealthStatus.Info : HealthStatus.Good, $"Dernière mise à jour installée {ago}", detail),
+            > 60 => new HealthResult(HealthStatus.Critical, LP(days, "Aucune mise à jour installée depuis {0} jour", "Aucune mise à jour installée depuis {0} jours"), detail ?? L("Ce PC ne reçoit plus les correctifs de sécurité : lancez une recherche de mises à jour.")),
+            > 30 => new HealthResult(HealthStatus.Warning, last, detail ?? L("Pensez à rechercher les mises à jour.")),
+            _ => new HealthResult(RebootPending ? HealthStatus.Info : HealthStatus.Good, last, detail),
         };
     }
 }

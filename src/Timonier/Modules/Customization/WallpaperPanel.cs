@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -22,9 +22,9 @@ internal sealed class WallpaperPanel : UserControl
     /// <summary>Couleurs unies proposées (contenu choisi par l'utilisateur, pas un style d'interface).</summary>
     private static readonly (string Hex, string Name)[] SolidColors =
     [
-        ("000000", "Noir"), ("4C4A48", "Anthracite"), ("767676", "Gris"), ("0063B1", "Bleu nuit"), ("0078D4", "Bleu"),
-        ("2D7D9A", "Bleu canard"), ("038387", "Sarcelle"), ("107C10", "Vert"), ("744DA9", "Violet"),
-        ("881798", "Prune"), ("C30052", "Framboise"), ("D13438", "Rouge"), ("CA5010", "Orange brûlé"), ("847545", "Bronze"),
+        ("000000", L("Noir")), ("4C4A48", L("Anthracite")), ("767676", L("Gris")), ("0063B1", L("Bleu nuit")), ("0078D4", L("Bleu")),
+        ("2D7D9A", L("Bleu canard")), ("038387", L("Sarcelle")), ("107C10", L("Vert")), ("744DA9", L("Violet")),
+        ("881798", L("Prune")), ("C30052", L("Framboise")), ("D13438", L("Rouge")), ("CA5010", L("Orange brûlé")), ("847545", L("Bronze")),
     ];
 
     private readonly Image _preview = new() { Stretch = Stretch.UniformToFill, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
@@ -49,7 +49,7 @@ internal sealed class WallpaperPanel : UserControl
         // ---- Aperçu (16:9)
         _placeholder = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed };
         _placeholder.Children.Add(UiKit.Icon("", 22, "Pp.TextTertiary").Also(i => i.HorizontalAlignment = HorizontalAlignment.Center));
-        _placeholder.Children.Add(UiKit.Text("Aperçu indisponible", "Pp.Caption").Also(t => { t.Margin = new Thickness(0, 6, 0, 0); t.HorizontalAlignment = HorizontalAlignment.Center; }));
+        _placeholder.Children.Add(UiKit.Text(L("Aperçu indisponible"), "Pp.Caption").Also(t => { t.Margin = new Thickness(0, 6, 0, 0); t.HorizontalAlignment = HorizontalAlignment.Center; }));
         var previewGrid = new Grid();
         previewGrid.Children.Add(_previewColor);
         previewGrid.Children.Add(_preview);
@@ -66,29 +66,29 @@ internal sealed class WallpaperPanel : UserControl
         var header = new DockPanel();
         DockPanel.SetDock(_busy, Dock.Right);
         header.Children.Add(_busy);
-        header.Children.Add(UiKit.Text("Fond d'écran", "Pp.CardTitle").Also(t => t.FontWeight = FontWeights.SemiBold));
+        header.Children.Add(UiKit.Text(L("Fond d'écran"), "Pp.CardTitle").Also(t => t.FontWeight = FontWeights.SemiBold));
         details.Children.Add(header);
-        _current = UiKit.Text("Lecture…", "Pp.Caption");
+        _current = UiKit.Text(L("Lecture…"), "Pp.Caption");
         _current.TextTrimming = TextTrimming.CharacterEllipsis;
         _current.TextWrapping = TextWrapping.NoWrap;
         _current.Margin = new Thickness(0, 2, 0, 0);
         details.Children.Add(_current);
 
         var row = new WrapPanel { Margin = new Thickness(0, 12, 0, 0) };
-        _pick = UiKit.Button("Choisir une image…", "", "Pp.AccentButton", async (_, _) => await PickImageAsync());
+        _pick = UiKit.Button(L("Choisir une image…"), "", "Pp.AccentButton", async (_, _) => await PickImageAsync());
         _pick.Margin = new Thickness(0, 0, 16, 6);
         row.Children.Add(_pick);
-        var positionLabel = UiKit.Text("Position", "Pp.Body");
+        var positionLabel = UiKit.Text(L("Position"), "Pp.Body");
         positionLabel.VerticalAlignment = VerticalAlignment.Center;
         positionLabel.Margin = new Thickness(0, 0, 8, 6);
         row.Children.Add(positionLabel);
         _position = new ComboBox { Width = 220, Margin = new Thickness(0, 0, 0, 6), DisplayMemberPath = nameof(WallpaperPosition.Label), ItemsSource = WallpaperPosition.All };
-        System.Windows.Automation.AutomationProperties.SetName(_position, "Position du fond d'écran");
+        System.Windows.Automation.AutomationProperties.SetName(_position, L("Position du fond d'écran"));
         _position.SelectionChanged += async (_, _) => { if (!_suppressPosition) await ApplyPositionAsync(); };
         row.Children.Add(_position);
         details.Children.Add(row);
 
-        details.Children.Add(UiKit.Text("Ou une couleur unie :", "Pp.Caption").Also(t => t.Margin = new Thickness(0, 8, 0, 6)));
+        details.Children.Add(UiKit.Text(L("Ou une couleur unie :"), "Pp.Caption").Also(t => t.Margin = new Thickness(0, 8, 0, 6)));
         foreach (var (hex, name) in SolidColors) _swatches.Children.Add(Swatch(hex, name));
         var plus = new Border
         {
@@ -96,22 +96,22 @@ internal sealed class WallpaperPanel : UserControl
             Child = UiKit.Icon("", 12).Also(i => i.HorizontalAlignment = HorizontalAlignment.Center),
         }.Themed(Border.BorderBrushProperty, "Pp.ControlStroke").Themed(Border.BackgroundProperty, "Pp.ControlFill");
         _other = new Button { Content = plus, Padding = new Thickness(2), MinHeight = 0, Margin = new Thickness(0, 0, 2, 4) }.Styled("Pp.SubtleButton");
-        _other.ToolTip = "Autre couleur (code hexadécimal RRVVBB)…";
-        System.Windows.Automation.AutomationProperties.SetName(_other, "Autre couleur unie");
+        _other.ToolTip = L("Autre couleur (code hexadécimal RRVVBB)…");
+        System.Windows.Automation.AutomationProperties.SetName(_other, L("Autre couleur unie"));
         _other.Click += async (_, _) => await PickCustomColorAsync();
         _swatches.Children.Add(_other);
         details.Children.Add(_swatches);
 
         var links = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
-        _restore = UiKit.Button("Restaurer le fond précédent", "", "Pp.LinkButton", async (_, _) => await RestorePreviousAsync());
+        _restore = UiKit.Button(L("Restaurer le fond précédent"), "", "Pp.LinkButton", async (_, _) => await RestorePreviousAsync());
         _restore.Margin = new Thickness(-2, 0, 16, 0);
         links.Children.Add(_restore);
-        var settings = UiKit.Button("Paramètres Windows : arrière-plan", "", "Pp.LinkButton", (_, _) => AppearancePanel.OpenSettings("ms-settings:personalization-background"));
+        var settings = UiKit.Button(L("Paramètres Windows : arrière-plan"), "", "Pp.LinkButton", (_, _) => AppearancePanel.OpenSettings("ms-settings:personalization-background"));
         settings.Margin = new Thickness(-2, 0, 0, 0);
         links.Children.Add(settings);
         details.Children.Add(links);
 
-        details.Children.Add(UiKit.Text("Si un diaporama ou « Windows à la une » est actif dans les Paramètres, il peut remplacer l'image choisie.", "Pp.Caption")
+        details.Children.Add(UiKit.Text(L("Si un diaporama ou « Windows à la une » est actif dans les Paramètres, il peut remplacer l'image choisie."), "Pp.Caption")
             .Themed(TextBlock.ForegroundProperty, "Pp.TextTertiary").Also(t => t.Margin = new Thickness(0, 8, 0, 0)));
 
         var grid = new Grid();
@@ -140,7 +140,7 @@ internal sealed class WallpaperPanel : UserControl
         }.Themed(Border.BorderBrushProperty, "Pp.ControlStroke");
         var b = new Button { Content = chip, Padding = new Thickness(2), MinHeight = 0, Margin = new Thickness(0, 0, 2, 4), ToolTip = $"{name} (#{hex})" }
             .Styled("Pp.SubtleButton");
-        System.Windows.Automation.AutomationProperties.SetName(b, "Couleur unie : " + name);
+        System.Windows.Automation.AutomationProperties.SetName(b, L("Couleur unie : {0}", name));
         b.Click += async (_, _) => await ApplyColorAsync(hex);
         return b;
     }
@@ -179,7 +179,7 @@ internal sealed class WallpaperPanel : UserControl
         catch (Exception ex)
         {
             Log.Error("Customization", "lecture du fond d'écran", ex);
-            _current.Text = "Impossible de lire le fond d'écran actuel.";
+            _current.Text = L("Impossible de lire le fond d'écran actuel.");
         }
     }
 
@@ -189,7 +189,7 @@ internal sealed class WallpaperPanel : UserControl
         if (s is null) return;
         if (s.IsSolidColor)
         {
-            _current.Text = s.BackgroundHex is { } hex ? $"Couleur unie (#{hex})" : "Couleur unie";
+            _current.Text = s.BackgroundHex is { } hex ? L("Couleur unie (#{0})", hex) : L("Couleur unie");
             _current.ToolTip = null;
             _previewColor.Background = UiKit.BrushFromHex(s.BackgroundHex);
             _preview.Visibility = Visibility.Collapsed;
@@ -200,7 +200,7 @@ internal sealed class WallpaperPanel : UserControl
             var exists = File.Exists(s.FilePath);
             _current.Text = exists
                 ? $"{Path.GetFileName(s.FilePath)} · {Path.GetDirectoryName(s.FilePath)}"
-                : "Image d'origine introuvable (copie conservée par Windows)";
+                : L("Image d'origine introuvable (copie conservée par Windows)");
             _current.ToolTip = s.FilePath;
             _previewColor.Background = UiKit.BrushFromHex(s.BackgroundHex);
             _preview.Visibility = Visibility.Visible;
@@ -234,8 +234,8 @@ internal sealed class WallpaperPanel : UserControl
     {
         var dialog = new OpenFileDialog
         {
-            Title = "Choisir un fond d'écran",
-            Filter = "Images (JPEG, PNG, BMP, GIF, TIFF)|" + string.Join(";", CustomizationValidate.WallpaperExtensions.Select(e => "*" + e)),
+            Title = L("Choisir un fond d'écran"),
+            Filter = L("Images (JPEG, PNG, BMP, GIF, TIFF)") + "|" + string.Join(";", CustomizationValidate.WallpaperExtensions.Select(e => "*" + e)),
             InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
             CheckFileExists = true,
             Multiselect = false,
@@ -250,7 +250,7 @@ internal sealed class WallpaperPanel : UserControl
         if (_position.SelectedItem is not WallpaperPosition position || _state is not { } s) return;
         if (s.IsSolidColor || !IsUsableImage(s.FilePath))
         {
-            AppHost.Toasts.Show("La position sera utilisée pour la prochaine image choisie.", ToastKind.Info);
+            AppHost.Toasts.Show(L("La position sera utilisée pour la prochaine image choisie."), ToastKind.Info);
             return;
         }
         if (s.Position?.Key == position.Key) return;
@@ -268,12 +268,12 @@ internal sealed class WallpaperPanel : UserControl
 
     private async Task PickCustomColorAsync()
     {
-        var value = await AppHost.Dialogs.PromptAsync("Couleur unie",
-            "Code hexadécimal de la couleur (RRVVBB), par exemple 1E3A5F pour un bleu profond :",
+        var value = await AppHost.Dialogs.PromptAsync(L("Couleur unie"),
+            L("Code hexadécimal de la couleur (RRVVBB), par exemple 1E3A5F pour un bleu profond :"),
             _state?.BackgroundHex ?? "",
             validate: v => System.Text.RegularExpressions.Regex.IsMatch(v.Trim().TrimStart('#'), "^[0-9A-Fa-f]{6}$")
                 ? null
-                : "Six caractères hexadécimaux attendus (0-9, A-F).");
+                : L("Six caractères hexadécimaux attendus (0-9, A-F)."));
         if (value is null) return;
         await ApplyColorAsync(value.Trim().TrimStart('#').ToUpperInvariant());
     }
@@ -299,7 +299,7 @@ internal sealed class WallpaperPanel : UserControl
         }
         if (outcome.Data is { } data) SavePrevious(data);
         // « Annuler » réapplique immédiatement le fond précédent (l'annulation du journal ne restaure que le registre).
-        AppHost.Toasts.Show(outcome.Message, ToastKind.Success, HasPrevious() ? "Annuler" : null,
+        AppHost.Toasts.Show(outcome.Message, ToastKind.Success, HasPrevious() ? L("Annuler") : null,
             HasPrevious() ? () => _ = RestorePreviousAsync() : null);
         await RefreshAsync();
     }
@@ -309,7 +309,7 @@ internal sealed class WallpaperPanel : UserControl
         var previous = LoadPrevious();
         if (previous is null)
         {
-            AppHost.Toasts.Show("Aucun fond d'écran précédent n'est mémorisé.", ToastKind.Info);
+            AppHost.Toasts.Show(L("Aucun fond d'écran précédent n'est mémorisé."), ToastKind.Info);
             return;
         }
         var path = previous.GetValueOrDefault("previousPath") ?? "";
@@ -320,7 +320,7 @@ internal sealed class WallpaperPanel : UserControl
         }
         if (!IsUsableImage(path))
         {
-            AppHost.Toasts.Show("Le fond d'écran précédent n'est plus disponible sous forme d'image (fichier déplacé, supprimé ou géré par Windows).", ToastKind.Warning);
+            AppHost.Toasts.Show(L("Le fond d'écran précédent n'est plus disponible sous forme d'image (fichier déplacé, supprimé ou géré par Windows)."), ToastKind.Warning);
             return;
         }
         var position = WallpaperPosition.Get(previous.GetValueOrDefault("previousPosition") ?? "") ?? WallpaperPosition.Get("fill")!;

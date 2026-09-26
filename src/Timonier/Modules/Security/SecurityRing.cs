@@ -34,7 +34,7 @@ internal sealed class SecurityRing : Grid
         _icon.SetResourceReference(TextBlock.ForegroundProperty, "Pp.TextSecondary");
         _value = new TextBlock { FontSize = 26, HorizontalAlignment = HorizontalAlignment.Center };
         _value.SetResourceReference(StyleProperty, "Pp.Metric");
-        _caption = new TextBlock { FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, -3, 0, 0), Text = "sur 100" };
+        _caption = new TextBlock { FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, -3, 0, 0), Text = L("sur 100") };
         _caption.SetResourceReference(StyleProperty, "Pp.Caption");
 
         var center = new StackPanel { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
@@ -45,7 +45,7 @@ internal sealed class SecurityRing : Grid
         Children.Add(track);
         Children.Add(_arc);
         Children.Add(center);
-        System.Windows.Automation.AutomationProperties.SetName(this, "Score de sécurité");
+        System.Windows.Automation.AutomationProperties.SetName(this, L("Score de sécurité"));
         Update(null, "");
     }
 

@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using Timonier.Core.Platform;
@@ -10,8 +9,6 @@ namespace Timonier.Modules.Startup;
 /// <summary>Onglet « Tâches planifiées » : tâches des applications (par défaut), déclencheurs, activation.</summary>
 internal sealed class TasksPanel : StackPanel, IStartupPanel
 {
-    private static readonly CultureInfo Fr = CultureInfo.GetCultureInfo("fr-FR");
-
     private readonly TextBlock _summary = Caption("");
     private readonly SegmentedBar _filter = new(compact: true);
     private readonly Button _refresh;
@@ -28,19 +25,17 @@ internal sealed class TasksPanel : StackPanel, IStartupPanel
     public TasksPanel()
     {
         Children.Add(PageScaffold.InfoBar(
-            "Beaucoup d'applications installent des tâches planifiées (mises à jour, vérifications, lancement à l'ouverture de session). "
-            + "Par défaut, seules les tâches hors du dossier Microsoft sont affichées. Les tâches système de Windows restent en lecture "
-            + "seule ; désactiver une tâche est annulable depuis le journal.", ""));
+            L("Beaucoup d'applications installent des tâches planifiées (mises à jour, vérifications, lancement à l'ouverture de session). Par défaut, seules les tâches hors du dossier Microsoft sont affichées. Les tâches système de Windows restent en lecture seule ; désactiver une tâche est annulable depuis le journal."), ""));
 
-        var search = SearchBox("Rechercher une tâche, un auteur, une commande", q => { _query = q; Render(); });
-        _filter.Add("Applications");
-        _filter.Add("Au démarrage");
-        _filter.Add("Désactivées");
-        _filter.Add("Toutes");
+        var search = SearchBox(L("Rechercher une tâche, un auteur, une commande"), q => { _query = q; Render(); });
+        _filter.Add(L("Applications"));
+        _filter.Add(L("Au démarrage"));
+        _filter.Add(L("Désactivées"));
+        _filter.Add(L("Toutes"));
         _filter.Select(0, notify: false);
         _filter.SelectionChanged += (_, _) => Render();
-        _refresh = Button("Actualiser", "", "Pp.Button", async (_, _) => await ReloadAsync());
-        var console = Button("Planificateur de tâches", "", "Pp.SubtleButton", (_, _) => OpenConsole("taskschd.msc"));
+        _refresh = Button(L("Actualiser"), "", "Pp.Button", async (_, _) => await ReloadAsync());
+        var console = Button(L("Planificateur de tâches"), "", "Pp.SubtleButton", (_, _) => OpenConsole("taskschd.msc"));
         Children.Add(Toolbar(search, _filter, _refresh, console));
 
         _summary.Margin = new Thickness(2, 0, 0, 10);
@@ -60,7 +55,7 @@ internal sealed class TasksPanel : StackPanel, IStartupPanel
         _loading = true;
         _refresh.IsEnabled = false;
         if (!IsDataLoaded)
-            _body.Content = StateCard("", "Lecture des tâches planifiées…", "La première lecture peut prendre quelques secondes.", busy: true);
+            _body.Content = StateCard("", L("Lecture des tâches planifiées…"), L("La première lecture peut prendre quelques secondes."), busy: true);
         try
         {
             // 1) Tâches des applications (vue par défaut, rapide), 2) dossier \Microsoft en complément.
@@ -79,7 +74,7 @@ internal sealed class TasksPanel : StackPanel, IStartupPanel
         catch (Exception ex)
         {
             Log.Error("Startup", "énumération des tâches planifiées", ex);
-            _body.Content = StateCard("", "Impossible de lire les tâches planifiées", ex.Message);
+            _body.Content = StateCard("", L("Impossible de lire les tâches planifiées"), ex.Message);
         }
         finally
         {
@@ -109,18 +104,28 @@ internal sealed class TasksPanel : StackPanel, IStartupPanel
 
         var apps = _items.Count(t => !t.IsMicrosoftFolder);
         var atStartup = _items.Count(t => t.RunsAtStartup && t.Enabled && !t.IsMicrosoftFolder);
-        _summary.Text = _microsoftPending
-            ? $"{apps} tâches d'applications · {atStartup} lancées au démarrage ou à l'ouverture de session · lecture des tâches Microsoft en cours…"
-            : $"{_items.Count} tâches lisibles · {apps} d'applications · {atStartup} d'applications lancées au démarrage ou à l'ouverture de session"
-              + (list.Count != _items.Count ? $" · {list.Count} affichées" : "");
-        CountChanged?.Invoke(this, apps.ToString(Fr));
+        _summary.Text = string.Join(" · ", (_microsoftPending
+            ? new[]
+            {
+                LP(apps, "{0} tâche d'application", "{0} tâches d'applications"),
+                LP(atStartup, "{0} lancée au démarrage ou à l'ouverture de session", "{0} lancées au démarrage ou à l'ouverture de session"),
+                L("lecture des tâches Microsoft en cours…"),
+            }
+            : new[]
+            {
+                LP(_items.Count, "{0} tâche lisible", "{0} tâches lisibles"),
+                LP(apps, "{0} d'applications", "{0} d'applications"),
+                LP(atStartup, "{0} d'application lancée au démarrage ou à l'ouverture de session", "{0} d'applications lancées au démarrage ou à l'ouverture de session"),
+                list.Count != _items.Count ? LP(list.Count, "{0} affichée", "{0} affichées") : null,
+            }).Where(p => p is not null));
+        CountChanged?.Invoke(this, apps.ToString(Culture));
         if (!rebuildList && _body.Content == _list) return;
 
         if (list.Count == 0)
         {
             _body.Content = _items.Count == 0
-                ? StateCard("", "Aucune tâche planifiée lisible", "Les tâches d'autres comptes ne sont pas visibles sans droits administrateur.")
-                : StateCard("", "Aucune tâche ne correspond", "Modifiez la recherche ou le filtre.");
+                ? StateCard("", L("Aucune tâche planifiée lisible"), L("Les tâches d'autres comptes ne sont pas visibles sans droits administrateur."))
+                : StateCard("", L("Aucune tâche ne correspond"), L("Modifiez la recherche ou le filtre."));
             return;
         }
         _list.SetItems(list);
@@ -150,23 +155,25 @@ internal sealed class TasksPanel : StackPanel, IStartupPanel
         var titleLine = new WrapPanel();
         titleLine.Children.Add(new TextBlock { Text = DisplayName(item.Name), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 10, 2), ToolTip = item.Path }
             .Styled("Pp.Body"));
-        if (!item.Enabled) titleLine.Children.Add(Badge("Désactivée"));
-        else if (item.IsRunning) titleLine.Children.Add(Badge("En cours", "Success"));
-        if (item.RunsAtStartup) titleLine.Children.Add(Badge("Au démarrage", "Accent", ""));
-        if (item.IsWindowsSystem) titleLine.Children.Add(Badge("Tâche système", "Neutral", ""));
-        if (item.Hidden) titleLine.Children.Add(Badge("Masquée"));
+        if (!item.Enabled) titleLine.Children.Add(Badge(L("Désactivée")));
+        else if (item.IsRunning) titleLine.Children.Add(Badge(L("En cours"), "Success"));
+        if (item.RunsAtStartup) titleLine.Children.Add(Badge(L("Au démarrage"), "Accent", ""));
+        if (item.IsWindowsSystem) titleLine.Children.Add(Badge(L("Tâche système"), "Neutral", ""));
+        if (item.Hidden) titleLine.Children.Add(Badge(L("Masquée")));
         body.Children.Add(titleLine);
 
-        var meta = new List<string> { item.Folder.TrimEnd('\\').Length == 0 ? "Dossier racine" : item.Folder.TrimEnd('\\') };
-        if (item.Author is { Length: > 0 } author) meta.Add("auteur : " + author);
-        meta.Add(item.Triggers.Length > 0 ? item.Triggers : "Déclencheurs non lisibles");
+        var meta = new List<string> { item.Folder.TrimEnd('\\').Length == 0 ? L("Dossier racine") : item.Folder.TrimEnd('\\') };
+        if (item.Author is { Length: > 0 } author) meta.Add(L("auteur : {0}", author));
+        meta.Add(item.Triggers.Length > 0 ? item.Triggers : L("Déclencheurs non lisibles"));
         body.Children.Add(Caption(string.Join(" · ", meta)));
 
         var runs = new List<string>();
         if (item.LastRun is { } last)
-            runs.Add("Dernière exécution : " + last.ToString("d MMM yyyy HH:mm", Fr) + (TaskInventory.ResultLabel(item.LastResult) is { } r ? $" ({r})" : ""));
-        else runs.Add("Jamais exécutée");
-        if (item.Enabled && item.NextRun is { } next) runs.Add("prochaine : " + next.ToString("d MMM yyyy HH:mm", Fr));
+            runs.Add(TaskInventory.ResultLabel(item.LastResult) is { } r
+                ? L("Dernière exécution : {0} ({1})", Format.Date(last), r)
+                : L("Dernière exécution : {0}", Format.Date(last)));
+        else runs.Add(L("Jamais exécutée"));
+        if (item.Enabled && item.NextRun is { } next) runs.Add(L("prochaine : {0}", Format.Date(next)));
         body.Children.Add(Caption(string.Join(" · ", runs), tertiary: true));
         if (item.Actions.Length > 0)
         {
@@ -181,13 +188,13 @@ internal sealed class TasksPanel : StackPanel, IStartupPanel
         var actions = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
         var busy = new ProgressBar { IsIndeterminate = true, Width = 40, Height = 3, Margin = new Thickness(0, 0, 10, 0), Visibility = Visibility.Collapsed, VerticalAlignment = VerticalAlignment.Center };
         actions.Children.Add(busy);
-        var state = new TextBlock { Text = item.Enabled ? "Activée" : "Désactivée", Width = 74, TextAlignment = TextAlignment.Right, Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center }
+        var state = new TextBlock { Text = item.Enabled ? L("Activée") : L("Désactivée"), Width = 74, TextAlignment = TextAlignment.Right, Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center }
             .Styled("Pp.Body");
         var toggle = new CheckBox { IsChecked = item.Enabled, IsEnabled = item.CanToggle, VerticalAlignment = VerticalAlignment.Center }.Styled("Pp.ToggleSwitch");
-        System.Windows.Automation.AutomationProperties.SetName(toggle, "Activer la tâche " + item.Name);
+        System.Windows.Automation.AutomationProperties.SetName(toggle, L("Activer la tâche {0}", item.Name));
         toggle.ToolTip = item.CanToggle
-            ? "Activer ou désactiver la tâche (droits administrateur requis)"
-            : "Tâche système de Windows : non modifiable ici.";
+            ? L("Activer ou désactiver la tâche (droits administrateur requis)")
+            : L("Tâche système de Windows : non modifiable ici.");
         ToolTipService.SetShowOnDisabled(toggle, true);
         toggle.Click += async (_, _) => await ToggleAsync(item, toggle, host, busy);
         actions.Children.Add(state);
@@ -210,10 +217,13 @@ internal sealed class TasksPanel : StackPanel, IStartupPanel
         var desired = toggle.IsChecked == true;
         if (!desired && item.IsMicrosoftFolder)
         {
-            var ok = await AppHost.Dialogs.ConfirmAsync("Désactiver cette tâche Microsoft ?",
-                $"{item.Path}\n\n{(item.Description is { Length: > 0 } d ? d + "\n\n" : "")}"
-                + "Cette tâche appartient à un produit Microsoft (Office, Edge, OneDrive…) : la désactiver peut empêcher ses mises à jour "
-                + "ou une fonction associée. La modification est annulable depuis le journal.", "Désactiver", "Annuler");
+            var ok = await AppHost.Dialogs.ConfirmAsync(L("Désactiver cette tâche Microsoft ?"),
+                string.Join("\n\n", new[]
+                {
+                    item.Path,
+                    item.Description is { Length: > 0 } d ? d : null,
+                    L("Cette tâche appartient à un produit Microsoft (Office, Edge, OneDrive…) : la désactiver peut empêcher ses mises à jour ou une fonction associée. La modification est annulable depuis le journal."),
+                }.Where(p => p is not null)), L("Désactiver"), L("Annuler"));
             if (!ok) { toggle.IsChecked = item.Enabled; return; }
         }
         toggle.IsEnabled = false;
@@ -224,7 +234,7 @@ internal sealed class TasksPanel : StackPanel, IStartupPanel
         if (outcome.Success)
         {
             item.Enabled = desired;
-            item.State = desired ? "Prête" : "Désactivée";
+            item.State = desired ? L("Prête") : L("Désactivée");
         }
         host.Content = Row(item, host);
     }

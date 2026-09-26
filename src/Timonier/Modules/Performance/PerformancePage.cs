@@ -46,19 +46,19 @@ public sealed partial class PerformancePage : UserControl, INavigationAware
 
         _stack.Children.Add(new PageHeader
         {
-            Title = "Performances",
-            Subtitle = "Alimentation, veille, effets visuels, jeux et services : adaptez Windows à la puissance réelle de ce PC.",
+            Title = L("Performances"),
+            Subtitle = L("Alimentation, veille, effets visuels, jeux et services : adaptez Windows à la puissance réelle de ce PC."),
             Glyph = PerformanceModule.Glyph,
         });
         _stack.Children.Add(BuildJumpBar());
 
-        AddAnchor("hardware", PageScaffold.Section("Profil matériel de ce PC"));
+        AddAnchor("hardware", PageScaffold.Section(L("Profil matériel de ce PC")));
         _stack.Children.Add(BuildHardwareCard());
 
-        AddAnchor("power", PageScaffold.Section("Alimentation"));
+        AddAnchor("power", PageScaffold.Section(L("Alimentation")));
         _stack.Children.Add(BuildPowerCard());
 
-        AddAnchor("sleep", PageScaffold.Section("Veille et écran"));
+        AddAnchor("sleep", PageScaffold.Section(L("Veille et écran")));
         _stack.Children.Add(BuildSleepCard());
 
         (_recoBar, _recoButton) = BuildRecommendationBar();
@@ -187,10 +187,10 @@ public sealed partial class PerformancePage : UserControl, INavigationAware
         var bar = new WrapPanel { Margin = new Thickness(0, 16, 0, 0) };
         (string Key, string Label, string Glyph)[] items =
         [
-            ("power", "Alimentation", ""), ("sleep", "Veille", ""),
-            ("group:" + PerformanceTweaks.GroupVisual, "Effets visuels", ""), ("group:" + PerformanceTweaks.GroupGames, "Jeux", ""),
-            ("group:" + PerformanceTweaks.GroupEnergy, "Énergie", ""), ("group:" + PerformanceTweaks.GroupBackground, "Arrière-plan", ""),
-            ("group:" + PerformanceTweaks.GroupServices, "Services", ""), ("group:" + PerformanceTweaks.GroupStorage, "Stockage", ""),
+            ("power", L("Alimentation"), ""), ("sleep", L("Veille"), ""),
+            ("group:" + PerformanceTweaks.GroupVisual, L("Effets visuels"), ""), ("group:" + PerformanceTweaks.GroupGames, L("Jeux"), ""),
+            ("group:" + PerformanceTweaks.GroupEnergy, L("Énergie"), ""), ("group:" + PerformanceTweaks.GroupBackground, L("Arrière-plan"), ""),
+            ("group:" + PerformanceTweaks.GroupServices, L("Services"), ""), ("group:" + PerformanceTweaks.GroupStorage, L("Stockage"), ""),
         ];
         foreach (var (key, label, glyph) in items)
         {
@@ -243,7 +243,7 @@ public sealed partial class PerformancePage : UserControl, INavigationAware
             catch (Exception ex)
             {
                 Log.Error("Performance", "liste " + group, ex);
-                _listsHost.Children.Add(PageScaffold.InfoBar($"Impossible d'afficher le groupe « {group} » : {ex.Message}", "", "Pp.InfoBar.Danger"));
+                _listsHost.Children.Add(PageScaffold.InfoBar(L("Impossible d'afficher le groupe « {0} » : {1}", group, ex.Message), "", "Pp.InfoBar.Danger"));
             }
         }
         TryHandlePendingNavigation();
@@ -258,7 +258,7 @@ public sealed partial class PerformancePage : UserControl, INavigationAware
         icon.Margin = new Thickness(0, 0, 10, 0);
         _recoText.SetResourceReference(StyleProperty, "Pp.Body");
         _recoText.VerticalAlignment = VerticalAlignment.Center;
-        var apply = PerfUi.Button("Appliquer les recommandations", "Pp.AccentButton");
+        var apply = PerfUi.Button(L("Appliquer les recommandations"), "Pp.AccentButton");
         apply.Margin = new Thickness(12, 0, 0, 0);
         apply.Click += async (_, _) => await ApplyRecommendationsAsync();
         var dock = new DockPanel();
@@ -290,9 +290,9 @@ public sealed partial class PerformancePage : UserControl, INavigationAware
     {
         var pending = PendingRecommendations();
         _recoBar.Visibility = pending.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        _recoText.Text = pending.Count == 1
-            ? "1 réglage de performances diffère de la recommandation pour ce PC."
-            : $"{pending.Count} réglages de performances diffèrent des recommandations pour ce PC.";
+        _recoText.Text = LP(pending.Count,
+            "{0} réglage de performances diffère de la recommandation pour ce PC.",
+            "{0} réglages de performances diffèrent des recommandations pour ce PC.");
     }
 
     private async Task ApplyRecommendationsAsync()
@@ -301,10 +301,11 @@ public sealed partial class PerformancePage : UserControl, INavigationAware
         if (pending.Count == 0) return;
         var lines = string.Join("\n", pending.Select(p => $"• {p.Vm.Title} → {p.Vm.Definition.GetOption(p.Option)?.Label}"));
         var needsAdmin = pending.Any(p => p.Vm.Definition.RequiresAdmin);
-        if (!await AppHost.Dialogs.ConfirmAsync("Appliquer les recommandations",
-                $"Les réglages suivants vont être modifiés :\n\n{lines}\n\n" +
-                (needsAdmin ? "Une autorisation administrateur sera demandée une seule fois.\n" : "") +
-                "Chaque modification reste annulable depuis le Journal.", "Appliquer"))
+        if (!await AppHost.Dialogs.ConfirmAsync(L("Appliquer les recommandations"),
+                needsAdmin
+                    ? L("Les réglages suivants vont être modifiés :\n\n{0}\n\nUne autorisation administrateur sera demandée une seule fois.\nChaque modification reste annulable depuis le Journal.", lines)
+                    : L("Les réglages suivants vont être modifiés :\n\n{0}\n\nChaque modification reste annulable depuis le Journal.", lines),
+                L("Appliquer")))
             return;
 
         _applyingReco = true;
@@ -316,11 +317,11 @@ public sealed partial class PerformancePage : UserControl, INavigationAware
             var ok = results.Count(r => r.Outcome.Success);
             var failed = results.Where(r => !r.Outcome.Success).ToList();
             AppHost.Toasts.Show(failed.Count == 0
-                    ? $"{ok} réglage(s) appliqué(s)."
-                    : $"{ok} appliqué(s), {failed.Count} en échec : {string.Join(" ; ", failed.Select(f => f.Tweak.Title + " (" + f.Outcome.Message + ")"))}",
+                    ? LP(ok, "{0} réglage appliqué.", "{0} réglages appliqués.")
+                    : LP(ok, "{0} appliqué, {1} en échec : {2}", "{0} appliqués, {1} en échec : {2}", failed.Count, string.Join(" ; ", failed.Select(f => f.Tweak.Title + " (" + f.Outcome.Message + ")"))),
                 failed.Count == 0 ? ToastKind.Success : ToastKind.Warning);
             var effects = results.Where(r => r.Outcome.Success).Aggregate(ApplyEffect.None, (acc, r) => acc | r.Tweak.Effect);
-            if (effects != ApplyEffect.None) AppHost.Toasts.ShowOutcome(new ApplyOutcome(true, "Certains changements demandent une action", effects));
+            if (effects != ApplyEffect.None) AppHost.Toasts.ShowOutcome(new ApplyOutcome(true, L("Certains changements demandent une action"), effects));
         }
         finally
         {

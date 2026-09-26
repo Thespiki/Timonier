@@ -41,22 +41,20 @@ public sealed class AppsPage : UserControl, INavigationAware
 
         stack.Children.Add(new PageHeader
         {
-            Title = "Applications",
-            Subtitle = "Installez des logiciels vérifiés en un clic, désinstallez des programmes, supprimez les applications préinstallées " +
-                       "superflues et gardez tout à jour avec winget.",
+            Title = L("Applications"),
+            Subtitle = L("Installez des logiciels vérifiés en un clic, désinstallez des programmes, supprimez les applications préinstallées superflues et gardez tout à jour avec winget."),
             Glyph = AppsModule.Glyph,
         });
 
         if (!_ctx.WingetAvailable)
         {
-            var store = AppsUi.Button("Installer depuis le Microsoft Store", "", "Pp.Button", (_, _) =>
+            var store = AppsUi.Button(L("Installer depuis le Microsoft Store"), "", "Pp.Button", (_, _) =>
             {
                 try { ProcessRunner.OpenSettingsUri(Winget.StoreProductUri); }
-                catch (Exception ex) { AppHost.Toasts.Show("Impossible d'ouvrir le Microsoft Store : " + ex.Message, ToastKind.Error); }
+                catch (Exception ex) { AppHost.Toasts.Show(L("Impossible d'ouvrir le Microsoft Store : {0}", ex.Message), ToastKind.Error); }
             });
             stack.Children.Add(AppsUi.InfoBar(
-                "winget (« Programme d'installation d'application ») est introuvable : l'installation, la désinstallation et les mises à jour " +
-                "sont indisponibles. Installez-le gratuitement depuis le Microsoft Store, puis rouvrez Timonier.", "", "Pp.InfoBar.Warning", store));
+                L("winget (« Programme d'installation d'application ») est introuvable : l'installation, la désinstallation et les mises à jour sont indisponibles. Installez-le gratuitement depuis le Microsoft Store, puis rouvrez Timonier."), "", "Pp.InfoBar.Warning", store));
         }
 
         stack.Children.Add(BuildSelector());
@@ -82,10 +80,10 @@ public sealed class AppsPage : UserControl, INavigationAware
     private Border BuildSelector()
     {
         var grid = new UniformGrid { Columns = 4, Rows = 1 };
-        AddSegment(grid, View.Install, "", "Installer");
-        AddSegment(grid, View.Installed, "", "Installées");
-        AddSegment(grid, View.Bloat, "", "Préinstallées");
-        AddSegment(grid, View.Updates, "", "Mises à jour");
+        AddSegment(grid, View.Install, "", L("Installer"));
+        AddSegment(grid, View.Installed, "", L("Installées"));
+        AddSegment(grid, View.Bloat, "", L("Préinstallées"));
+        AddSegment(grid, View.Updates, "", L("Mises à jour"));
         _segments[View.Install].IsChecked = true;
         return new Border { Child = grid, CornerRadius = new CornerRadius(8), Padding = new Thickness(2), BorderThickness = new Thickness(1) }
             .Themed(Border.BackgroundProperty, "Pp.CardSecondary")
@@ -205,7 +203,7 @@ public sealed class AppsPage : UserControl, INavigationAware
         catch (Exception ex)
         {
             Log.Error("Apps", "affichage de la vue " + view, ex);
-            _viewHost.Content = AppsUi.EmptyState("", "Cette vue n'a pas pu s'afficher", ex.Message, "Pp.Warning");
+            _viewHost.Content = AppsUi.EmptyState("", L("Cette vue n'a pas pu s'afficher"), ex.Message, "Pp.Warning");
         }
     }
 

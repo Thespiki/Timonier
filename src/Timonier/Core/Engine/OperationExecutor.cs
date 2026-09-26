@@ -26,14 +26,14 @@ public static class OperationExecutor
     {
         ctx.Cancellation.ThrowIfCancellationRequested();
         if (op.RequiresAdmin && !ctx.Elevated)
-            throw new UnauthorizedAccessException("Cette opération nécessite les droits administrateur : " + op.Describe());
+            throw new UnauthorizedAccessException(L("Cette opération nécessite les droits administrateur : {0}", op.Describe()));
 
         switch (op)
         {
             case RegSet set:
             {
                 using var root = RegistryAccess.OpenRoot(set.Hive, ctx.UserSid);
-                using var key = root.CreateSubKey(set.Key, true) ?? throw new IOException("Clé inaccessible : " + set.Key);
+                using var key = root.CreateSubKey(set.Key, true) ?? throw new IOException(L("Clé inaccessible : {0}", set.Key));
                 var previous = key.GetValue(set.Name, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
                 var undo = new RegValueUndo(set.Hive, set.Key, set.Name, previous is not null,
                     previous is null ? null : RegValueSnapshot.From(previous, key.GetValueKind(set.Name)));
@@ -63,7 +63,7 @@ public static class OperationExecutor
             case ServiceStartOp svc:
             {
                 var previous = ServiceConfig.ReadStart(svc.ServiceName);
-                if (previous is null) return new NoUndo($"Service {svc.ServiceName} absent de ce PC (ignoré).");
+                if (previous is null) return new NoUndo(L("Service {0} absent de ce PC (ignoré).", svc.ServiceName));
                 ServiceConfig.SetStart(svc.ServiceName, svc.Start);
                 if (svc.Start == ServiceStartKind.Disabled && svc.StopIfDisabled)
                     ServiceConfig.TryStop(svc.ServiceName, TimeSpan.FromSeconds(15));
@@ -72,7 +72,7 @@ public static class OperationExecutor
             case ScheduledTaskOp task:
             {
                 var previous = TaskSchedulerHelper.IsEnabled(task.TaskPath);
-                if (previous is null) return new NoUndo($"Tâche {task.TaskPath} absente de ce PC (ignorée).");
+                if (previous is null) return new NoUndo(L("Tâche {0} absente de ce PC (ignorée).", task.TaskPath));
                 TaskSchedulerHelper.SetEnabled(task.TaskPath, task.Enabled);
                 return new TaskUndo(task.TaskPath, previous.Value);
             }
@@ -81,8 +81,8 @@ public static class OperationExecutor
                 var result = ProcessRunner.RunAsync(tool.Tool, tool.Args, new RunOptions { LineProgress = ctx.Progress, Timeout = TimeSpan.FromMinutes(10) }, ctx.Cancellation)
                                           .GetAwaiter().GetResult();
                 if (!result.Success)
-                    throw new InvalidOperationException($"{SystemTools.FileName(tool.Tool)} a échoué (code {result.ExitCode}) : {Trim(result.CombinedOutput)}");
-                return new NoUndo("Commande système (non annulable automatiquement).");
+                    throw new InvalidOperationException(L("{0} a échoué (code {1}) : {2}", SystemTools.FileName(tool.Tool), result.ExitCode, Trim(result.CombinedOutput)));
+                return new NoUndo(L("Commande système (non annulable automatiquement)."));
             }
             case BroadcastSettingChangeOp b:
                 Native.BroadcastSettingChange(b.Area);
@@ -155,11 +155,11 @@ public static class OperationExecutor
     private static RegTreeSnapshot SnapshotTree(RegistryKey key, int depth)
     {
         // Sauvegarde complète ou refus : la clé est supprimée juste après, une copie tronquée perdrait des données.
-        if (depth > 8) throw new InvalidOperationException("Arborescence de registre trop profonde pour être sauvegardée.");
+        if (depth > 8) throw new InvalidOperationException(L("Arborescence de registre trop profonde pour être sauvegardée."));
         var valueNames = key.GetValueNames();
         var subKeyNames = key.GetSubKeyNames();
         if (valueNames.Length > 2000 || subKeyNames.Length > 500)
-            throw new InvalidOperationException("Arborescence de registre trop volumineuse pour être sauvegardée : suppression annulée.");
+            throw new InvalidOperationException(L("Arborescence de registre trop volumineuse pour être sauvegardée : suppression annulée."));
         var values = new Dictionary<string, RegValueSnapshot>();
         foreach (var name in valueNames)
         {

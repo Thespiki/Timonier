@@ -1,6 +1,7 @@
 <UserControl x:Class="Timonier.UI.Controls.TweakCard"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:Timonier.Core.Localization">
     <Border x:Name="Root">
         <Border.Style>
             <Style TargetType="Border" BasedOn="{StaticResource Pp.CardInteractive}">
@@ -54,15 +55,15 @@
                             Visibility="{Binding RecommendationText, Converter={StaticResource StringToVisibility}}">
                     <TextBlock Style="{StaticResource Pp.Icon}" FontSize="12" Text="&#xE734;" Foreground="{DynamicResource Pp.AccentText}" Margin="0,0,6,0" />
                     <TextBlock Style="{StaticResource Pp.Caption}" Text="{Binding RecommendationText}" Foreground="{DynamicResource Pp.AccentText}" VerticalAlignment="Center" />
-                    <Button Style="{StaticResource Pp.LinkButton}" Content="Appliquer" Margin="8,0,0,0" Command="{Binding ApplyRecommendedCommand}"
+                    <Button Style="{StaticResource Pp.LinkButton}" Content="{loc:L 'Appliquer'}" Margin="8,0,0,0" Command="{Binding ApplyRecommendedCommand}"
                             IsEnabled="{Binding CanInteract}" />
                 </StackPanel>
 
                 <Button Style="{StaticResource Pp.LinkButton}" HorizontalAlignment="Left" Margin="-2,6,0,0" Command="{Binding ToggleDetailsCommand}"
-                        ToolTip="Liste exacte des modifications effectuées par ce réglage">
+                        ToolTip="{loc:L 'Liste exacte des modifications effectuées par ce réglage'}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Style="{StaticResource Pp.Icon}" FontSize="10" Text="&#xE946;" Foreground="{DynamicResource Pp.AccentText}" Margin="0,0,4,0" />
-                        <TextBlock Text="Ce que ça change" />
+                        <TextBlock Text="{loc:L 'Ce que ça change'}" />
                     </StackPanel>
                 </Button>
 

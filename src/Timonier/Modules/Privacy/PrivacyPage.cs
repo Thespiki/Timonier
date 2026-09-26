@@ -68,8 +68,8 @@ public sealed class PrivacyPage : UserControl, INavigationAware
 
         stack.Children.Add(new PageHeader
         {
-            Title = "Confidentialité",
-            Subtitle = "Télémétrie, publicité, recherche, IA et autorisations des applications : choisissez ce que Windows partage.",
+            Title = L("Confidentialité"),
+            Subtitle = L("Télémétrie, publicité, recherche, IA et autorisations des applications : choisissez ce que Windows partage."),
             Glyph = "",
         });
 
@@ -237,7 +237,7 @@ public sealed class PrivacyPage : UserControl, INavigationAware
             if (_filter is { Count: 0 })
             {
                 _listsHost.Children.Add(PageScaffold.InfoBar(
-                    "Aucun réglage à revoir : tous les réglages évalués suivent déjà la recommandation de Timonier pour ce PC.",
+                    L("Aucun réglage à revoir : tous les réglages évalués suivent déjà la recommandation de Timonier pour ce PC."),
                     "", "Pp.InfoBar.Success"));
             }
             _listsReady = true;
@@ -259,7 +259,7 @@ public sealed class PrivacyPage : UserControl, INavigationAware
         catch (Exception ex)
         {
             Log.Error("Privacy", "création de la section " + section.Key, ex);
-            _listsHost.Children.Add(PageScaffold.InfoBar($"Une partie de la section « {section.Title} » n'a pas pu être affichée : {ex.Message}",
+            _listsHost.Children.Add(PageScaffold.InfoBar(L("Une partie de la section « {0} » n'a pas pu être affichée : {1}", section.Title, ex.Message),
                 "", "Pp.InfoBar.Danger"));
         }
 
@@ -295,13 +295,15 @@ public sealed class PrivacyPage : UserControl, INavigationAware
         var total = _tweaks.Count(t => AppHost.Settings.AdvancedMode || t.Risk != RiskLevel.Advanced);
         if (_last is null)
         {
-            _listSummary.Text = $"{total} réglages";
+            _listSummary.Text = LP(total, "{0} réglage", "{0} réglages");
             return;
         }
         var pending = _last.Pending.Count;
         _listSummary.Text = _filter is not null
-            ? $"{_filter.Count} réglage(s) à revoir affiché(s) sur {total}"
-            : pending == 0 ? $"{total} réglages, tous conformes à la recommandation" : $"{total} réglages, dont {pending} à revoir";
+            ? LP(_filter.Count, "{0} réglage à revoir affiché sur {1}", "{0} réglages à revoir affichés sur {1}", total)
+            : pending == 0
+                ? LP(total, "{0} réglage, conforme à la recommandation", "{0} réglages, tous conformes à la recommandation")
+                : LP(total, "{0} réglage, dont {1} à revoir", "{0} réglages, dont {1} à revoir", pending);
     }
 
     // ================================================================== Score
@@ -327,13 +329,13 @@ public sealed class PrivacyPage : UserControl, INavigationAware
         {
             if (version != _version) return;
             Log.Error("Privacy", "calcul du score de confidentialité", ex);
-            _errorText.Text = "Le score n'a pas pu être calculé : " + ex.Message;
+            _errorText.Text = L("Le score n'a pas pu être calculé : {0}", ex.Message);
             _errorBar.Visibility = Visibility.Visible;
             if (_last is null)
             {
                 _ring.Update(null, "—", "", "Pp.TextTertiary");
-                SetStatus("", "Pp.Danger", "Score indisponible", "Pp.TextPrimary");
-                _detailText.Text = "Les réglages ci-dessous restent utilisables.";
+                SetStatus("", "Pp.Danger", L("Score indisponible"), "Pp.TextPrimary");
+                _detailText.Text = L("Les réglages ci-dessous restent utilisables.");
             }
         }
         finally
@@ -357,12 +359,12 @@ public sealed class PrivacyPage : UserControl, INavigationAware
     private void SetComputing(bool computing)
     {
         _progressRow.Visibility = computing || _busy ? Visibility.Visible : Visibility.Collapsed;
-        if (computing && !_busy) _progressText.Text = _last is null ? "Analyse des réglages…" : "Actualisation…";
+        if (computing && !_busy) _progressText.Text = _last is null ? L("Analyse des réglages…") : L("Actualisation…");
         if (computing && _last is null)
         {
             _ring.Update(null, "…", "", "Pp.Accent");
-            SetStatus("", "Pp.TextSecondary", "Analyse en cours", "Pp.TextPrimary");
-            _detailText.Text = "Timonier vérifie l'état réel de chaque réglage (lecture seule).";
+            SetStatus("", "Pp.TextSecondary", L("Analyse en cours"), "Pp.TextPrimary");
+            _detailText.Text = L("Timonier vérifie l'état réel de chaque réglage (lecture seule).");
         }
         UpdateButtons();
     }
@@ -373,9 +375,9 @@ public sealed class PrivacyPage : UserControl, INavigationAware
         _applyButton.IsEnabled = !_busy && _last is not null && pending > 0;
         _refreshButton.IsEnabled = !_busy;
         _pendingOnly.IsEnabled = !_busy && _last is not null;
-        _applyText.Text = _last is null ? "Appliquer le niveau recommandé"
-            : pending == 0 ? "Niveau recommandé atteint"
-            : $"Appliquer le niveau recommandé ({pending})";
+        _applyText.Text = _last is null ? L("Appliquer le niveau recommandé")
+            : pending == 0 ? L("Niveau recommandé atteint")
+            : L("Appliquer le niveau recommandé ({0})", pending);
     }
 
     private void Render(PrivacyScoreResult result)
@@ -383,27 +385,29 @@ public sealed class PrivacyPage : UserControl, INavigationAware
         if (result.Total == 0)
         {
             _ring.Update(null, "—", "", "Pp.TextTertiary");
-            SetStatus("", "Pp.TextSecondary", "Aucun réglage évaluable", "Pp.TextPrimary");
-            _detailText.Text = "Aucun réglage de cette page ne dispose d'une recommandation applicable à ce PC.";
+            SetStatus("", "Pp.TextSecondary", L("Aucun réglage évaluable"), "Pp.TextPrimary");
+            _detailText.Text = L("Aucun réglage de cette page ne dispose d'une recommandation applicable à ce PC.");
         }
         else
         {
             var (brush, glyph, label) = result.Level switch
             {
-                ScoreLevel.Good => ("Pp.Success", "", "Bonne protection"),
-                ScoreLevel.Medium => ("Pp.Info", "", "Protection partielle"),
-                _ => ("Pp.Warning", "", "Protection faible"),
+                ScoreLevel.Good => ("Pp.Success", "", L("Bonne protection")),
+                ScoreLevel.Medium => ("Pp.Info", "", L("Protection partielle")),
+                _ => ("Pp.Warning", "", L("Protection faible")),
             };
-            _ring.Update(result.Ratio, $"{result.Percent} %", "", brush);
+            _ring.Update(result.Ratio, L("{0} %", result.Percent), "", brush);
             SetStatus(glyph, brush, label, brush);
 
             var detail = result.Compliant == result.Total
-                ? $"Les {result.Total} réglages évalués suivent la recommandation de Timonier pour ce PC."
-                : $"{result.Compliant} réglage(s) sur {result.Total} suivent la recommandation de Timonier pour ce PC.";
+                ? LP(result.Total, "Le réglage évalué suit la recommandation de Timonier pour ce PC.",
+                    "Les {0} réglages évalués suivent la recommandation de Timonier pour ce PC.")
+                : LP(result.Compliant, "{0} réglage sur {1} suit la recommandation de Timonier pour ce PC.",
+                    "{0} réglages sur {1} suivent la recommandation de Timonier pour ce PC.", result.Total);
             if (result.Unavailable > 0)
-                detail += result.Unavailable == 1
-                    ? " 1 réglage ne s'applique pas à ce PC (édition, version de Windows ou matériel) et n'est pas compté."
-                    : $" {result.Unavailable} réglages ne s'appliquent pas à ce PC (édition, version de Windows ou matériel) et ne sont pas comptés.";
+                detail += " " + LP(result.Unavailable,
+                    "{0} réglage ne s'applique pas à ce PC (édition, version de Windows ou matériel) et n'est pas compté.",
+                    "{0} réglages ne s'appliquent pas à ce PC (édition, version de Windows ou matériel) et ne sont pas comptés.");
             _detailText.Text = detail;
         }
         BuildChips(result);
@@ -449,11 +453,12 @@ public sealed class PrivacyPage : UserControl, INavigationAware
                 MinHeight = 28,
                 Margin = new Thickness(0, 0, 6, 6),
                 ToolTip = total == 0
-                    ? $"{section.Title} : aucune recommandation pour ce PC. Cliquer pour afficher la section."
-                    : $"{section.Title} : {ok} réglage(s) sur {total} au niveau recommandé. Cliquer pour afficher la section.",
+                    ? L("{0} : aucune recommandation pour ce PC. Cliquer pour afficher la section.", section.Title)
+                    : LP(ok, "{1} : {0} réglage sur {2} au niveau recommandé. Cliquer pour afficher la section.",
+                        "{1} : {0} réglages sur {2} au niveau recommandé. Cliquer pour afficher la section.", section.Title, total),
             };
             chip.SetResourceReference(StyleProperty, "Pp.Button");
-            System.Windows.Automation.AutomationProperties.SetName(chip, total == 0 ? section.Title : $"{section.Title}, {ok} sur {total}");
+            System.Windows.Automation.AutomationProperties.SetName(chip, total == 0 ? section.Title : L("{0}, {1} sur {2}", section.Title, ok, total));
             var key = section.Key;
             chip.Click += (_, _) =>
             {
@@ -472,13 +477,13 @@ public sealed class PrivacyPage : UserControl, INavigationAware
         _busy = true;
         UpdateButtons();
         _progressRow.Visibility = Visibility.Visible;
-        _progressText.Text = "Préparation de la liste des changements…";
-        var progress = new Progress<string>(s => _progressText.Text = "Application : " + s);
+        _progressText.Text = L("Préparation de la liste des changements…");
+        var progress = new Progress<string>(s => _progressText.Text = L("Application : {0}", s));
         try
         {
             await PrivacyRecommendations.RunAsync(progress, targets =>
             {
-                _progressText.Text = "Application en cours…";
+                _progressText.Text = L("Application en cours…");
                 _applying = new HashSet<string>(targets.Select(t => t.Id), StringComparer.Ordinal);
                 foreach (var vm in AllItems())
                     if (_applying.Contains(vm.Definition.Id)) vm.IsBusy = true;
@@ -487,7 +492,7 @@ public sealed class PrivacyPage : UserControl, INavigationAware
         catch (Exception ex)
         {
             Log.Error("Privacy", "application du niveau recommandé", ex);
-            AppHost.Toasts.Show("Erreur pendant l'application : " + ex.Message, ToastKind.Error);
+            AppHost.Toasts.Show(L("Erreur pendant l'application : {0}", ex.Message), ToastKind.Error);
         }
         finally
         {
@@ -509,7 +514,7 @@ public sealed class PrivacyPage : UserControl, INavigationAware
     private static void OpenWindowsSettings()
     {
         try { ProcessRunner.OpenSettingsUri("ms-settings:privacy"); }
-        catch (Exception ex) { AppHost.Toasts.Show("Impossible d'ouvrir les Paramètres Windows : " + ex.Message, ToastKind.Error); }
+        catch (Exception ex) { AppHost.Toasts.Show(L("Impossible d'ouvrir les Paramètres Windows : {0}", ex.Message), ToastKind.Error); }
     }
 
     // ================================================================== Construction de l'interface
@@ -532,15 +537,15 @@ public sealed class PrivacyPage : UserControl, INavigationAware
         // Titre + bouton d'actualisation
         var titleRow = new DockPanel();
         _refreshButton.Content = Icon("", 14);
-        _refreshButton.ToolTip = "Relire l'état des réglages";
+        _refreshButton.ToolTip = L("Relire l'état des réglages");
         _refreshButton.Padding = new Thickness(8, 4, 8, 4);
         _refreshButton.MinHeight = 28;
         _refreshButton.SetResourceReference(StyleProperty, "Pp.SubtleButton");
-        System.Windows.Automation.AutomationProperties.SetName(_refreshButton, "Actualiser le score");
+        System.Windows.Automation.AutomationProperties.SetName(_refreshButton, L("Actualiser le score"));
         _refreshButton.Click += async (_, _) => await RefreshScoreAsync(refreshCards: true);
         DockPanel.SetDock(_refreshButton, Dock.Right);
         titleRow.Children.Add(_refreshButton);
-        var title = new TextBlock { Text = "Score de confidentialité", FontSize = 18, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center };
+        var title = new TextBlock { Text = L("Score de confidentialité"), FontSize = 18, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center };
         title.SetResourceReference(StyleProperty, "Pp.CardTitle");
         titleRow.Children.Add(title);
         right.Children.Add(titleRow);
@@ -588,7 +593,7 @@ public sealed class PrivacyPage : UserControl, INavigationAware
         _applyButton.Content = applyContent;
         _applyButton.Margin = new Thickness(0, 0, 8, 6);
         _applyButton.SetResourceReference(StyleProperty, "Pp.AccentButton");
-        _applyButton.ToolTip = "Affiche la liste des changements avant de les appliquer. Tout reste annulable depuis le Journal.";
+        _applyButton.ToolTip = L("Affiche la liste des changements avant de les appliquer. Tout reste annulable depuis le Journal.");
         _applyButton.Click += async (_, _) => await ApplyRecommendedAsync();
         buttons.Children.Add(_applyButton);
 
@@ -596,7 +601,7 @@ public sealed class PrivacyPage : UserControl, INavigationAware
         var settingsIcon = Icon("", 14);
         settingsIcon.Margin = new Thickness(0, 0, 8, 0);
         settingsContent.Children.Add(settingsIcon);
-        settingsContent.Children.Add(new TextBlock { Text = "Paramètres de confidentialité Windows", VerticalAlignment = VerticalAlignment.Center });
+        settingsContent.Children.Add(new TextBlock { Text = L("Paramètres de confidentialité Windows"), VerticalAlignment = VerticalAlignment.Center });
         var settingsButton = new Button { Content = settingsContent, Margin = new Thickness(0, 0, 8, 6) };
         settingsButton.SetResourceReference(StyleProperty, "Pp.Button");
         settingsButton.Click += (_, _) => OpenWindowsSettings();
@@ -614,7 +619,7 @@ public sealed class PrivacyPage : UserControl, INavigationAware
     private Border BuildErrorBar()
     {
         _errorText.SetResourceReference(StyleProperty, "Pp.Body");
-        var retry = new Button { Content = "Réessayer", Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+        var retry = new Button { Content = L("Réessayer"), Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
         retry.SetResourceReference(StyleProperty, "Pp.Button");
         retry.Click += async (_, _) => await RefreshScoreAsync(refreshCards: true);
         var icon = Icon("", 16);
@@ -635,22 +640,18 @@ public sealed class PrivacyPage : UserControl, INavigationAware
     {
         var p = AppHost.Profile;
         var body = new StackPanel();
-        var title = new TextBlock { Text = "Ce que Timonier peut faire, et ses limites", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 4) };
+        var title = new TextBlock { Text = L("Ce que Timonier peut faire, et ses limites"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 4) };
         title.SetResourceReference(StyleProperty, "Pp.Body");
         body.Children.Add(title);
 
         body.Children.Add(Bullet(p.SupportsTelemetryOff
-            ? $"Votre édition ({p.EditionLabel}) permet de couper entièrement les données de diagnostic (niveau 0)."
-            : $"Sur votre édition ({p.EditionLabel}), Windows envoie toujours les données de diagnostic « requises » : les couper " +
-              "entièrement (niveau 0) n'est possible que sur les éditions Entreprise, Éducation et IoT."));
-        body.Children.Add(Bullet("Les mises à jour majeures de Windows peuvent réactiver certains services, tâches planifiées ou suggestions : " +
-                                 "revenez vérifier le score après une mise à jour."));
-        body.Children.Add(Bullet("Timonier ne bloque pas les serveurs de Microsoft (fichier hosts, pare-feu) : ce blocage perturbe " +
-                                 "Windows Update, l'activation et le Microsoft Store, sans garantie d'efficacité."));
-        body.Children.Add(Bullet("Les autorisations des applications s'appliquent à votre compte. Le blocage de la caméra, du micro et de " +
-                                 "la localisation pour tout le PC se règle dans la page Périphériques."));
+            ? L("Votre édition ({0}) permet de couper entièrement les données de diagnostic (niveau 0).", p.EditionLabel)
+            : L("Sur votre édition ({0}), Windows envoie toujours les données de diagnostic « requises » : les couper entièrement (niveau 0) n'est possible que sur les éditions Entreprise, Éducation et IoT.", p.EditionLabel)));
+        body.Children.Add(Bullet(L("Les mises à jour majeures de Windows peuvent réactiver certains services, tâches planifiées ou suggestions : revenez vérifier le score après une mise à jour.")));
+        body.Children.Add(Bullet(L("Timonier ne bloque pas les serveurs de Microsoft (fichier hosts, pare-feu) : ce blocage perturbe Windows Update, l'activation et le Microsoft Store, sans garantie d'efficacité.")));
+        body.Children.Add(Bullet(L("Les autorisations des applications s'appliquent à votre compte. Le blocage de la caméra, du micro et de la localisation pour tout le PC se règle dans la page Périphériques.")));
         if (p.IsManaged)
-            body.Children.Add(Bullet("Ce PC est géré par une organisation : ses stratégies peuvent remplacer les réglages ci-dessous."));
+            body.Children.Add(Bullet(L("Ce PC est géré par une organisation : ses stratégies peuvent remplacer les réglages ci-dessous.")));
 
         var icon = Icon("", 16);
         icon.Margin = new Thickness(0, 1, 12, 0);
@@ -668,14 +669,14 @@ public sealed class PrivacyPage : UserControl, INavigationAware
     /// <summary>Barre au-dessus des listes : résumé et filtre « uniquement les réglages à revoir ».</summary>
     private FrameworkElement BuildListToolbar()
     {
-        var label = new TextBlock { Text = "Uniquement les réglages à revoir", VerticalAlignment = VerticalAlignment.Center };
+        var label = new TextBlock { Text = L("Uniquement les réglages à revoir"), VerticalAlignment = VerticalAlignment.Center };
         label.SetResourceReference(StyleProperty, "Pp.Body");
         _pendingOnly.Content = label;
         _pendingOnly.IsThreeState = false;
         _pendingOnly.IsEnabled = false;
-        _pendingOnly.ToolTip = "Masque les réglages déjà conformes à la recommandation et ceux sans recommandation pour ce PC.";
+        _pendingOnly.ToolTip = L("Masque les réglages déjà conformes à la recommandation et ceux sans recommandation pour ce PC.");
         _pendingOnly.SetResourceReference(StyleProperty, "Pp.ToggleSwitch");
-        System.Windows.Automation.AutomationProperties.SetName(_pendingOnly, "Afficher uniquement les réglages à revoir");
+        System.Windows.Automation.AutomationProperties.SetName(_pendingOnly, L("Afficher uniquement les réglages à revoir"));
         _pendingOnly.Checked += (_, _) => ApplyFilter(true);
         _pendingOnly.Unchecked += (_, _) => ApplyFilter(false);
 

@@ -22,14 +22,14 @@ internal static partial class DeviceGuard
     public static DeviceEntry CheckDisable(string id, bool sensitiveConfirmed)
     {
         var entry = DeviceInventory.Find(id)
-                    ?? throw new ValidationException("Ce périphérique n'est pas présent sur le PC (il a peut-être été débranché).");
+                    ?? throw new ValidationException(L("Ce périphérique n'est pas présent sur le PC (il a peut-être été débranché)."));
         var (level, reason) = entry.Protection;
         if (level == DeviceProtection.Protected)
-            throw new ValidationException($"Timonier refuse de désactiver « {entry.Name} » : {reason}");
+            throw new ValidationException(L("Timonier refuse de désactiver « {0} » : {1}", entry.Name, reason));
         CheckNotOnSystemDiskPath(entry.InstanceId, entry.Name);
         if (string.Equals(entry.PnpClass, "DiskDrive", StringComparison.OrdinalIgnoreCase)) CheckExternalDataDisk(id, entry.Name);
         if (level == DeviceProtection.Sensitive && !sensitiveConfirmed)
-            throw new ValidationException($"« {entry.Name} » est un périphérique sensible : sa désactivation doit être confirmée par le processus administrateur.");
+            throw new ValidationException(L("« {0} » est un périphérique sensible : sa désactivation doit être confirmée par le processus administrateur.", entry.Name));
         return entry;
     }
 
@@ -45,10 +45,10 @@ internal static partial class DeviceGuard
         catch (Exception ex)
         {
             Log.Warn("Devices", "chemin matériel du disque système illisible : " + ex.Message);
-            throw new ValidationException("Impossible de vérifier que ce périphérique n'est pas nécessaire au disque de Windows : action refusée par précaution.");
+            throw new ValidationException(L("Impossible de vérifier que ce périphérique n'est pas nécessaire au disque de Windows : action refusée par précaution."));
         }
         if (chain.Contains(id))
-            throw new ValidationException($"Timonier refuse de désactiver « {name} » : le disque sur lequel Windows est installé en dépend.");
+            throw new ValidationException(L("Timonier refuse de désactiver « {0} » : le disque sur lequel Windows est installé en dépend.", name));
     }
 
     /// <summary>Identifiants d'instance du disque système et de tous ses parents dans l'arborescence Plug-and-Play.</summary>
@@ -104,19 +104,19 @@ internal static partial class DeviceGuard
                 .FirstOrDefault(r => string.Equals(r.GetValueOrDefault("PNPDeviceID") as string, id, StringComparison.OrdinalIgnoreCase));
             if (disk is null) return; // lecteur sans support (lecteur de cartes vide) : aucun volume en dépend
             if (!string.Equals(disk.GetValueOrDefault("InterfaceType") as string, "USB", StringComparison.OrdinalIgnoreCase))
-                throw new ValidationException($"Timonier refuse de désactiver « {name} » : ce n'est pas un disque USB externe.");
+                throw new ValidationException(L("Timonier refuse de désactiver « {0} » : ce n'est pas un disque USB externe.", name));
             var index = Convert.ToInt64(disk.GetValueOrDefault("Index") ?? -1L);
             var root = (Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\").TrimEnd('\\');
-            if (root.Length != 2 || root[1] != ':') throw new ValidationException("Lecteur système non identifiable.");
+            if (root.Length != 2 || root[1] != ':') throw new ValidationException(L("Lecteur système non identifiable."));
             var partitions = WmiQuery.Query("ASSOCIATORS OF {Win32_LogicalDisk.DeviceID='" + root + "'} WHERE AssocClass = Win32_LogicalDiskToPartition");
             if (partitions.Any(pt => Convert.ToInt64(pt.GetValueOrDefault("DiskIndex") ?? -2L) == index))
-                throw new ValidationException($"Timonier refuse de désactiver « {name} » : Windows est installé sur ce disque.");
+                throw new ValidationException(L("Timonier refuse de désactiver « {0} » : Windows est installé sur ce disque.", name));
         }
         catch (ValidationException) { throw; }
         catch (Exception ex)
         {
             Log.Warn("Devices", "contrôle du disque système impossible : " + ex.Message);
-            throw new ValidationException("Impossible de vérifier que ce disque ne contient pas Windows : action refusée par précaution.");
+            throw new ValidationException(L("Impossible de vérifier que ce disque ne contient pas Windows : action refusée par précaution."));
         }
     }
 
@@ -125,17 +125,17 @@ internal static partial class DeviceGuard
     {
         if (DeviceInventory.Find(id) is { } entry) return entry.Name;
         using var key = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Enum\" + id, false);
-        if (key is null) throw new ValidationException("Ce périphérique est inconnu de Windows (il a peut-être été désinstallé).");
+        if (key is null) throw new ValidationException(L("Ce périphérique est inconnu de Windows (il a peut-être été désinstallé)."));
         if (key.GetValue("FriendlyName") is string friendly && friendly.Length > 0) return friendly;
         // DeviceDesc est souvent de la forme « @fichier.inf,%cle%;Nom lisible ».
         if (key.GetValue("DeviceDesc") is string desc && desc.Length > 0) return desc.Contains(';') ? desc[(desc.LastIndexOf(';') + 1)..] : desc;
-        return "Périphérique";
+        return L("Périphérique");
     }
 
     public static void CheckBuild()
     {
         if (Environment.OSVersion.Version.Build < MinBuild)
-            throw new ValidationException("Nécessite Windows 10 version 2004 ou plus récent.");
+            throw new ValidationException(L("Nécessite Windows 10 version 2004 ou plus récent."));
     }
 
     /// <summary>Exécute pnputil (liste blanche, ArgumentList : aucune interprétation par un shell).</summary>
@@ -146,10 +146,10 @@ internal static partial class DeviceGuard
         var data = new Dictionary<string, string> { ["name"] = name };
         if (r.ExitCode == 0) return ActionResult.Ok(okMessage, data);
         if (r.ExitCode == 3010) // ERROR_SUCCESS_REBOOT_REQUIRED
-            return new ActionResult(true, okMessage + " Un redémarrage est nécessaire pour terminer.") { Data = data, Effect = ApplyEffect.Reboot };
+            return new ActionResult(true, okMessage + " " + L("Un redémarrage est nécessaire pour terminer.")) { Data = data, Effect = ApplyEffect.Reboot };
         var detail = r.CombinedOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).LastOrDefault();
         Log.Warn("Devices", $"pnputil {verb} : code {r.ExitCode}");
-        return ActionResult.Fail(r.TimedOut ? "L'opération a expiré." : $"Windows a refusé l'opération (code {r.ExitCode}){(detail is null ? "." : " : " + detail)}");
+        return ActionResult.Fail(r.TimedOut ? L("L'opération a expiré.") : detail is null ? L("Windows a refusé l'opération (code {0}).", r.ExitCode) : L("Windows a refusé l'opération (code {0}) : {1}", r.ExitCode, detail));
     }
 }
 
@@ -158,7 +158,7 @@ public sealed class DisableDeviceAction : IActionHandler
 {
     public const string ActionId = "devices.device.disable";
     public string Id => ActionId;
-    public string Title => "Désactiver un périphérique";
+    public string Title => L("Désactiver un périphérique");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) => DeviceGuard.ReadId(p);
@@ -168,11 +168,11 @@ public sealed class DisableDeviceAction : IActionHandler
         ValidateParameters(p);
         var id = DeviceGuard.ReadId(p);
         DeviceGuard.CheckBuild();
-        ctx.Progress?.Report("Vérification du périphérique…");
+        ctx.Progress?.Report(L("Vérification du périphérique…"));
         var entry = DeviceGuard.CheckDisable(id, sensitiveConfirmed: false);
-        if (entry.IsDisabled) return ActionResult.Ok($"« {entry.Name} » est déjà désactivé.", new() { ["name"] = entry.Name });
-        ctx.Progress?.Report("Désactivation…");
-        return await DeviceGuard.RunPnpUtilAsync(ctx, "/disable-device", id, entry.Name, $"« {entry.Name} » est désactivé.").ConfigureAwait(false);
+        if (entry.IsDisabled) return ActionResult.Ok(L("« {0} » est déjà désactivé.", entry.Name), new() { ["name"] = entry.Name });
+        ctx.Progress?.Report(L("Désactivation…"));
+        return await DeviceGuard.RunPnpUtilAsync(ctx, "/disable-device", id, entry.Name, L("« {0} » est désactivé.", entry.Name)).ConfigureAwait(false);
     }
 }
 
@@ -184,7 +184,7 @@ public sealed class DisableSensitiveDeviceAction : IActionHandler
 {
     public const string ActionId = "devices.device.disable-sensitive";
     public string Id => ActionId;
-    public string Title => "Désactiver un périphérique sensible";
+    public string Title => L("Désactiver un périphérique sensible");
     public bool RequiresAdmin => true;
     public bool RequiresElevatedConfirmation => true;
 
@@ -196,14 +196,13 @@ public sealed class DisableSensitiveDeviceAction : IActionHandler
         {
             var id = DeviceGuard.ReadId(p);
             var entry = DeviceInventory.Find(id);
-            if (entry is null) return "Désactiver un périphérique sensible ?";
+            if (entry is null) return L("Désactiver un périphérique sensible ?");
             var (_, reason) = entry.Protection;
-            return $"Désactiver « {entry.Name} » ({entry.Class.Title}) ?\n\n{reason}\n\n" +
-                   "Pour le réactiver : Timonier, page Périphériques, section « Désactivés par Timonier » (ou le Gestionnaire de périphériques).";
+            return L("Désactiver « {0} » ({1}) ?\n\n{2}\n\nPour le réactiver : Timonier, page Périphériques, section « Désactivés par Timonier » (ou le Gestionnaire de périphériques).", entry.Name, entry.Class.Title, reason);
         }
         catch (Exception ex) when (ex is ValidationException or System.Management.ManagementException)
         {
-            return "Désactiver un périphérique sensible ?";
+            return L("Désactiver un périphérique sensible ?");
         }
     }
 
@@ -212,11 +211,11 @@ public sealed class DisableSensitiveDeviceAction : IActionHandler
         ValidateParameters(p);
         var id = DeviceGuard.ReadId(p);
         DeviceGuard.CheckBuild();
-        ctx.Progress?.Report("Vérification du périphérique…");
+        ctx.Progress?.Report(L("Vérification du périphérique…"));
         var entry = DeviceGuard.CheckDisable(id, sensitiveConfirmed: true);
-        if (entry.IsDisabled) return ActionResult.Ok($"« {entry.Name} » est déjà désactivé.", new() { ["name"] = entry.Name });
-        ctx.Progress?.Report("Désactivation…");
-        return await DeviceGuard.RunPnpUtilAsync(ctx, "/disable-device", id, entry.Name, $"« {entry.Name} » est désactivé.").ConfigureAwait(false);
+        if (entry.IsDisabled) return ActionResult.Ok(L("« {0} » est déjà désactivé.", entry.Name), new() { ["name"] = entry.Name });
+        ctx.Progress?.Report(L("Désactivation…"));
+        return await DeviceGuard.RunPnpUtilAsync(ctx, "/disable-device", id, entry.Name, L("« {0} » est désactivé.", entry.Name)).ConfigureAwait(false);
     }
 }
 
@@ -225,7 +224,7 @@ public sealed class EnableDeviceAction : IActionHandler
 {
     public const string ActionId = "devices.device.enable";
     public string Id => ActionId;
-    public string Title => "Réactiver un périphérique";
+    public string Title => L("Réactiver un périphérique");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) => DeviceGuard.ReadId(p);
@@ -235,9 +234,9 @@ public sealed class EnableDeviceAction : IActionHandler
         ValidateParameters(p);
         var id = DeviceGuard.ReadId(p);
         DeviceGuard.CheckBuild();
-        ctx.Progress?.Report("Vérification du périphérique…");
+        ctx.Progress?.Report(L("Vérification du périphérique…"));
         var name = DeviceGuard.CheckEnable(id);
-        ctx.Progress?.Report("Réactivation…");
-        return await DeviceGuard.RunPnpUtilAsync(ctx, "/enable-device", id, name, $"« {name} » est réactivé.").ConfigureAwait(false);
+        ctx.Progress?.Report(L("Réactivation…"));
+        return await DeviceGuard.RunPnpUtilAsync(ctx, "/enable-device", id, name, L("« {0} » est réactivé.", name)).ConfigureAwait(false);
     }
 }

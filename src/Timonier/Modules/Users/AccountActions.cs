@@ -18,9 +18,9 @@ internal static class AccountParams
     {
         p.TryGetValue("password", out var pwd);
         pwd ??= "";
-        if (pwd.Length == 0 && !allowEmpty) throw new ValidationException("Saisissez un mot de passe.");
-        if (pwd.Length > MaxPassword) throw new ValidationException($"Mot de passe trop long (maximum {MaxPassword} caractères).");
-        if (pwd.Any(char.IsControl)) throw new ValidationException("Le mot de passe contient des caractères non autorisés.");
+        if (pwd.Length == 0 && !allowEmpty) throw new ValidationException(L("Saisissez un mot de passe."));
+        if (pwd.Length > MaxPassword) throw new ValidationException(L("Mot de passe trop long (maximum {0} caractères).", MaxPassword));
+        if (pwd.Any(char.IsControl)) throw new ValidationException(L("Le mot de passe contient des caractères non autorisés."));
         return pwd;
     }
 
@@ -28,7 +28,7 @@ internal static class AccountParams
     {
         var v = Validate.Optional(p, "fullName", 64);
         if (v is not null && v.Any(c => char.IsControl(c) || c is '<' or '>' or '"' or '\\' or '/' or '[' or ']' or ':' or '|' or '=' or '+' or '*' or '?'))
-            throw new ValidationException("Le nom complet contient des caractères non autorisés.");
+            throw new ValidationException(L("Le nom complet contient des caractères non autorisés."));
         return v;
     }
 
@@ -38,9 +38,12 @@ internal static class AccountParams
         {
             var sid = Sid(p);
             var a = LocalAccounts.Enumerate().FirstOrDefault(x => string.Equals(x.Sid, sid, StringComparison.OrdinalIgnoreCase));
-            return a is null ? "(compte introuvable)" : $"« {a.Name} »" + (a.FullName.Length > 0 && a.FullName != a.Name ? $" ({a.FullName})" : "");
+            if (a is null) return L("(compte introuvable)");
+            return a.FullName.Length > 0 && a.FullName != a.Name
+                ? L("« {0} » ({1})", a.Name, a.FullName)
+                : L("« {0} »", a.Name);
         }
-        catch { return "(compte inconnu)"; }
+        catch { return L("(compte inconnu)"); }
     }
 
     public static string? ProfilePath(string sid)
@@ -58,7 +61,7 @@ internal static class AccountParams
 public sealed class CreateAccountAction : IActionHandler
 {
     public string Id => "users.account.create";
-    public string Title => "Créer un compte local";
+    public string Title => L("Créer un compte local");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
@@ -77,8 +80,8 @@ public sealed class CreateAccountAction : IActionHandler
     {
         var name = Validate.LocalUserName(Validate.Required(p, "name", 20));
         return AccountParams.Password(p, allowEmpty: true).Length == 0
-            ? $"Créer le compte ADMINISTRATEUR « {name} », SANS mot de passe ? Il aura un contrôle total sur ce PC et toute personne ayant accès au PC pourra l'ouvrir."
-            : $"Créer le compte ADMINISTRATEUR « {name} » ? Il aura un contrôle total sur ce PC.";
+            ? L("Créer le compte ADMINISTRATEUR « {0} », SANS mot de passe ? Il aura un contrôle total sur ce PC et toute personne ayant accès au PC pourra l'ouvrir.", name)
+            : L("Créer le compte ADMINISTRATEUR « {0} » ? Il aura un contrôle total sur ce PC.", name);
     }
 
     public Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
@@ -90,28 +93,30 @@ public sealed class CreateAccountAction : IActionHandler
         var admin = Validate.OneOf(p, "type", "standard", "admin") == "admin";
 
         if (LocalAccounts.Enumerate(ctx.UserSid).Any(a => string.Equals(a.Name, name, StringComparison.OrdinalIgnoreCase)))
-            throw new ValidationException($"Un compte « {name} » existe déjà.");
+            throw new ValidationException(L("Un compte « {0} » existe déjà.", name));
 
-        ctx.Progress?.Report("Création du compte…");
+        ctx.Progress?.Report(L("Création du compte…"));
         NetApi.AddUser(name, password, passwordNotRequired: password.Length == 0);
-        var sid = NetApi.GetIdentity(name).Sid ?? throw new InvalidOperationException("Compte créé mais SID introuvable.");
+        var sid = NetApi.GetIdentity(name).Sid ?? throw new InvalidOperationException(L("Compte créé mais SID introuvable."));
         var warnings = new List<string>();
         try { NetApi.AddToGroup(LocalAccounts.UsersGroup, sid); }
-        catch (Exception ex) { warnings.Add("ajout au groupe Utilisateurs impossible (" + ex.Message + ")"); }
+        catch (Exception ex) { warnings.Add(L("ajout au groupe Utilisateurs impossible ({0})", ex.Message)); }
         if (admin)
         {
             try { NetApi.AddToGroup(LocalAccounts.AdministratorsGroup, sid); }
-            catch (Exception ex) { warnings.Add("ajout au groupe Administrateurs impossible (" + ex.Message + ")"); }
+            catch (Exception ex) { warnings.Add(L("ajout au groupe Administrateurs impossible ({0})", ex.Message)); }
         }
         if (!string.IsNullOrWhiteSpace(fullName))
         {
             try { NetApi.SetFullName(name, fullName); }
-            catch (Exception ex) { warnings.Add("nom complet non enregistré (" + ex.Message + ")"); }
+            catch (Exception ex) { warnings.Add(L("nom complet non enregistré ({0})", ex.Message)); }
         }
         Log.Info("Users", $"compte créé : {name} ({(admin ? "admin" : "standard")})");
-        var msg = $"Compte « {name} » créé ({(admin ? "administrateur" : "standard")}). Son profil sera préparé à sa première connexion.";
-        if (password.Length == 0) msg += " Attention : il n'a pas de mot de passe.";
-        if (warnings.Count > 0) msg += " Avertissement : " + string.Join(" ; ", warnings) + ".";
+        var msg = admin
+            ? L("Compte « {0} » créé (administrateur). Son profil sera préparé à sa première connexion.", name)
+            : L("Compte « {0} » créé (standard). Son profil sera préparé à sa première connexion.", name);
+        if (password.Length == 0) msg += L(" Attention : il n'a pas de mot de passe.");
+        if (warnings.Count > 0) msg += L(" Avertissement : {0}.", string.Join(" ; ", warnings));
         return Task.FromResult(ActionResult.Ok(msg, new Dictionary<string, string> { ["sid"] = sid }));
     }
 }
@@ -120,13 +125,12 @@ public sealed class CreateAccountAction : IActionHandler
 public sealed class DeleteAccountAction : IActionHandler
 {
     public string Id => "users.account.delete";
-    public string Title => "Supprimer un compte local";
+    public string Title => L("Supprimer un compte local");
     public bool RequiresAdmin => true;
     public bool RequiresElevatedConfirmation => true;
 
     public string DescribeForConfirmation(IReadOnlyDictionary<string, string> p) =>
-        $"Supprimer définitivement le compte {AccountParams.DescribeTarget(p)} ? Il ne pourra plus ouvrir de session. " +
-        "Son dossier de profil (documents, bureau…) est conservé sur le disque.";
+        L("Supprimer définitivement le compte {0} ? Il ne pourra plus ouvrir de session. Son dossier de profil (documents, bureau…) est conservé sur le disque.", AccountParams.DescribeTarget(p));
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) => AccountParams.Sid(p);
 
@@ -138,18 +142,18 @@ public sealed class DeleteAccountAction : IActionHandler
         lock (LocalAccounts.AdminGate)
         {
             (target, var all) = LocalAccounts.Resolve(AccountParams.Sid(p), ctx.UserSid);
-            LocalAccounts.RefuseSessionAccount(target, ctx.UserSid, "supprimer");
-            if (target.IsBuiltIn) throw new ValidationException("Les comptes intégrés de Windows ne peuvent pas être supprimés (désactivez-les plutôt).");
+            LocalAccounts.RefuseSessionAccount(target, ctx.UserSid, L("Par sécurité, Timonier refuse de supprimer le compte avec lequel vous êtes connecté."));
+            if (target.IsBuiltIn) throw new ValidationException(L("Les comptes intégrés de Windows ne peuvent pas être supprimés (désactivez-les plutôt)."));
             LocalAccounts.RefuseLastAdmin(target, all);
 
             profile = AccountParams.ProfilePath(target.Sid);
             NetApi.DeleteUser(target.Name);
         }
         Log.Info("Users", "compte supprimé : " + target.Name);
-        var msg = $"Compte « {target.Name} » supprimé.";
+        var msg = L("Compte « {0} » supprimé.", target.Name);
         msg += profile is not null && Directory.Exists(profile)
-            ? $" Son dossier {profile} est conservé : supprimez-le depuis « Profils des utilisateurs » si vous n'en avez plus besoin."
-            : " Il n'avait pas encore de dossier de profil.";
+            ? L(" Son dossier {0} est conservé : supprimez-le depuis « Profils des utilisateurs » si vous n'en avez plus besoin.", profile)
+            : L(" Il n'avait pas encore de dossier de profil.");
         return Task.FromResult(ActionResult.Ok(msg));
     }
 }
@@ -158,7 +162,7 @@ public sealed class DeleteAccountAction : IActionHandler
 public sealed class SetAccountEnabledAction : IActionHandler
 {
     public string Id => "users.account.setenabled";
-    public string Title => "Activer ou désactiver un compte";
+    public string Title => L("Activer ou désactiver un compte");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
@@ -176,16 +180,16 @@ public sealed class SetAccountEnabledAction : IActionHandler
         lock (LocalAccounts.AdminGate)
         {
             (target, var all) = LocalAccounts.Resolve(AccountParams.Sid(p), ctx.UserSid);
-            if (target.Rid is 503 or 504) throw new ValidationException("Ce compte technique est géré par Windows : Timonier ne le modifie pas.");
+            if (target.Rid is 503 or 504) throw new ValidationException(L("Ce compte technique est géré par Windows : Timonier ne le modifie pas."));
             if (enable)
             {
                 // Ne jamais affaiblir la sécurité : l'Administrateur intégré (sans UAC) et l'Invité restent désactivés.
                 if ((target.IsBuiltInAdministrator || target.IsGuest) && !target.Enabled)
-                    throw new ValidationException("Par sécurité, Timonier ne réactive pas le compte Administrateur intégré ni le compte Invité.");
+                    throw new ValidationException(L("Par sécurité, Timonier ne réactive pas le compte Administrateur intégré ni le compte Invité."));
             }
             else
             {
-                LocalAccounts.RefuseSessionAccount(target, ctx.UserSid, "désactiver");
+                LocalAccounts.RefuseSessionAccount(target, ctx.UserSid, L("Par sécurité, Timonier refuse de désactiver le compte avec lequel vous êtes connecté."));
                 LocalAccounts.RefuseLastAdmin(target, all);
             }
 
@@ -195,8 +199,8 @@ public sealed class SetAccountEnabledAction : IActionHandler
         }
         Log.Info("Users", $"compte {target.Name} : {(enable ? "activé" : "désactivé")}");
         var msg = enable
-            ? target.LockedOut ? $"Compte « {target.Name} » déverrouillé et actif." : $"Compte « {target.Name} » activé."
-            : $"Compte « {target.Name} » désactivé : il ne peut plus ouvrir de session (ses fichiers sont conservés).";
+            ? target.LockedOut ? L("Compte « {0} » déverrouillé et actif.", target.Name) : L("Compte « {0} » activé.", target.Name)
+            : L("Compte « {0} » désactivé : il ne peut plus ouvrir de session (ses fichiers sont conservés).", target.Name);
         return Task.FromResult(ActionResult.Ok(msg));
     }
 }
@@ -205,7 +209,7 @@ public sealed class SetAccountEnabledAction : IActionHandler
 public sealed class SetAccountTypeAction : IActionHandler
 {
     public string Id => "users.account.settype";
-    public string Title => "Changer le type de compte";
+    public string Title => L("Changer le type de compte");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
@@ -219,7 +223,7 @@ public sealed class SetAccountTypeAction : IActionHandler
         Validate.OneOf(p, "type", "standard", "admin") == "admin";
 
     public string DescribeForConfirmation(IReadOnlyDictionary<string, string> p) =>
-        $"Faire du compte {AccountParams.DescribeTarget(p)} un ADMINISTRATEUR ? Ce compte pourra tout modifier sur ce PC, y compris les autres comptes.";
+        L("Faire du compte {0} un ADMINISTRATEUR ? Ce compte pourra tout modifier sur ce PC, y compris les autres comptes.", AccountParams.DescribeTarget(p));
 
     public Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
     {
@@ -229,8 +233,10 @@ public sealed class SetAccountTypeAction : IActionHandler
         lock (LocalAccounts.AdminGate)
         {
             (target, var all) = LocalAccounts.Resolve(AccountParams.Sid(p), ctx.UserSid);
-            if (target.IsBuiltIn) throw new ValidationException("Le type des comptes intégrés de Windows ne se modifie pas.");
-            if (target.IsAdmin == admin) return Task.FromResult(ActionResult.Ok($"« {target.Name} » est déjà {(admin ? "administrateur" : "standard")}."));
+            if (target.IsBuiltIn) throw new ValidationException(L("Le type des comptes intégrés de Windows ne se modifie pas."));
+            if (target.IsAdmin == admin) return Task.FromResult(ActionResult.Ok(admin
+                ? L("« {0} » est déjà administrateur.", target.Name)
+                : L("« {0} » est déjà standard.", target.Name)));
 
             if (admin)
             {
@@ -238,7 +244,7 @@ public sealed class SetAccountTypeAction : IActionHandler
             }
             else
             {
-                LocalAccounts.RefuseSessionAccount(target, ctx.UserSid, "rétrograder");
+                LocalAccounts.RefuseSessionAccount(target, ctx.UserSid, L("Par sécurité, Timonier refuse de rétrograder le compte avec lequel vous êtes connecté."));
                 LocalAccounts.RefuseLastAdmin(target, all);
                 NetApi.AddToGroup(LocalAccounts.UsersGroup, target.Sid);
                 NetApi.RemoveFromGroup(LocalAccounts.AdministratorsGroup, target.Sid);
@@ -246,7 +252,9 @@ public sealed class SetAccountTypeAction : IActionHandler
         }
         Log.Info("Users", $"compte {target.Name} : type {(admin ? "admin" : "standard")}");
         return Task.FromResult(ActionResult.Ok(
-            $"« {target.Name} » est maintenant {(admin ? "administrateur" : "un compte standard")}. Effectif à sa prochaine ouverture de session."));
+            admin
+                ? L("« {0} » est maintenant administrateur. Effectif à sa prochaine ouverture de session.", target.Name)
+                : L("« {0} » est maintenant un compte standard. Effectif à sa prochaine ouverture de session.", target.Name)));
     }
 }
 
@@ -254,13 +262,12 @@ public sealed class SetAccountTypeAction : IActionHandler
 public sealed class ResetPasswordAction : IActionHandler
 {
     public string Id => "users.account.resetpassword";
-    public string Title => "Réinitialiser le mot de passe d'un compte";
+    public string Title => L("Réinitialiser le mot de passe d'un compte");
     public bool RequiresAdmin => true;
     public bool RequiresElevatedConfirmation => true;
 
     public string DescribeForConfirmation(IReadOnlyDictionary<string, string> p) =>
-        $"Réinitialiser le mot de passe du compte {AccountParams.DescribeTarget(p)} ? Ce compte perdra l'accès à ses fichiers " +
-        "chiffrés (EFS), à ses mots de passe enregistrés par Windows et à ses certificats personnels.";
+        L("Réinitialiser le mot de passe du compte {0} ? Ce compte perdra l'accès à ses fichiers chiffrés (EFS), à ses mots de passe enregistrés par Windows et à ses certificats personnels.", AccountParams.DescribeTarget(p));
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
     {
@@ -273,10 +280,10 @@ public sealed class ResetPasswordAction : IActionHandler
         ValidateParameters(p);
         var password = AccountParams.Password(p, allowEmpty: false);
         var (target, _) = LocalAccounts.Resolve(AccountParams.Sid(p), ctx.UserSid);
-        LocalAccounts.RefuseSessionAccount(target, ctx.UserSid, "réinitialiser le mot de passe de");
-        if (target.Rid is 501 or 503 or 504) throw new ValidationException("Ce compte intégré n'utilise pas de mot de passe géré par Timonier.");
+        LocalAccounts.RefuseSessionAccount(target, ctx.UserSid, L("Par sécurité, Timonier refuse de réinitialiser le mot de passe du compte avec lequel vous êtes connecté."));
+        if (target.Rid is 501 or 503 or 504) throw new ValidationException(L("Ce compte intégré n'utilise pas de mot de passe géré par Timonier."));
         if (target.MicrosoftAccount is not null)
-            throw new ValidationException($"« {target.Name} » est lié au compte Microsoft {target.MicrosoftAccount} : changez son mot de passe sur account.microsoft.com.");
+            throw new ValidationException(L("« {0} » est lié au compte Microsoft {1} : changez son mot de passe sur account.microsoft.com.", target.Name, target.MicrosoftAccount));
 
         NetApi.SetPassword(target.Name, password);
         // Un mot de passe est désormais défini : on retire l'autorisation de mot de passe vide si elle existait.
@@ -287,7 +294,7 @@ public sealed class ResetPasswordAction : IActionHandler
         }
         catch (Exception ex) { Log.Warn("Users", "indicateur mot de passe non exigé : " + ex.Message); }
         Log.Info("Users", "mot de passe réinitialisé : " + target.Name);
-        return Task.FromResult(ActionResult.Ok($"Mot de passe de « {target.Name} » réinitialisé. Communiquez-le-lui de vive voix."));
+        return Task.FromResult(ActionResult.Ok(L("Mot de passe de « {0} » réinitialisé. Communiquez-le-lui de vive voix.", target.Name)));
     }
 }
 
@@ -295,7 +302,7 @@ public sealed class ResetPasswordAction : IActionHandler
 public sealed class SetFullNameAction : IActionHandler
 {
     public string Id => "users.account.setfullname";
-    public string Title => "Modifier le nom affiché d'un compte";
+    public string Title => L("Modifier le nom affiché d'un compte");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
@@ -310,11 +317,11 @@ public sealed class SetFullNameAction : IActionHandler
         var fullName = AccountParams.FullName(p) ?? "";
         var (target, _) = LocalAccounts.Resolve(AccountParams.Sid(p), ctx.UserSid);
         if (target.MicrosoftAccount is not null)
-            throw new ValidationException("Le nom d'un compte Microsoft se modifie sur account.microsoft.com.");
+            throw new ValidationException(L("Le nom d'un compte Microsoft se modifie sur account.microsoft.com."));
         NetApi.SetFullName(target.Name, fullName);
         return Task.FromResult(ActionResult.Ok(fullName.Length == 0
-            ? $"Nom affiché de « {target.Name} » effacé."
-            : $"« {target.Name} » s'affichera désormais « {fullName} »."));
+            ? L("Nom affiché de « {0} » effacé.", target.Name)
+            : L("« {0} » s'affichera désormais « {1} ».", target.Name, fullName)));
     }
 }
 
@@ -322,7 +329,7 @@ public sealed class SetFullNameAction : IActionHandler
 public sealed class LockoutThresholdAction : IActionHandler
 {
     public string Id => "users.lockout.set";
-    public string Title => "Seuil de verrouillage des comptes";
+    public string Title => L("Seuil de verrouillage des comptes");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) => Validate.Int(p, "threshold", 0, 50);
@@ -331,7 +338,7 @@ public sealed class LockoutThresholdAction : IActionHandler
     public bool RequiresElevatedConfirmationFor(IReadOnlyDictionary<string, string> p) => Validate.Int(p, "threshold", 0, 50) == 0;
 
     public string DescribeForConfirmation(IReadOnlyDictionary<string, string> p) =>
-        "Désactiver le verrouillage des comptes ? Une personne pourra essayer autant de mots de passe qu'elle le souhaite sur ce PC.";
+        L("Désactiver le verrouillage des comptes ? Une personne pourra essayer autant de mots de passe qu'elle le souhaite sur ce PC.");
 
     public async Task<ActionResult> ExecuteAsync(ActionContext ctx, IReadOnlyDictionary<string, string> p)
     {
@@ -340,9 +347,9 @@ public sealed class LockoutThresholdAction : IActionHandler
         var r = await ProcessRunner.RunAsync(SystemTool.Net,
             ["accounts", "/lockoutthreshold:" + n.ToString(CultureInfo.InvariantCulture)],
             new RunOptions { Timeout = TimeSpan.FromSeconds(30), OutputEncoding = ProcessRunner.OemEncoding }, ctx.Cancellation).ConfigureAwait(false);
-        if (!r.Success) return ActionResult.Fail("net accounts a échoué : " + r.CombinedOutput.Trim());
+        if (!r.Success) return ActionResult.Fail(L("net accounts a échoué : {0}", r.CombinedOutput.Trim()));
         return ActionResult.Ok(n == 0
-            ? "Verrouillage des comptes désactivé : les essais de mot de passe ne sont plus limités."
-            : $"Un compte sera verrouillé après {n} mots de passe erronés.");
+            ? L("Verrouillage des comptes désactivé : les essais de mot de passe ne sont plus limités.")
+            : LP(n, "Un compte sera verrouillé après {0} mot de passe erroné.", "Un compte sera verrouillé après {0} mots de passe erronés."));
     }
 }

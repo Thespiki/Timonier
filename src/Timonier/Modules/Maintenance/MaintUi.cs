@@ -159,7 +159,7 @@ internal static class MaintUi
         catch (Exception ex)
         {
             Log.Warn("Maintenance", $"ouverture de {tool} : {ex.Message}");
-            AppHost.Toasts.Show("Impossible d'ouvrir cet outil de Windows : " + ex.Message, UI.Services.ToastKind.Error);
+            AppHost.Toasts.Show(L("Impossible d'ouvrir cet outil de Windows : {0}", ex.Message), UI.Services.ToastKind.Error);
         }
     }
 
@@ -169,7 +169,7 @@ internal static class MaintUi
         catch (Exception ex)
         {
             Log.Warn("Maintenance", $"ouverture de {uri} : {ex.Message}");
-            AppHost.Toasts.Show("Impossible d'ouvrir les Paramètres de Windows.", UI.Services.ToastKind.Error);
+            AppHost.Toasts.Show(L("Impossible d'ouvrir les Paramètres de Windows."), UI.Services.ToastKind.Error);
         }
     }
 }

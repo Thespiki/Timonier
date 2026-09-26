@@ -24,7 +24,7 @@ public sealed partial class ProfilesPage
         public string? Option { get; init; }
         public PlanApp? App { get; init; }
         /// <summary>Libellé du rapport quand l'élément a réussi (par défaut « Appliqué »).</summary>
-        public string DoneLabel { get; set; } = "Appliqué";
+        public string DoneLabel { get; set; } = L("Appliqué");
     }
 
     private sealed class RunState
@@ -59,47 +59,51 @@ public sealed partial class ProfilesPage
 
         var restore = _createRestorePoint && AppHost.Registry.GetAction(RestorePointAction) is not null;
         var content = new StackPanel { MaxWidth = 520 };
-        content.Children.Add(Text("Timonier va maintenant, dans cet ordre :"));
+        content.Children.Add(Text(L("Timonier va maintenant, dans cet ordre :")));
         var steps = new StackPanel { Margin = new Thickness(0, 8, 0, 8) };
-        if (restore) steps.Children.Add(Bullet("créer un point de restauration système ;", "", "Pp.AccentText"));
+        if (restore) steps.Children.Add(Bullet(L("créer un point de restauration système ;"), "", "Pp.AccentText"));
         if (tweaks.Count > 0)
         {
             var admin = tweaks.Count(t => t.Tweak.RequiresAdmin);
-            steps.Children.Add(Bullet($"appliquer {tweaks.Count} réglage{(tweaks.Count > 1 ? "s" : "")}" +
-                                      (admin > 0 ? $", dont {admin} avec les droits d'administrateur ;" : " ;"), "", "Pp.AccentText"));
+            steps.Children.Add(Bullet(admin > 0
+                ? LP(tweaks.Count, "appliquer {0} réglage, dont {1} avec les droits d'administrateur ;", "appliquer {0} réglages, dont {1} avec les droits d'administrateur ;", admin)
+                : LP(tweaks.Count, "appliquer {0} réglage ;", "appliquer {0} réglages ;"), "", "Pp.AccentText"));
         }
         if (apps.Count > 0)
-            steps.Children.Add(Bullet($"installer {apps.Count} application{(apps.Count > 1 ? "s" : "")} avec winget (téléchargement depuis Internet, " +
-                                      "acceptation des licences des éditeurs) : " + string.Join(", ", apps.Take(6).Select(a => a.Name)) + (apps.Count > 6 ? "…" : "") + ".",
+            steps.Children.Add(Bullet(LP(apps.Count, "installer {0} application avec winget (téléchargement depuis Internet, acceptation des licences des éditeurs) : {1}{2}.",
+                    "installer {0} applications avec winget (téléchargement depuis Internet, acceptation des licences des éditeurs) : {1}{2}.",
+                    string.Join(", ", apps.Take(6).Select(a => a.Name)), apps.Count > 6 ? "…" : ""),
                 "", "Pp.AccentText"));
         content.Children.Add(steps);
 
         var needsAdmin = tweaks.Any(t => t.Tweak.RequiresAdmin) || apps.Count > 0 || restore;
         if (needsAdmin)
-            content.Children.Add(Caption("Windows demandera au plus une fois l'autorisation administrateur (UAC) pour l'ensemble du plan." +
-                                         (apps.Any(a => !a.InCatalog) ? " Les applications hors du catalogue vérifié demandent en plus une confirmation dédiée." : "")));
+            content.Children.Add(Caption(L("Windows demandera au plus une fois l'autorisation administrateur (UAC) pour l'ensemble du plan.")
+                + (apps.Any(a => !a.InCatalog) ? " " + L("Les applications hors du catalogue vérifié demandent en plus une confirmation dédiée.") : "")));
         var warnings = tweaks.Where(t => t.Tweak.Warning is not null).ToList();
         if (warnings.Count > 0)
         {
-            var w = Caption("À savoir : " + string.Join(" ", warnings.Take(4).Select(t => $"« {t.Tweak.Title} » : {t.Tweak.Warning}")) +
-                            (warnings.Count > 4 ? $" (et {warnings.Count - 4} autre{(warnings.Count - 4 > 1 ? "s" : "")} avertissement{(warnings.Count - 4 > 1 ? "s" : "")} dans le plan)" : ""),
+            var items = string.Join(" ", warnings.Take(4).Select(t => L("« {0} » : {1}", t.Tweak.Title, t.Tweak.Warning)));
+            if (warnings.Count > 4)
+                items += " " + LP(warnings.Count - 4, "(et {0} autre avertissement dans le plan)", "(et {0} autres avertissements dans le plan)");
+            var w = Caption(L("À savoir : {0}", items),
                 "Pp.Warning");
             w.Margin = new Thickness(0, 8, 0, 0);
             content.Children.Add(w);
         }
         if (EffectsText(tweaks.Aggregate(ApplyEffect.None, (e, t) => e | t.Tweak.Effect)) is { } fx)
         {
-            var f = Caption("Certains changements nécessiteront : " + fx + ". Rien ne redémarre sans votre accord.");
+            var f = Caption(L("Certains changements nécessiteront : {0}. Rien ne redémarre sans votre accord.", fx));
             f.Margin = new Thickness(0, 8, 0, 0);
             content.Children.Add(f);
         }
-        var undo = Caption("Vous pourrez annuler chaque réglage depuis le Journal" +
-                           (tweaks.Any(t => !t.Tweak.IsReversible) ? ", sauf ceux marqués « Non annulable »." : ".") +
-                           " Les applications se désinstallent depuis la page Applications ou les Paramètres de Windows.");
+        var undo = Caption(tweaks.Any(t => !t.Tweak.IsReversible)
+            ? L("Vous pourrez annuler chaque réglage depuis le Journal, sauf ceux marqués « Non annulable ». Les applications se désinstallent depuis la page Applications ou les Paramètres de Windows.")
+            : L("Vous pourrez annuler chaque réglage depuis le Journal. Les applications se désinstallent depuis la page Applications ou les Paramètres de Windows."));
         undo.Margin = new Thickness(0, 8, 0, 0);
         content.Children.Add(undo);
 
-        if (!await AppHost.Dialogs.ShowAsync("Appliquer le plan ?", content, "Appliquer", "Annuler")) return;
+        if (!await AppHost.Dialogs.ShowAsync(L("Appliquer le plan ?"), content, L("Appliquer"), L("Annuler"))) return;
         await RunAsync(tweaks, apps, restore);
     }
 
@@ -108,13 +112,13 @@ public sealed partial class ProfilesPage
     private async Task RunAsync(List<PlanTweak> tweaks, List<PlanApp> apps, bool restore)
     {
         var run = _run = new RunState();
-        if (restore) run.RestorePoint = new RunItem("Point de restauration système");
+        if (restore) run.RestorePoint = new RunItem(L("Point de restauration système"));
         foreach (var t in tweaks) run.Tweaks.Add(new RunItem(t.Tweak.Title, t.TargetLabel) { Tweak = t.Tweak, Option = t.Target });
         foreach (var a in apps) run.Apps.Add(new RunItem(a.Name) { App = a });
 
         _running = true;
         var cts = _applyCts = new CancellationTokenSource();
-        using var keepAlive = AppHost.Background.Acquire("Application d'un profil d'installation");
+        using var keepAlive = AppHost.Background.Acquire(L("Application d'un profil d'installation"));
         GoTo(Step.Apply);
         var progress = new Progress<string>(message => AddLog(message));
 
@@ -125,15 +129,15 @@ public sealed partial class ProfilesPage
             {
                 SetState(rp, ItemState.Running);
                 var outcome = await AppHost.Engine.RunActionAsync(RestorePointAction,
-                    new Dictionary<string, string> { ["description"] = "Timonier - avant profil" }, progress, cts.Token);
+                    new Dictionary<string, string> { ["description"] = L("Timonier - avant profil") }, progress, cts.Token);
                 rp.Message = outcome.Message;
                 // Windows ne crée qu'un point toutes les 24 heures : l'action réussit alors sans nouveau point.
-                rp.DoneLabel = outcome.Data?.GetValueOrDefault("created") == "false" ? "Point récent conservé" : "Créé";
+                rp.DoneLabel = outcome.Data?.GetValueOrDefault("created") == "false" ? L("Point récent conservé") : L("Créé");
                 SetState(rp,outcome.Success ? ItemState.Done : outcome.Cancelled ? ItemState.Skipped : ItemState.Failed);
                 if (!outcome.Success && !cts.IsCancellationRequested &&
-                    !await AppHost.Dialogs.ConfirmAsync("Point de restauration non créé",
-                        $"{outcome.Message}\n\nContinuer sans point de restauration ? Les réglages resteront annulables un par un depuis le Journal.",
-                        "Continuer", "Arrêter"))
+                    !await AppHost.Dialogs.ConfirmAsync(L("Point de restauration non créé"),
+                        L("{0}\n\nContinuer sans point de restauration ? Les réglages resteront annulables un par un depuis le Journal.", outcome.Message),
+                        L("Continuer"), L("Arrêter")))
                 {
                     run.Aborted = true;
                 }
@@ -169,7 +173,7 @@ public sealed partial class ProfilesPage
             {
                 if (AppHost.Registry.GetAction(WingetInstallAction) is null)
                 {
-                    foreach (var item in run.Apps) { item.Message = "Module Applications indisponible."; SetState(item, ItemState.Failed); }
+                    foreach (var item in run.Apps) { item.Message = L("Module Applications indisponible."); SetState(item, ItemState.Failed); }
                 }
                 else
                 {
@@ -183,9 +187,11 @@ public sealed partial class ProfilesPage
                         {
                             if (outcome.Data?.TryGetValue(item.App!.Id, out var result) == true)
                             {
+                                // Données de apps.winget.install : « ok : … » / « erreur : … » (préfixes non traduits), le détail
+                                // d'une annulation étant L("annulé") dans les deux processus (même langue).
                                 var success = result.StartsWith("ok", StringComparison.OrdinalIgnoreCase);
                                 item.Message = result.Contains(':') ? result[(result.IndexOf(':') + 1)..].Trim() : result;
-                                SetState(item, success ? ItemState.Done : result.Contains("annul", StringComparison.OrdinalIgnoreCase) ? ItemState.Skipped : ItemState.Failed);
+                                SetState(item, success ? ItemState.Done : item.Message == L("annulé") ? ItemState.Skipped : ItemState.Failed);
                             }
                             else
                             {
@@ -202,7 +208,7 @@ public sealed partial class ProfilesPage
         catch (Exception ex)
         {
             Log.Error("Profiles", "application du plan", ex);
-            AddLog("Erreur inattendue : " + ex.Message);
+            AddLog(L("Erreur inattendue : {0}", ex.Message));
             run.Aborted = true;
         }
         finally
@@ -211,7 +217,7 @@ public sealed partial class ProfilesPage
             foreach (var item in run.All.Where(i => i.State is ItemState.Pending or ItemState.Running))
             {
                 item.State = ItemState.Skipped;
-                item.Message ??= run.Aborted ? "Non effectué (arrêt demandé)." : "Non effectué (annulé).";
+                item.Message ??= run.Aborted ? L("Non effectué (arrêt demandé).") : L("Non effectué (annulé).");
             }
             _running = false;
             _applyCts = null;
@@ -225,8 +231,10 @@ public sealed partial class ProfilesPage
         var ok = run.All.Count(i => i.State == ItemState.Done);
         var failed = run.All.Count(i => i.State == ItemState.Failed);
         AppHost.Toasts.Show(failed == 0 && !run.Cancelled && !run.Aborted
-                ? $"Plan appliqué : {ok} élément{(ok > 1 ? "s" : "")} terminé{(ok > 1 ? "s" : "")}."
-                : $"Plan terminé avec {failed} échec{(failed > 1 ? "s" : "")}{(run.Cancelled || run.Aborted ? ", interrompu" : "")} : consultez le rapport.",
+                ? LP(ok, "Plan appliqué : {0} élément terminé.", "Plan appliqué : {0} éléments terminés.")
+                : run.Cancelled || run.Aborted
+                    ? LP(failed, "Plan terminé avec {0} échec, interrompu : consultez le rapport.", "Plan terminé avec {0} échecs, interrompu : consultez le rapport.")
+                    : LP(failed, "Plan terminé avec {0} échec : consultez le rapport.", "Plan terminé avec {0} échecs : consultez le rapport."),
             failed == 0 && !run.Cancelled && !run.Aborted ? ToastKind.Success : ToastKind.Warning);
         GoTo(Step.Report);
     }
@@ -252,15 +260,15 @@ public sealed partial class ProfilesPage
     {
         if (_run is not { } run) return;
         var top = new StackPanel();
-        top.Children.Add(Text("Application en cours", "Pp.CardTitle"));
-        _progressText = Caption("Préparation…");
+        top.Children.Add(Text(L("Application en cours"), "Pp.CardTitle"));
+        _progressText = Caption(L("Préparation…"));
         _progressText.Margin = new Thickness(0, 4, 0, 10);
         _progressText.TextTrimming = TextTrimming.CharacterEllipsis;
         _progressText.TextWrapping = TextWrapping.NoWrap;
         top.Children.Add(_progressText);
         _progressBar = new ProgressBar { Height = 4, Minimum = 0, Maximum = Math.Max(1, run.All.Count()) };
         top.Children.Add(_progressBar);
-        var hint = Caption("Vous pouvez quitter cette page : l'opération continue. Si Windows demande l'autorisation administrateur, acceptez-la pour poursuivre.", "Pp.TextTertiary");
+        var hint = Caption(L("Vous pouvez quitter cette page : l'opération continue. Si Windows demande l'autorisation administrateur, acceptez-la pour poursuivre."), "Pp.TextTertiary");
         hint.Margin = new Thickness(0, 10, 0, 0);
         top.Children.Add(hint);
         _body.Children.Add(Card(top));
@@ -268,20 +276,20 @@ public sealed partial class ProfilesPage
         _phaseList = new StackPanel();
         _body.Children.Add(Card(_phaseList));
 
-        _body.Children.Add(Section("Détails"));
+        _body.Children.Add(Section(L("Détails")));
         _logText = new TextBlock { TextWrapping = TextWrapping.Wrap, FontFamily = new System.Windows.Media.FontFamily("Cascadia Mono, Consolas"), FontSize = 12 }
             .Themed(TextBlock.ForegroundProperty, "Pp.TextSecondary");
         _logText.Text = run.Log.Count == 0 ? "…" : string.Join("\n", run.Log.TakeLast(6));
         _body.Children.Add(Card(_logText));
 
-        _cancelButton = Button("Annuler la suite", "", "Pp.Button", (_, _) =>
+        _cancelButton = Button(L("Annuler la suite"), "", "Pp.Button", (_, _) =>
         {
             _applyCts?.Cancel();
             if (_cancelButton is null) return;
             _cancelButton.IsEnabled = false;
-            _cancelButton.Content = "Arrêt après l'élément en cours…";
+            _cancelButton.Content = L("Arrêt après l'élément en cours…");
         });
-        _cancelButton.ToolTip = "L'élément en cours se termine ; les suivants ne sont pas appliqués.";
+        _cancelButton.ToolTip = L("L'élément en cours se termine ; les suivants ne sont pas appliqués.");
         _cancelButton.IsEnabled = _applyCts is { IsCancellationRequested: false };
         NavRight(_cancelButton);
         RefreshApply();
@@ -294,9 +302,9 @@ public sealed partial class ProfilesPage
         if (_progressBar is not null) _progressBar.Value = all.Count(i => i.State is ItemState.Done or ItemState.Failed or ItemState.Skipped);
 
         _phaseList.Children.Clear();
-        if (run.RestorePoint is { } rp) _phaseList.Children.Add(PhaseRow("Point de restauration", [rp]));
-        if (run.Tweaks.Count > 0) _phaseList.Children.Add(PhaseRow("Réglages", run.Tweaks));
-        if (run.Apps.Count > 0) _phaseList.Children.Add(PhaseRow("Applications", run.Apps));
+        if (run.RestorePoint is { } rp) _phaseList.Children.Add(PhaseRow(L("Point de restauration"), [rp]));
+        if (run.Tweaks.Count > 0) _phaseList.Children.Add(PhaseRow(L("Réglages"), run.Tweaks));
+        if (run.Apps.Count > 0) _phaseList.Children.Add(PhaseRow(L("Applications"), run.Apps));
     }
 
     private static UIElement PhaseRow(string title, IReadOnlyList<RunItem> items)
@@ -308,9 +316,14 @@ public sealed partial class ProfilesPage
         var (glyph, brush) = running is not null ? ("", "Pp.AccentText")
             : finished ? (failed > 0 ? ("", "Pp.Warning") : items.All(i => i.State == ItemState.Skipped) ? ("", "Pp.TextTertiary") : ("", "Pp.Success"))
             : ("", "Pp.TextTertiary");
-        var detail = items.Count == 1 && running is null && items[0].Message is { } m ? m
-            : $"{done} sur {items.Count} terminé{(done > 1 ? "s" : "")}" + (failed > 0 ? $", {failed} échec{(failed > 1 ? "s" : "")}" : "")
-              + (running is not null ? $" · en cours : {running.Title}" : "");
+        string detail;
+        if (items.Count == 1 && running is null && items[0].Message is { } m) detail = m;
+        else
+        {
+            detail = LP(done, "{0} sur {1} terminé", "{0} sur {1} terminés", items.Count);
+            if (failed > 0) detail += ", " + LP(failed, "{0} échec", "{0} échecs");
+            if (running is not null) detail += " · " + L("en cours : {0}", running.Title);
+        }
         return SimpleRow(glyph, brush, title, detail);
     }
 
@@ -324,63 +337,63 @@ public sealed partial class ProfilesPage
         var failed = all.Count(i => i.State == ItemState.Failed);
         var skipped = all.Count(i => i.State == ItemState.Skipped);
 
-        var summary = $"{done} élément{(done > 1 ? "s" : "")} appliqué{(done > 1 ? "s" : "")}"
-                      + (failed > 0 ? $", {failed} échec{(failed > 1 ? "s" : "")}" : "")
-                      + (skipped > 0 ? $", {skipped} non effectué{(skipped > 1 ? "s" : "")}" : "") + "."
-                      + (run.Cancelled ? " Vous avez interrompu l'opération : ce qui a été appliqué avant l'arrêt reste en place." : "")
-                      + (run.Aborted && !run.Cancelled ? " L'opération a été arrêtée avant la fin." : "");
+        var parts = new List<string> { LP(done, "{0} élément appliqué", "{0} éléments appliqués") };
+        if (failed > 0) parts.Add(LP(failed, "{0} échec", "{0} échecs"));
+        if (skipped > 0) parts.Add(LP(skipped, "{0} non effectué", "{0} non effectués"));
+        var summary = string.Join(", ", parts) + ".";
+        if (run.Cancelled) summary += " " + L("Vous avez interrompu l'opération : ce qui a été appliqué avant l'arrêt reste en place.");
+        else if (run.Aborted) summary += " " + L("L'opération a été arrêtée avant la fin.");
         _body.Children.Add(InfoBar(summary, failed == 0 && skipped == 0 ? "" : "",
             failed == 0 && skipped == 0 ? "Pp.InfoBar.Success" : "Pp.InfoBar.Warning"));
 
         if (run.Effects.HasFlag(ApplyEffect.Reboot))
-            _body.Children.Add(InfoBar("Certains changements seront effectifs après le redémarrage du PC.", "", "Pp.InfoBar",
-                Button("Redémarrer maintenant", "", "Pp.Button", async (_, _) =>
+            _body.Children.Add(InfoBar(L("Certains changements seront effectifs après le redémarrage du PC."), "", "Pp.InfoBar",
+                Button(L("Redémarrer maintenant"), "", "Pp.Button", async (_, _) =>
                 {
-                    if (await AppHost.Dialogs.ConfirmAsync("Redémarrer le PC ?", "Enregistrez votre travail : les applications ouvertes seront fermées.", "Redémarrer"))
+                    if (await AppHost.Dialogs.ConfirmAsync(L("Redémarrer le PC ?"), L("Enregistrez votre travail : les applications ouvertes seront fermées."), L("Redémarrer")))
                         await SystemEffects.RebootNowAsync();
                 })));
         else if (run.Effects.HasFlag(ApplyEffect.SignOut))
-            _body.Children.Add(InfoBar("Certains changements seront effectifs à la prochaine ouverture de session.", "", "Pp.InfoBar",
-                Button("Se déconnecter", null, "Pp.Button", async (_, _) =>
+            _body.Children.Add(InfoBar(L("Certains changements seront effectifs à la prochaine ouverture de session."), "", "Pp.InfoBar",
+                Button(L("Se déconnecter"), null, "Pp.Button", async (_, _) =>
                 {
-                    if (await AppHost.Dialogs.ConfirmAsync("Se déconnecter ?", "Enregistrez votre travail avant de continuer.", "Se déconnecter"))
+                    if (await AppHost.Dialogs.ConfirmAsync(L("Se déconnecter ?"), L("Enregistrez votre travail avant de continuer."), L("Se déconnecter")))
                         await SystemEffects.SignOutNowAsync();
                 })));
         if (run.Effects.HasFlag(ApplyEffect.RestartExplorer))
-            _body.Children.Add(InfoBar("L'Explorateur Windows doit être relancé pour afficher certains changements (barre des tâches, menus).", "", "Pp.InfoBar",
-                Button("Relancer l'Explorateur", null, "Pp.Button", (_, _) => _ = SystemEffects.RestartExplorerAsync())));
+            _body.Children.Add(InfoBar(L("L'Explorateur Windows doit être relancé pour afficher certains changements (barre des tâches, menus)."), "", "Pp.InfoBar",
+                Button(L("Relancer l'Explorateur"), null, "Pp.Button", (_, _) => _ = SystemEffects.RestartExplorerAsync())));
 
         if (_plan?.Profiles.FirstOrDefault(p => p.LinkPageId == "kiosk") is { } kiosk && AppHost.Registry.GetPage("kiosk") is not null)
-            _body.Children.Add(InfoBar("Le PC est préparé pour un usage en borne. Il reste à choisir le compte et l'application affichée.", "", "Pp.InfoBar",
-                Button(kiosk.LinkLabel ?? "Configurer le kiosque", null, "Pp.AccentButton", (_, _) => AppHost.Navigator.Navigate("kiosk"))));
+            _body.Children.Add(InfoBar(L("Le PC est préparé pour un usage en borne. Il reste à choisir le compte et l'application affichée."), "", "Pp.InfoBar",
+                Button(kiosk.LinkLabel ?? L("Configurer le kiosque"), null, "Pp.AccentButton", (_, _) => AppHost.Navigator.Navigate("kiosk"))));
 
         if (run.RestorePoint is { } rp)
         {
-            _body.Children.Add(Section("Point de restauration"));
+            _body.Children.Add(Section(L("Point de restauration")));
             _body.Children.Add(Card(ReportRow(rp), 12));
         }
         if (run.Tweaks.Count > 0)
         {
-            _body.Children.Add(Section($"Réglages ({run.Tweaks.Count(i => i.State == ItemState.Done)} sur {run.Tweaks.Count})"));
+            _body.Children.Add(Section(L("Réglages ({0} sur {1})", run.Tweaks.Count(i => i.State == ItemState.Done), run.Tweaks.Count)));
             _body.Children.Add(Card(ReportList(run.Tweaks.OrderBy(i => i.State == ItemState.Done ? 1 : 0))));
         }
         if (run.Apps.Count > 0)
         {
-            _body.Children.Add(Section($"Applications ({run.Apps.Count(i => i.State == ItemState.Done)} sur {run.Apps.Count})"));
+            _body.Children.Add(Section(L("Applications ({0} sur {1})", run.Apps.Count(i => i.State == ItemState.Done), run.Apps.Count)));
             _body.Children.Add(Card(ReportList(run.Apps.OrderBy(i => i.State == ItemState.Done ? 1 : 0))));
         }
 
         if (AppHost.Registry.GetPage("journal") is null && run.Tweaks.Any(i => i.State == ItemState.Done))
         {
-            var back = Caption("Pour revenir en arrière sur un réglage, ouvrez sa page (Confidentialité, Performances, Sécurité…) " +
-                               "et choisissez de nouveau l'option d'origine.", "Pp.TextTertiary");
+            var back = Caption(L("Pour revenir en arrière sur un réglage, ouvrez sa page (Confidentialité, Performances, Sécurité…) et choisissez de nouveau l'option d'origine."), "Pp.TextTertiary");
             back.Margin = new Thickness(0, 8, 0, 0);
             _body.Children.Add(back);
         }
         else if (AppHost.Registry.GetPage("journal") is not null)
-            NavLeft(Button("Ouvrir le journal (annuler)", "", "Pp.Button", (_, _) => AppHost.Navigator.Navigate("journal")));
-        NavLeft(Button("Exporter ce plan…", "", "Pp.SubtleButton", (_, _) => _ = ExportAsync()));
-        NavRight(Button("Terminer", "", "Pp.AccentButton", (_, _) => Finish()));
+            NavLeft(Button(L("Ouvrir le journal (annuler)"), "", "Pp.Button", (_, _) => AppHost.Navigator.Navigate("journal")));
+        NavLeft(Button(L("Exporter ce plan…"), "", "Pp.SubtleButton", (_, _) => _ = ExportAsync()));
+        NavRight(Button(L("Terminer"), "", "Pp.AccentButton", (_, _) => Finish()));
     }
 
     private static StackPanel ReportList(IEnumerable<RunItem> items)
@@ -401,19 +414,19 @@ public sealed partial class ProfilesPage
         var (glyph, brush, label) = item.State switch
         {
             ItemState.Done => ("", "Pp.Success", item.DoneLabel),
-            ItemState.Failed => ("", "Pp.Danger", "Échec"),
-            _ => ("", "Pp.TextTertiary", "Non effectué"),
+            ItemState.Failed => ("", "Pp.Danger", L("Échec")),
+            _ => ("", "Pp.TextTertiary", L("Non effectué")),
         };
-        var detail = label + (item.Detail is null ? "" : " : " + item.Detail);
+        var detail = item.Detail is null ? label : L("{0} : {1}", label, item.Detail);
         if (item.State != ItemState.Done && item.Message is { Length: > 0 } msg) detail += " — " + msg;
         else if (item.Tweak is null && item.Message is { Length: > 0 } ok) detail += " — " + ok; // application ou point de restauration
         var row = (DockPanel)SimpleRow(glyph, brush, item.Title, detail);
         var badges = new WrapPanel { Margin = new Thickness(22, 2, 0, 0) };
         if (item.State == ItemState.Done && item.Tweak is { } t)
         {
-            if (!t.IsReversible) badges.Children.Add(Badge("Non annulable", "Danger"));
-            if (t.Effect.HasFlag(ApplyEffect.Reboot)) badges.Children.Add(Badge("Redémarrage requis", "Info", ""));
-            else if (t.Effect.HasFlag(ApplyEffect.SignOut)) badges.Children.Add(Badge("Déconnexion requise", "Info", ""));
+            if (!t.IsReversible) badges.Children.Add(Badge(L("Non annulable"), "Danger"));
+            if (t.Effect.HasFlag(ApplyEffect.Reboot)) badges.Children.Add(Badge(L("Redémarrage requis"), "Info", ""));
+            else if (t.Effect.HasFlag(ApplyEffect.SignOut)) badges.Children.Add(Badge(L("Déconnexion requise"), "Info", ""));
         }
         if (badges.Children.Count == 0) return row;
         var stack = new StackPanel();
@@ -430,6 +443,6 @@ public sealed partial class ProfilesPage
         _import = null;
         _defaultsApplied = _userTouched = false;
         GoTo(Step.Pc);
-        AppHost.Toasts.Show("Configuration terminée. Vous pouvez relancer l'assistant à tout moment.", ToastKind.Success);
+        AppHost.Toasts.Show(L("Configuration terminée. Vous pouvez relancer l'assistant à tout moment."), ToastKind.Success);
     }
 }

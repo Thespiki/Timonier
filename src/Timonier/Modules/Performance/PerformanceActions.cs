@@ -18,7 +18,7 @@ public sealed class ActivateSchemeAction(bool admin) : IActionHandler
     public const string AdminId = "perf.power.activate.admin";
 
     public string Id => admin ? AdminId : UserId;
-    public string Title => "Activer un plan d'alimentation";
+    public string Title => L("Activer un plan d'alimentation");
     public bool RequiresAdmin => admin;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) => Validate.Guid(p, "scheme");
@@ -28,12 +28,12 @@ public sealed class ActivateSchemeAction(bool admin) : IActionHandler
         ValidateParameters(p);
         var id = Validate.Guid(p, "scheme");
         var scheme = PowerApi.EnumerateSchemes().FirstOrDefault(s => s.Id == id)
-                     ?? throw new ValidationException("Ce plan d'alimentation n'existe pas (ou plus) sur ce PC.");
+                     ?? throw new ValidationException(L("Ce plan d'alimentation n'existe pas (ou plus) sur ce PC."));
         var rc = PowerApi.SetActiveScheme(id);
-        if (rc == 0) return Task.FromResult(ActionResult.Ok($"Plan « {scheme.Name} » activé."));
+        if (rc == 0) return Task.FromResult(ActionResult.Ok(L("Plan « {0} » activé.", scheme.Name)));
         return Task.FromResult(new ActionResult(false, rc == PowerApi.ErrorAccessDenied
-            ? "Windows a refusé le changement de plan (accès refusé)."
-            : $"Impossible d'activer le plan « {scheme.Name} » (code {rc}).")
+            ? L("Windows a refusé le changement de plan (accès refusé).")
+            : L("Impossible d'activer le plan « {0} » (code {1}).", scheme.Name, rc))
         {
             Data = new Dictionary<string, string> { ["code"] = rc.ToString(CultureInfo.InvariantCulture) },
         });
@@ -51,13 +51,13 @@ public sealed partial class AddSchemeAction : IActionHandler
     /// <summary>Modèles autorisés : clé → (GUID du modèle, personnalité attendue).</summary>
     public static readonly IReadOnlyDictionary<string, (Guid Template, string Label)> Templates = new Dictionary<string, (Guid, string)>
     {
-        ["ultimate"] = (PowerApi.UltimateTemplate, "Performances optimales"),
-        ["high"] = (PowerApi.HighPerformance, "Performances élevées"),
-        ["saver"] = (PowerApi.PowerSaver, "Économie d'énergie"),
+        ["ultimate"] = (PowerApi.UltimateTemplate, L("Performances optimales")),
+        ["high"] = (PowerApi.HighPerformance, L("Performances élevées")),
+        ["saver"] = (PowerApi.PowerSaver, L("Économie d'énergie")),
     };
 
     public string Id => ActionId;
-    public string Title => "Ajouter un plan d'alimentation";
+    public string Title => L("Ajouter un plan d'alimentation");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) => Validate.OneOf(p, "template", [.. Templates.Keys]);
@@ -76,20 +76,20 @@ public sealed partial class AddSchemeAction : IActionHandler
         var existing = PowerApi.EnumerateSchemes().FirstOrDefault(s =>
             s.Id == template || string.Equals(s.Name, templateName, StringComparison.CurrentCultureIgnoreCase));
         if (existing is not null)
-            return ActionResult.Ok($"Le plan « {existing.Name} » existe déjà.", new() { ["scheme"] = existing.Id.ToString() });
+            return ActionResult.Ok(L("Le plan « {0} » existe déjà.", existing.Name), new() { ["scheme"] = existing.Id.ToString() });
 
-        ctx.Progress?.Report("Création du plan…");
+        ctx.Progress?.Report(L("Création du plan…"));
         var result = await ProcessRunner.RunAsync(SystemTool.PowerCfg, ["-duplicatescheme", template.ToString()],
             new RunOptions { Timeout = TimeSpan.FromSeconds(30), OutputEncoding = ProcessRunner.OemEncoding }, ctx.Cancellation);
         if (!result.Success)
-            return ActionResult.Fail($"powercfg a échoué (code {result.ExitCode}) : {result.CombinedOutput.Trim()}");
+            return ActionResult.Fail(L("powercfg a échoué (code {0}) : {1}", result.ExitCode, result.CombinedOutput.Trim()));
 
         var data = new Dictionary<string, string>();
         foreach (Match m in GuidRx().Matches(result.Output))
         {
             if (Guid.TryParse(m.Value, out var g) && g != template) { data["scheme"] = g.ToString(); break; }
         }
-        return ActionResult.Ok($"Plan « {templateName} » ajouté.", data);
+        return ActionResult.Ok(L("Plan « {0} » ajouté.", templateName), data);
     }
 }
 
@@ -102,7 +102,7 @@ public sealed class SetTimeoutAction : IActionHandler
     public const string ActionId = "perf.power.timeout";
 
     public string Id => ActionId;
-    public string Title => "Modifier les délais de mise en veille";
+    public string Title => L("Modifier les délais de mise en veille");
     public bool RequiresAdmin => false;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
@@ -124,11 +124,16 @@ public sealed class SetTimeoutAction : IActionHandler
             ["/change", setting, minutes.ToString(CultureInfo.InvariantCulture)],
             new RunOptions { Timeout = TimeSpan.FromSeconds(30), OutputEncoding = ProcessRunner.OemEncoding }, ctx.Cancellation);
         if (!result.Success)
-            return ActionResult.Fail($"powercfg a échoué (code {result.ExitCode}) : {result.CombinedOutput.Trim()}");
+            return ActionResult.Fail(L("powercfg a échoué (code {0}) : {1}", result.ExitCode, result.CombinedOutput.Trim()));
 
-        var what = kind == "monitor" ? "Extinction de l'écran" : "Mise en veille";
-        var where = source == "ac" ? "sur secteur" : "sur batterie";
-        return ActionResult.Ok($"{what} {where} : {PerfText.Minutes(minutes)}.");
+        var delay = PerfText.Minutes(minutes);
+        return ActionResult.Ok((kind, source) switch
+        {
+            ("monitor", "ac") => L("Extinction de l'écran sur secteur : {0}.", delay),
+            ("monitor", _) => L("Extinction de l'écran sur batterie : {0}.", delay),
+            (_, "ac") => L("Mise en veille sur secteur : {0}.", delay),
+            _ => L("Mise en veille sur batterie : {0}.", delay),
+        });
     }
 }
 
@@ -138,7 +143,7 @@ public sealed class SetPowerModeAction : IActionHandler
     public const string ActionId = "perf.power.mode";
 
     public string Id => ActionId;
-    public string Title => "Changer le mode d'alimentation";
+    public string Title => L("Changer le mode d'alimentation");
     public bool RequiresAdmin => false;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
@@ -153,11 +158,11 @@ public sealed class SetPowerModeAction : IActionHandler
         var ac = Validate.OneOf(p, "source", "ac", "dc") == "ac";
         var mode = PowerApi.ModeFromKey(Validate.OneOf(p, "mode", [.. PowerApi.Modes.Select(m => m.Key)]))!;
         if (!PowerApi.UserModeApiAvailable)
-            return Task.FromResult(ActionResult.Fail("Cette version de Windows ne permet pas de changer le mode ici : utilisez les Paramètres Windows."));
+            return Task.FromResult(ActionResult.Fail(L("Cette version de Windows ne permet pas de changer le mode ici : utilisez les Paramètres Windows.")));
         var rc = PowerApi.SetUserMode(ac, mode.Id);
         return Task.FromResult(rc == 0
-            ? ActionResult.Ok($"Mode « {mode.Label} » {(ac ? "sur secteur" : "sur batterie")}.")
-            : ActionResult.Fail($"Windows a refusé le changement de mode (code {rc})."));
+            ? ActionResult.Ok(ac ? L("Mode « {0} » sur secteur.", mode.Label) : L("Mode « {0} » sur batterie.", mode.Label))
+            : ActionResult.Fail(L("Windows a refusé le changement de mode (code {0}).", rc)));
     }
 }
 
@@ -174,12 +179,12 @@ public sealed class DirectXSettingAction : IActionHandler
     /// <summary>Entrées autorisées → libellé.</summary>
     public static readonly IReadOnlyDictionary<string, string> Settings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
-        ["SwapEffectUpgradeEnable"] = "Optimisations pour les jeux fenêtrés",
-        ["VRROptimizeEnable"] = "Optimisations pour la fréquence d'actualisation variable",
+        ["SwapEffectUpgradeEnable"] = L("Optimisations pour les jeux fenêtrés"),
+        ["VRROptimizeEnable"] = L("Optimisations pour la fréquence d'actualisation variable"),
     };
 
     public string Id => ActionId;
-    public string Title => "Options graphiques de DirectX";
+    public string Title => L("Options graphiques de DirectX");
     public bool RequiresAdmin => false;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p)
@@ -201,9 +206,15 @@ public sealed class DirectXSettingAction : IActionHandler
         Operation op = entries.Count == 0
             ? Reg.CuDel(Key, ValueName)
             : Reg.CuString(Key, ValueName, string.Concat(entries.Select(e => $"{e.Key}={e.Value};")));
-        var label = value switch { "1" => "Activé", "0" => "Désactivé", _ => "Par défaut de Windows" };
+        var label = value switch { "1" => L("Activé"), "0" => L("Désactivé"), _ => L("Par défaut de Windows") };
         var entry = ctx.ApplyJournaled(ActionId, Settings[setting], label, [op]);
-        return Task.FromResult(new ActionResult(true, $"{Settings[setting]} : {label.ToLowerInvariant()}. Pris en compte au prochain lancement des jeux.")
+        var message = value switch
+        {
+            "1" => L("{0} : activé. Pris en compte au prochain lancement des jeux.", Settings[setting]),
+            "0" => L("{0} : désactivé. Pris en compte au prochain lancement des jeux.", Settings[setting]),
+            _ => L("{0} : par défaut de Windows. Pris en compte au prochain lancement des jeux.", Settings[setting]),
+        };
+        return Task.FromResult(new ActionResult(true, message)
         {
             JournalId = entry.Id,
         });
@@ -235,9 +246,9 @@ public static class PerfText
 {
     public static string Minutes(int minutes) => minutes switch
     {
-        0 => "jamais",
-        < 60 => $"{minutes} min",
-        _ when minutes % 60 == 0 => minutes / 60 == 1 ? "1 heure" : $"{minutes / 60} heures",
-        _ => $"{minutes / 60} h {minutes % 60:00}",
+        0 => L("jamais"),
+        < 60 => L("{0} min", minutes),
+        _ when minutes % 60 == 0 => LP(minutes / 60, "{0} heure", "{0} heures"),
+        _ => L("{0} h {1:00}", minutes / 60, minutes % 60),
     };
 }

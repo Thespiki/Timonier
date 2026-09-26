@@ -33,39 +33,38 @@ internal static partial class UserRestrictions
 
     public static readonly RestrictionDef[] All =
     [
-        new("NoControlPanel", "Panneau de configuration et Paramètres",
-            "Bloque l'application Paramètres et le Panneau de configuration (le raccourci Windows + I compris).",
+        new("NoControlPanel", L("Panneau de configuration et Paramètres"),
+            L("Bloque l'application Paramètres et le Panneau de configuration (le raccourci Windows + I compris)."),
             "", Explorer, "NoControlPanel", [0, 1]),
-        new("DisableTaskMgr", "Gestionnaire des tâches",
-            "Empêche d'ouvrir le Gestionnaire des tâches, donc de fermer de force une application ou de voir les processus.",
+        new("DisableTaskMgr", L("Gestionnaire des tâches"),
+            L("Empêche d'ouvrir le Gestionnaire des tâches, donc de fermer de force une application ou de voir les processus."),
             "", SysPol, "DisableTaskMgr", [0, 1]),
-        new("DisableRegistryTools", "Éditeur du Registre",
-            "Empêche de lancer regedit, y compris l'import silencieux de fichiers .reg.",
+        new("DisableRegistryTools", L("Éditeur du Registre"),
+            L("Empêche de lancer regedit, y compris l'import silencieux de fichiers .reg."),
             "", SysPol, "DisableRegistryTools", [0, 1]),
-        new("DisableCMD", "Invite de commandes",
-            "Bloque cmd.exe. Choisissez si les scripts .bat/.cmd (parfois utilisés à l'ouverture de session) restent autorisés.",
+        new("DisableCMD", L("Invite de commandes"),
+            L("Bloque cmd.exe. Choisissez si les scripts .bat/.cmd (parfois utilisés à l'ouverture de session) restent autorisés."),
             "", PolSystem, "DisableCMD", [0, 1, 2])
         {
-            Note = "Ne bloque pas PowerShell : ajoutez powershell.exe et pwsh.exe à la liste d'applications interdites si besoin.",
+            Note = L("Ne bloque pas PowerShell : ajoutez powershell.exe et pwsh.exe à la liste d'applications interdites si besoin."),
         },
-        new("NoRun", "Boîte de dialogue Exécuter",
-            "Retire « Exécuter » du menu Démarrer et désactive le raccourci Windows + R.",
+        new("NoRun", L("Boîte de dialogue Exécuter"),
+            L("Retire « Exécuter » du menu Démarrer et désactive le raccourci Windows + R."),
             "", Explorer, "NoRun", [0, 1]),
-        new("NoChangingWallPaper", "Changement du fond d'écran",
-            "Empêche de modifier l'arrière-plan du bureau depuis Paramètres › Personnalisation.",
+        new("NoChangingWallPaper", L("Changement du fond d'écran"),
+            L("Empêche de modifier l'arrière-plan du bureau depuis Paramètres › Personnalisation."),
             "", ActiveDesktop, "NoChangingWallPaper", [0, 1]),
-        new(DisallowRunKey, "Applications interdites",
-            "Empêche l'Explorateur de lancer les programmes listés (nom du fichier .exe).",
+        new(DisallowRunKey, L("Applications interdites"),
+            L("Empêche l'Explorateur de lancer les programmes listés (nom du fichier .exe)."),
             "", Explorer, "DisallowRun", [0, 1])
         {
-            Note = "Protection légère : ne concerne que les lancements depuis l'Explorateur (menu Démarrer, bureau, dossiers). " +
-                   "Un programme renommé ou lancé par un autre programme n'est pas bloqué.",
+            Note = L("Protection légère : ne concerne que les lancements depuis l'Explorateur (menu Démarrer, bureau, dossiers). Un programme renommé ou lancé par un autre programme n'est pas bloqué."),
         },
         new("RemoveWindowsStore", "Microsoft Store",
-            "Empêche d'ouvrir l'application Microsoft Store (installation d'applications et de jeux).",
+            L("Empêche d'ouvrir l'application Microsoft Store (installation d'applications et de jeux)."),
             "", Store, "RemoveWindowsStore", [0, 1])
         {
-            Note = "Windows n'applique cette stratégie que sur les éditions Entreprise et Éducation.",
+            Note = L("Windows n'applique cette stratégie que sur les éditions Entreprise et Éducation."),
             EnterpriseOrEducationOnly = true,
         },
     ];
@@ -79,10 +78,10 @@ internal static partial class UserRestrictions
         if (string.IsNullOrWhiteSpace(raw)) return list;
         foreach (var part in raw.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
-            if (!ExeRx().IsMatch(part) || part.Contains("..")) throw new ValidationException($"Nom de programme invalide : « {part} » (exemple attendu : jeu.exe).");
+            if (!ExeRx().IsMatch(part) || part.Contains("..")) throw new ValidationException(L("Nom de programme invalide : « {0} » (exemple attendu : jeu.exe).", part));
             if (!list.Contains(part, StringComparer.OrdinalIgnoreCase)) list.Add(part);
         }
-        if (list.Count > MaxBlockedApps) throw new ValidationException($"{MaxBlockedApps} programmes au maximum.");
+        if (list.Count > MaxBlockedApps) throw new ValidationException(LP(MaxBlockedApps, "{0} programme au maximum.", "{0} programmes au maximum."));
         return list;
     }
 
@@ -127,12 +126,12 @@ internal static partial class UserRestrictions
                 if (rc != 0)
                 {
                     throw rc == 32
-                        ? new InvalidOperationException("Le profil de ce compte est en cours d'utilisation : réessayez après sa déconnexion.")
-                        : new System.ComponentModel.Win32Exception(rc, "Chargement du profil impossible (code " + rc + ").");
+                        ? new InvalidOperationException(L("Le profil de ce compte est en cours d'utilisation : réessayez après sa déconnexion."))
+                        : new System.ComponentModel.Win32Exception(rc, L("Chargement du profil impossible (code {0}).", rc));
                 }
                 try
                 {
-                    using var key = users.OpenSubKey(mount, writable) ?? throw new InvalidOperationException("Ruche chargée introuvable.");
+                    using var key = users.OpenSubKey(mount, writable) ?? throw new InvalidOperationException(L("Ruche chargée introuvable."));
                     return work(key, HiveSource.File);
                 }
                 finally
@@ -232,21 +231,21 @@ internal static partial class UserRestrictions
     public static LocalAccount ResolveTarget(string sid, string? clientSid)
     {
         var (target, _) = LocalAccounts.Resolve(sid, clientSid);
-        LocalAccounts.RefuseSessionAccount(target, clientSid, "restreindre");
-        if (target.IsAdmin) throw new ValidationException("Les restrictions sont réservées aux comptes standard : un administrateur pourrait les retirer lui-même.");
-        if (target.IsBuiltIn) throw new ValidationException("Les comptes intégrés de Windows ne sont pas concernés.");
+        LocalAccounts.RefuseSessionAccount(target, clientSid, L("Par sécurité, Timonier refuse de restreindre le compte avec lequel vous êtes connecté."));
+        if (target.IsAdmin) throw new ValidationException(L("Les restrictions sont réservées aux comptes standard : un administrateur pourrait les retirer lui-même."));
+        if (target.IsBuiltIn) throw new ValidationException(L("Les comptes intégrés de Windows ne sont pas concernés."));
         return target;
     }
 
-    public const string ProfileMissingMessage =
-        "Ce compte n'a encore jamais ouvert de session : son profil n'existe pas. Demandez-lui de se connecter une fois, puis revenez ici.";
+    public static string ProfileMissingMessage =>
+        L("Ce compte n'a encore jamais ouvert de session : son profil n'existe pas. Demandez-lui de se connecter une fois, puis revenez ici.");
 }
 
 /// <summary>Lit l'état des restrictions d'un compte standard (ruche chargée temporairement si besoin).</summary>
 public sealed class GetRestrictionsAction : IActionHandler
 {
     public string Id => "users.restrictions.get";
-    public string Title => "Lire les restrictions d'un compte";
+    public string Title => L("Lire les restrictions d'un compte");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) => AccountParams.Sid(p);
@@ -260,7 +259,7 @@ public sealed class GetRestrictionsAction : IActionHandler
             if (root is null) return ActionResult.Ok(UserRestrictions.ProfileMissingMessage, new Dictionary<string, string> { ["profile"] = "missing" });
             var data = UserRestrictions.ReadAll(root);
             data["profile"] = source == UserRestrictions.HiveSource.Loaded ? "loaded" : "file";
-            return ActionResult.Ok($"Restrictions de « {target.Name} » lues.", data);
+            return ActionResult.Ok(L("Restrictions de « {0} » lues.", target.Name), data);
         });
         return Task.FromResult(result);
     }
@@ -273,7 +272,7 @@ public sealed class GetRestrictionsAction : IActionHandler
 public sealed class SetRestrictionsAction : IActionHandler
 {
     public string Id => "users.restrictions.set";
-    public string Title => "Restrictions d'un compte";
+    public string Title => L("Restrictions d'un compte");
     public bool RequiresAdmin => true;
 
     public void ValidateParameters(IReadOnlyDictionary<string, string> p) => Parse(p);
@@ -288,16 +287,16 @@ public sealed class SetRestrictionsAction : IActionHandler
             if (key == "sid") continue;
             if (key == "DisallowRunList")
             {
-                if (raw.Length > 50 * 70) throw new ValidationException("Liste de programmes trop longue.");
+                if (raw.Length > 50 * 70) throw new ValidationException(L("Liste de programmes trop longue."));
                 apps = UserRestrictions.ParseAppList(raw);
                 continue;
             }
-            var def = UserRestrictions.Find(key) ?? throw new ValidationException($"Restriction inconnue : {key}");
-            if (def.Key == UserRestrictions.DisallowRunKey) throw new ValidationException("Utilisez DisallowRunList pour la liste des programmes.");
-            if (!int.TryParse(raw, out var v) || !def.Values.Contains(v)) throw new ValidationException($"Valeur non autorisée pour {key}.");
+            var def = UserRestrictions.Find(key) ?? throw new ValidationException(L("Restriction inconnue : {0}", key));
+            if (def.Key == UserRestrictions.DisallowRunKey) throw new ValidationException(L("Utilisez DisallowRunList pour la liste des programmes."));
+            if (!int.TryParse(raw, out var v) || !def.Values.Contains(v)) throw new ValidationException(L("Valeur non autorisée pour {0}.", key));
             values[def] = v;
         }
-        if (values.Count == 0 && apps is null) throw new ValidationException("Aucune restriction à modifier.");
+        if (values.Count == 0 && apps is null) throw new ValidationException(L("Aucune restriction à modifier."));
         return (sid, values, apps);
     }
 
@@ -315,8 +314,8 @@ public sealed class SetRestrictionsAction : IActionHandler
             data["profile"] = source == UserRestrictions.HiveSource.Loaded ? "loaded" : "file";
             Log.Info("Users", $"restrictions {target.Name} : {values.Count} valeur(s){(apps is null ? "" : $", {apps.Count} programme(s)")}");
             var msg = source == UserRestrictions.HiveSource.Loaded
-                ? $"Restrictions de « {target.Name} » enregistrées. Sa session est ouverte : certaines ne s'appliqueront qu'à sa prochaine connexion."
-                : $"Restrictions de « {target.Name} » enregistrées : elles s'appliqueront à sa prochaine ouverture de session.";
+                ? L("Restrictions de « {0} » enregistrées. Sa session est ouverte : certaines ne s'appliqueront qu'à sa prochaine connexion.", target.Name)
+                : L("Restrictions de « {0} » enregistrées : elles s'appliqueront à sa prochaine ouverture de session.", target.Name);
             return ActionResult.Ok(msg, data);
         });
         return Task.FromResult(result);

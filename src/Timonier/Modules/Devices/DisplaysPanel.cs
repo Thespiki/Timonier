@@ -15,12 +15,12 @@ internal sealed class DisplaysPanel : UserControl
     {
         Focusable = false;
         var footer = new DockPanel { Margin = new Thickness(0, 10, 0, 0) };
-        var open = DevUi.Button("Paramètres d'affichage", "", "Pp.SubtleButton", (_, _) => Open("ms-settings:display"));
+        var open = DevUi.Button(L("Paramètres d'affichage"), "", "Pp.SubtleButton", (_, _) => Open("ms-settings:display"));
         DockPanel.SetDock(open, Dock.Right);
         footer.Children.Add(open);
         footer.Children.Add(new TextBlock
         {
-            Text = "Résolution, échelle, disposition et fréquence se modifient dans les Paramètres d'affichage.",
+            Text = L("Résolution, échelle, disposition et fréquence se modifient dans les Paramètres d'affichage."),
             VerticalAlignment = VerticalAlignment.Center,
         }.Styled("Pp.Caption"));
         var stack = new StackPanel();
@@ -28,7 +28,7 @@ internal sealed class DisplaysPanel : UserControl
         stack.Children.Add(DevUi.Divider(new Thickness(0, 6, 0, 0)));
         stack.Children.Add(footer);
         Content = DevUi.Card(stack);
-        _rows.Children.Add(DevUi.Caption("Lecture des écrans…"));
+        _rows.Children.Add(DevUi.Caption(L("Lecture des écrans…")));
     }
 
     public async Task LoadAsync()
@@ -43,8 +43,8 @@ internal sealed class DisplaysPanel : UserControl
         _rows.Children.Clear();
         if (displays.Count == 0)
         {
-            _rows.Children.Add(DevUi.Text("Aucun écran actif n'a pu être lu."));
-            SummaryChanged?.Invoke("Indisponible");
+            _rows.Children.Add(DevUi.Text(L("Aucun écran actif n'a pu être lu.")));
+            SummaryChanged?.Invoke(L("Indisponible"));
             return;
         }
         var first = true;
@@ -55,7 +55,7 @@ internal sealed class DisplaysPanel : UserControl
             _rows.Children.Add(BuildRow(d, displays.Count));
         }
         var main = displays[0];
-        SummaryChanged?.Invoke((displays.Count > 1 ? $"{displays.Count} écrans · " : "") + $"{main.Width} × {main.Height} à {main.RefreshHz} Hz");
+        SummaryChanged?.Invoke((displays.Count > 1 ? LP(displays.Count, "{0} écran", "{0} écrans") + " · " : "") + L("{0} × {1} à {2} Hz", main.Width, main.Height, main.RefreshHz));
     }
 
     private static FrameworkElement BuildRow(DisplayInfo d, int count)
@@ -75,28 +75,27 @@ internal sealed class DisplaysPanel : UserControl
         title.Children.Add(DevUi.Text(d.MonitorName));
         if (d.Primary && count > 1)
         {
-            var b = DevUi.Badge("Principal", "Pp.Info");
+            var b = DevUi.Badge(LC("display", "Principal"), "Pp.Info");
             b.Margin = new Thickness(8, 0, 0, 0);
             title.Children.Add(b);
         }
         text.Children.Add(title);
-        text.Children.Add(DevUi.Caption($"{d.Width} × {d.Height} · {d.RefreshHz} Hz · {d.OrientationLabel} · couleurs {d.BitsPerPixel} bits · carte : {d.AdapterName}"));
+        text.Children.Add(DevUi.Caption(L("{0} × {1} · {2} Hz · {3} · couleurs {4} bits · carte : {5}", d.Width, d.Height, d.RefreshHz, d.OrientationLabel, d.BitsPerPixel, d.AdapterName)));
         if (d.MaxRefreshAtCurrent > d.RefreshHz)
         {
-            var hint = DevUi.Caption($"Cet écran accepte jusqu'à {d.MaxRefreshAtCurrent} Hz dans cette résolution : une fréquence plus élevée rend l'affichage plus fluide " +
-                                     "(consommation un peu plus élevée sur batterie).");
+            var hint = DevUi.Caption(L("Cet écran accepte jusqu'à {0} Hz dans cette résolution : une fréquence plus élevée rend l'affichage plus fluide (consommation un peu plus élevée sur batterie).", d.MaxRefreshAtCurrent));
             hint.SetResourceReference(TextBlock.ForegroundProperty, "Pp.AccentText");
             hint.Margin = new Thickness(0, 2, 0, 0);
             text.Children.Add(hint);
         }
         else if ((long)d.MaxWidth * d.MaxHeight > (long)d.Width * d.Height)
         {
-            text.Children.Add(DevUi.Caption($"Résolution maximale proposée : {d.MaxWidth} × {d.MaxHeight}."));
+            text.Children.Add(DevUi.Caption(L("Résolution maximale proposée : {0} × {1}.", d.MaxWidth, d.MaxHeight)));
         }
         Grid.SetColumn(text, 1);
         grid.Children.Add(text);
 
-        var metric = new TextBlock { Text = $"{d.RefreshHz} Hz", VerticalAlignment = VerticalAlignment.Center, FontSize = 18 }.Styled("Pp.Metric");
+        var metric = new TextBlock { Text = L("{0} Hz", d.RefreshHz), VerticalAlignment = VerticalAlignment.Center, FontSize = 18 }.Styled("Pp.Metric");
         metric.FontSize = 18;
         Grid.SetColumn(metric, 2);
         grid.Children.Add(metric);
